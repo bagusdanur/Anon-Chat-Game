@@ -235,6 +235,10 @@ function clearRaidSession(chatId, partnerId) {
   if (raid) {
     finalizeDungeonRun(raid.runId, 'abandoned', null);
     raidSessions.delete(key);
+    // Notifikasi ke partner yang masih aktif
+    const remainingId = chatId === raid.chatIdA ? raid.chatIdB : raid.chatIdA;
+    const leaverId = chatId === raid.chatIdA ? raid.chatIdA : raid.chatIdB;
+    bot.telegram.sendMessage(remainingId, '⏰ **Raid dibatalkan!**\n\nPartner meninggalkan chat sebelum raid selesai.\nCooldown dungeon tidak aktif (dibatalkan).', { parse_mode: 'Markdown' }).catch(() => {});
   }
 }
 
