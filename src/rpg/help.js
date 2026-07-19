@@ -1,5 +1,5 @@
 // src/rpg/help.js
-// Panduan & tutorial lengkap sistem RPG dalam Bahasa Indonesia
+// Panduan & tutorial lengkap sistem RPG — Updated dengan Physical/Magic/Crit/Status/Resistance
 
 const { Markup } = require('telegraf');
 
@@ -7,28 +7,79 @@ const HELP_PAGES = [
   // PAGE 1: Intro & Mulai
   {
     id: 'intro',
-    title: '📖 Panduan RPG — Halaman 1/6',
+    title: '📖 Panduan RPG — Halaman 1/8',
     text:
       `<b>⚔️ Selamat Datang di Anonymous RPG! ⚔️</b>\n\n` +
       `Bot ini punya sistem RPG persisten ala Discord Bot — progressmu tidak akan hilang walau ganti partner!\n\n` +
       `<b>🚀 Cara Mulai:</b>\n` +
       `1️⃣ Ketik <code>/profile</code> untuk membuat karakter\n` +
       `2️⃣ Pilih salah satu dari 3 kelas:\n` +
-      `   • <b>⚔️ Ksatria</b> — HP & DEF tinggi, cocok untuk pemula. Bonus: -10% damage di dungeon\n` +
-      `   • <b>🔥 Penyihir</b> — ATK tinggi, HP rendah. Bonus: +15% XP dari /hunt\n` +
-      `   • <b>🗡️ Pencuri</b> — Seimbang. Bonus: +gold seiring naik level\n\n` +
+      `   • <b>⚔️ Ksatria</b> — Physical fighter, HP & DEF tinggi. Skill: Tebasan Besar\n` +
+      `   • <b>🔥 Penyihir</b> — Magic DPS, ATK magic tinggi. Skill: Bola Api + Burn\n` +
+      `   • <b>🗡️ Pencuri</b> — Physical burst, Crit tinggi. Skill: Backstab (100% Crit!)\n\n` +
       `3️⃣ Mulai grinding untuk kumpulkan XP, Gold, dan Item!\n\n` +
       `<i>⚠️ Kelas tidak bisa diganti di versi ini. Pilih dengan bijak!</i>`,
-    nav: [null, 'grinding']
+    nav: [null, 'damage']
   },
 
-  // PAGE 2: Grinding
+  // PAGE 2: Damage System (BARU!)
+  {
+    id: 'damage',
+    title: '📖 Panduan RPG — Halaman 2/8',
+    text:
+      `<b>⚔️ Sistem Damage: Physical vs Magic</b>\n\n` +
+      `Setiap kelas punya tipe damage yang berbeda!\n\n` +
+      `<b>⚔️ Physical Damage (Ksatria & Pencuri):</n>` +
+      `   • Dipengaruhi stat ATK\n` +
+      `   • Dikurangi Physical Resist musuh\n` +
+      `   • Cocok lawan boss dengan Magic Resist tinggi\n\n` +
+      `<b>🔮 Magic Damage (Penyihir):</b>\n` +
+      `   • Dipengaruhi stat Magic ATK\n` +
+      `   • Dikurangi Magic Resist musuh\n` +
+      `   • Cocok lawan boss dengan Physical Resist tinggi\n\n` +
+      `<b>💥 Crit System:</b>\n` +
+      `   • Ksatria: 5% + 0.5%/level, multiplier 1.5x\n` +
+      `   • Penyihir: 10% + 1%/level, multiplier 1.8x\n` +
+      `   • Pencuri: 15% + 1.5%/level, multiplier 2.0x\n\n` +
+      `<b>🛡️ Boss Resistances:</b>\n` +
+      `   🌿 Kepala Goblin: Phys 20%, Magic 50% → Physical lebih efektif\n` +
+      `   🕸️ Ratu Laba-laba: Phys 40%, Magic 20% → Magic lebih efektif\n` +
+      `   🔥 Naga Bayangan: Phys 30%, Magic 30% → Seimbang\n` +
+      `   💀 Raja Terkutuk: Phys 25%, Magic 25% → Seimbang`,
+    nav: ['intro', 'classes']
+  },
+
+  // PAGE 3: Classes Detail (BARU!)
+  {
+    id: 'classes',
+    title: '📖 Panduan RPG — Halaman 3/8',
+    text:
+      `<b>🎭 Detail 3 Kelas</b>\n\n` +
+      `<b>⚔️ Ksatria — Physical Tank</b>\n` +
+      `   Stats: HP tinggi, DEF tinggi, ATK sedang\n` +
+      `   Bonus: +15% Physical Damage, -20% Magic\n` +
+      `   Skill: <b>Tebasan Besar</b> (2.0x Phys + 10% DEF penetrate)\n` +
+      `   Tips: Cocok untuk pemula, tahan damage boss\n\n` +
+      `<b>🔥 Penyihir — Magic DPS</b>\n` +
+      `   Stats: Magic ATK tinggi, HP rendah, DEF rendah\n` +
+      `   Bonus: +25% Magic Damage, -30% Physical\n` +
+      `   Skill: <b>Bola Api</b> (2.5x Magic + Burn 3 turn)\n` +
+      `   Tips: Damage tinggi tapi rapuh, jaga jarak!\n\n` +
+      `<b>🗡️ Pencuri — Physical Burst</b>\n` +
+      `   Stats: ATK sedang, Crit Rate tinggi\n` +
+      `   Bonus: +20% Physical Damage, 2x Crit Rate\n` +
+      `   Skill: <b>Backstab</b> (3.0x Phys + 100% Crit!)\n` +
+      `   Tips: Burst damage paling tinggi, cocok untuk speedrun`,
+    nav: ['damage', 'grinding']
+  },
+
+  // PAGE 4: Grinding
   {
     id: 'grinding',
-    title: '📖 Panduan RPG — Halaman 2/6',
+    title: '📖 Panduan RPG — Halaman 4/8',
     text:
       `<b>⚡ Sistem Energi & Grinding</b>\n\n` +
-      `Kamu punya <b>10 Energi</b> yang regen +1 setiap 5 menit.\n\n` +
+      `Kamu punya <b>10 Energi</b> yang regen +1 setiap 3 menit.\n\n` +
       `<b>Aktivitas Grinding:</b>\n\n` +
       `🗡️ <code>/hunt</code> — Berburu monster (2 Energi)\n` +
       `   • Lawan monster sesuai levelmu\n` +
@@ -36,22 +87,20 @@ const HELP_PAGES = [
       `   • Kalah = HP berkurang, tidak dapat reward\n\n` +
       `🎣 <code>/fish</code> — Mancing (1 Energi)\n` +
       `   • Fokus dapat material & Gold\n` +
-      `   • Tidak ada risiko kalah\n` +
-      `   • Kadang dapat "Sepatu Bot Rusak" 😂\n\n` +
+      `   • Tidak ada risiko kalah\n\n` +
       `⛏️ <code>/mine</code> — Menambang (3 Energi)\n` +
       `   • Dapat ore untuk crafting\n` +
-      `   • Hasil jual & craft paling tinggi\n` +
-      `   • Ore langka = material equipment terbaik\n\n` +
+      `   • Hasil jual & craft paling tinggi\n\n` +
       `🎁 <code>/daily</code> — Hadiah harian (0 Energi)\n` +
       `   • Cooldown 20 jam\n` +
       `   • Dapat: 30 Gold + 10 XP + 1 Ramuan Kecil`,
-    nav: ['intro', 'leveling']
+    nav: ['classes', 'leveling']
   },
 
-  // PAGE 3: Leveling & Stats
+  // PAGE 5: Leveling & Stats
   {
     id: 'leveling',
-    title: '📖 Panduan RPG — Halaman 3/6',
+    title: '📖 Panduan RPG — Halaman 5/8',
     text:
       `<b>📈 Sistem Leveling & Stats</b>\n\n` +
       `<b>XP yang dibutuhkan:</b>\n` +
@@ -60,92 +109,91 @@ const HELP_PAGES = [
       `   Lv 10→11: ~1.581 XP\n` +
       `   Lv 20→21: ~4.472 XP\n\n` +
       `<b>Stats naik per level:</b>\n` +
-      `   • ⚔️ Ksatria: +8 MaxHP, +1.5 ATK, +2 DEF\n` +
-      `   • 🔥 Penyihir: +5 MaxHP, +2.5 ATK, +1 DEF\n` +
-      `   • 🗡️ Pencuri: +6 MaxHP, +2 ATK, +1.5 DEF\n\n` +
+      `   • ⚔️ Ksatria: +8 HP, +1.5 ATK, +2 DEF, +0.5% Crit\n` +
+      `   • 🔥 Penyihir: +5 HP, +2.5 Magic ATK, +1 DEF, +1% Crit\n` +
+      `   • 🗡️ Pencuri: +6 HP, +2 ATK, +1.5 DEF, +1.5% Crit\n\n` +
       `<b>❤️ Regenerasi HP:</b>\n` +
       `   +10% MaxHP setiap 10 menit (otomatis)\n` +
       `   Atau langsung penuh pakai Ramuan dari <code>/inv</code>\n\n` +
       `<b>📊 Cek progressmu:</b>\n` +
-      `   <code>/profile</code> — Level, XP bar, HP, ATK, DEF, Gold, Energi, Tiket Dungeon`,
-    nav: ['grinding', 'economy']
+      `   <code>/profile</code> — Level, XP, HP, ATK, DEF, Magic ATK, Crit, Resist`,
+    nav: ['grinding', 'equipment']
   },
 
-  // PAGE 4: Economy (Inventory, Shop, Crafting)
+  // PAGE 6: Equipment (BARU!)
+  {
+    id: 'equipment',
+    title: '📖 Panduan RPG — Halaman 6/8',
+    text:
+      `<b>🗡️ Sistem Equipment (4 Slot)</b>\n\n` +
+      `Equipment otomatis dipakai dari inventory terbaik per slot!\n\n` +
+      `<b>⚔️ Weapon Slot:</b>\n` +
+      `   Bonus: +ATK, +Crit Rate\n` +
+      `   Contoh: Pedang Karatan (+2 ATK, +5% Crit)\n\n` +
+      `<b>🪄 Staff Slot:</b>\n` +
+      `   Bonus: +Magic ATK, +Crit Rate\n` +
+      `   Contoh: Tongkat Api (+6 Magic ATK, +8% Crit)\n\n` +
+      `<b>🛡️ Armor Slot:</b>\n` +
+      `   Bonus: +DEF, +Magic Resist\n` +
+      `   Contoh: Jubah Terkutuk (+5 DEF, +10% Magic Resist)\n\n` +
+      `<b>💍 Accessory Slot:</b>\n` +
+      `   Bonus: +Crit, +Resist, +ATK/Magic ATK\n` +
+      `   Contoh: Mahkota Terkutuk (+5 ATK, +5 Magic ATK, +10% Crit)\n\n` +
+      `<b>⬆️ Upgrade Equipment:</b>\n` +
+      `   <code>/upgrade nama_item</code> — +2 stat per tier (maks +5)\n` +
+      `   Butuh ore material + Gold`,
+    nav: ['leveling', 'economy']
+  },
+
+  // PAGE 7: Economy
   {
     id: 'economy',
-    title: '📖 Panduan RPG — Halaman 4/6',
+    title: '📖 Panduan RPG — Halaman 7/8',
     text:
-      `<b>💰 Ekonomi & Crafting</b>\n\n` +
-      `<b>🎒 Inventaris:</b>\n` +
-      `   <code>/inv</code> — Lihat semua item milikmu\n` +
-      `   <code>/use ramuan_kecil</code> — Pakai item konsumable\n` +
-      `   <code>/sell nama_item</code> — Jual item ke sistem\n\n` +
-      `<b>🏪 Toko:</b>\n` +
-      `   <code>/shop</code> — Lihat daftar item yang dijual\n` +
-      `   <code>/buy ramuan_kecil</code> — Beli item (nama dengan underscore)\n` +
-      `   Item toko: Ramuan Kecil (15g), Ramuan Besar (50g),\n` +
-      `   Kail Pancing+ (200g), Beliung Tambang+ (300g)\n\n` +
-      `<b>⚒️ Upgrade Equipment:</b>\n` +
-      `   <code>/upgrade pedang_karatan</code> — Upgrade senjata/armor\n` +
-      `   • Butuh ore material + Gold\n` +
-      `   • Setiap upgrade: +2 ATK (senjata) atau +2 DEF (armor)\n` +
-      `   • Maksimal upgrade: +5 tier\n\n` +
-      `<b>🟠 Rarity Loot:</b>\n` +
-      `   ⚪ Common → 🟢 Uncommon → 🔵 Rare → 🟣 Epic → 🟠 Legendary`,
-    nav: ['leveling', 'dungeon']
+      `<b>💰 Ekonomi & Inventory</b>\n\n` +
+      `<b>🎒 Commands:</b>\n` +
+      `   <code>/inv</code> — Lihat semua item\n` +
+      `   <code>/use ramuan_kecil</code> — Pakai consumable\n` +
+      `   <code>/sell nama_item</code> — Jual item\n` +
+      `   <code>/shop</code> — Lihat toko\n` +
+      `   <code>/buy nama_item</code> — Beli item\n` +
+      `   <code>/give 100</code> — Kirim gold ke partner (pajak 5%)\n\n` +
+      `<b>🟠 Rarity:</b>\n` +
+      `   ⚪ Common → 🟢 Uncommon → 🔵 Rare → 🟣 Epic → 🟠 Legendary\n\n` +
+      `<b>💫 Status Effects (Dungeon):</b>\n` +
+      `   🔥 Burn — 5% HP/t selama 3 turn (dari Penyihir)\n` +
+      `   ⚡ Stun — Skip 1 turn\n` +
+      `   🛡️ Shield — -50% damage 1 turn (dari Bertahan)`,
+    nav: ['equipment', 'dungeon']
   },
 
-  // PAGE 5: Dungeon Co-op
+  // PAGE 8: Dungeon & Tips
   {
     id: 'dungeon',
-    title: '📖 Panduan RPG — Halaman 5/6',
+    title: '📖 Panduan RPG — Halaman 8/8',
     text:
-      `<b>🏰 Dungeon Raid (Co-op Eksklusif)</b>\n\n` +
-      `Fitur terbaik bot ini! Hanya bisa dipakai saat kamu sedang terhubung dengan partner lewat <code>/search</code>.\n\n` +
-      `<b>⏳ Cooldown Dungeon:</b>\n` +
-      `   • Tidak ada batasan tiket harian!\n` +
-      `   • Setiap selesai raid (menang/kalah), ada cooldown <b>10 menit</b> per pemain\n` +
-      `   • Kedua pemain tidak boleh dalam status cooldown untuk mulai\n\n` +
-      `<b>Kategori Dungeon (berdasarkan rata-rata level party):</b>\n` +
-      `   🌿 Gua Goblin — Min. Lv 1 | Boss: Kepala Goblin\n` +
-      `   🕸️ Sarang Laba-laba — Min. Lv 16 | Boss: Ratu Laba-laba\n` +
-      `   🔥 Gua Naga Bayangan — Min. Lv 36 | Boss: Naga Bayangan\n` +
-      `   💀 Istana Terkutuk — Min. Lv 61 | Boss: Raja Terkutuk\n\n` +
-      `<b>Alur Raid:</b>\n` +
-      `1. Ketik <code>/dungeon</code> → pilih kategori\n` +
+      `<b>🏰 Dungeon Raid (Co-op)</b>\n\n` +
+      `<b>Alur:</b>\n` +
+      `1. <code>/dungeon</code> → pilih tier\n` +
       `2. Kirim undangan ke partner\n` +
       `3. Partner terima → Raid dimulai!\n` +
-      `4. Tiap turn: pilih Serang / Bertahan / Skill / Item\n` +
-      `5. Tunggu partner memilih → aksi dieksekusi bersama`,
-    nav: ['economy', 'combat']
-  },
-
-  // PAGE 6: Combat & Tips
-  {
-    id: 'combat',
-    title: '📖 Panduan RPG — Halaman 6/6',
-    text:
-      `<b>⚔️ Sistem Combat Dungeon & Tips</b>\n\n` +
-      `<b>Aksi tiap turn:</b>\n` +
-      `   🗡️ <b>Serang</b> — Damage normal ke boss\n` +
-      `   🛡️ <b>Bertahan</b> — Kurangi damage diterima 50%\n` +
-      `   🔮 <b>Skill</b> — Damage 1.8x ATK, cooldown 3 turn\n` +
-      `   🧪 <b>Item</b> — Pakai ramuan, heal 15% MaxHP\n\n` +
-      `<b>⚠️ Mekanik Khusus Boss:</b>\n` +
-      `   • Setiap 3 turn, boss memperingatkan serangan berat → gunakan BERTAHAN!\n` +
-      `   • Boss MENGAMUK (Enrage) saat HP &lt; 50% → ATK naik 30%!\n\n` +
-      `<b>🏆 Reward Menang:</b>\n` +
-      `   • XP & Gold dibagi rata ke KEDUA pemain\n` +
-      `   • Drop Legendary (1 per raid, diacak siapa yang dapat)\n\n` +
-      `<b>💔 Kalah:</b>\n` +
-      `   • HP dipulihkan ke 20% MaxHP\n` +
-      `   • Tidak dapat reward, tapi cooldown 10 menit tetap berlaku\n\n` +
-      `<b>💰 Tips Gold:</b>\n` +
-      `   <code>/give 100</code> — Kirim 100g ke partner (pajak 5%)\n` +
-      `   Hanya bisa ke partner yang sedang paired!\n\n` +
+      `4. Tiap turn: pilih aksi\n` +
+      `5. Tunggu partner → aksi dieksekusi\n\n` +
+      `<b>Aksi:</b>\n` +
+      `   🗡️ Serang — Damage sesuai tipe kelas\n` +
+      `   🛡️ Bertahan — -50% damage + Shield\n` +
+      `   🔮 Skill — Damage tinggi + efek khusus\n` +
+      `   🧪 Item — Heal 15% HP + bersihkan debuff\n\n` +
+      `<b>⚠️ Boss Mechanics:</b>\n` +
+      `   • Setiap 3 turn: serangan berat → BERTAHAN!\n` +
+      `   • HP < 50%: ENRAGE → ATK +30%!\n` +
+      `   • Cooldown 10 menit setelah raid selesai\n\n` +
+      `<b>🏆 Tips:</b>\n` +
+      `   • Pilih skill berdasarkan boss resistance!\n` +
+      `   • Pencuri bagus lawan Goblin (Phys Resist rendah)\n` +
+      `   • Penyihir bagus lawan Laba-laba (Magic Resist rendah)\n\n` +
       `<i>Selamat bertualang, Petualang! 🎮⚔️</i>`,
-    nav: ['dungeon', null]
+    nav: ['economy', null]
   },
 ];
 
@@ -171,19 +219,23 @@ function buildIndexMessage() {
     `<b>📖 Panduan RPG — Daftar Isi</b>\n\n` +
     `Pilih topik yang ingin kamu baca:\n\n` +
     `1️⃣ Intro & Cara Mulai\n` +
-    `2️⃣ Energi & Grinding (/hunt, /fish, /mine)\n` +
-    `3️⃣ Leveling, Stats & Regen HP\n` +
-    `4️⃣ Ekonomi: Inventory, Shop, Upgrade\n` +
-    `5️⃣ Dungeon Raid (Co-op)\n` +
-    `6️⃣ Sistem Combat & Tips\n`;
+    `2️⃣ Sistem Damage (Physical vs Magic)\n` +
+    `3️⃣ Detail 3 Kelas\n` +
+    `4️⃣ Energi & Grinding\n` +
+    `5️⃣ Leveling & Stats\n` +
+    `6️⃣ Equipment (4 Slot)\n` +
+    `7️⃣ Ekonomi & Status Effects\n` +
+    `8️⃣ Dungeon Raid & Tips`;
 
   const buttons = [
     [Markup.button.callback('1️⃣ Intro & Cara Mulai',           'help:page:intro')],
-    [Markup.button.callback('2️⃣ Energi & Grinding',            'help:page:grinding')],
-    [Markup.button.callback('3️⃣ Leveling & Stats',             'help:page:leveling')],
-    [Markup.button.callback('4️⃣ Ekonomi & Crafting',           'help:page:economy')],
-    [Markup.button.callback('5️⃣ Dungeon Raid (Co-op)',         'help:page:dungeon')],
-    [Markup.button.callback('6️⃣ Sistem Combat & Tips',         'help:page:combat')],
+    [Markup.button.callback('2️⃣ Sistem Damage',               'help:page:damage')],
+    [Markup.button.callback('3️⃣ Detail 3 Kelas',              'help:page:classes')],
+    [Markup.button.callback('4️⃣ Energi & Grinding',            'help:page:grinding')],
+    [Markup.button.callback('5️⃣ Leveling & Stats',             'help:page:leveling')],
+    [Markup.button.callback('6️⃣ Equipment (4 Slot)',           'help:page:equipment')],
+    [Markup.button.callback('7️⃣ Ekonomi & Status Effects',    'help:page:economy')],
+    [Markup.button.callback('8️⃣ Dungeon Raid & Tips',         'help:page:dungeon')],
   ];
 
   return {
