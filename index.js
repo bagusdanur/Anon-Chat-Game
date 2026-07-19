@@ -530,6 +530,7 @@ const botCommands = [
   { command: 'inv',      description: '🎒 Inventaris' },
   { command: 'shop',     description: '🏪 Toko' },
   { command: 'craft',    description: '⚒️ Craft equipment' },
+  { command: 'equip',    description: '🗡️ Lihat equipment aktif' },
   { command: 'upgrade',  description: '⬆️ Upgrade equipment' },
   { command: 'sell',     description: '💰 Jual item' },
   { command: 'use',      description: '🧪 Pakai item' },
