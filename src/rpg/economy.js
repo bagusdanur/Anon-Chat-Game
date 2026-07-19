@@ -532,10 +532,6 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
   });
 }
 
-module.exports = { setupEconomy, SHOP_ITEMS };
-
-module.exports = { setupEconomy, SHOP_ITEMS };
-
 // ===== /equip — Lihat Equipment Aktif =====
   bot.command('equip', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
