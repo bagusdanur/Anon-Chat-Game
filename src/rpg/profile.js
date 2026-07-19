@@ -68,6 +68,48 @@ function renderProfile(user) {
     msg += `${footer(`+1 energi dalam ~${nextEnergyMin} menit`)}`;
   }
 
+
+  // Equipment section
+  const equipped = { weapon: null, staff: null, armor: null, accessory: null };
+  for (const item of getInventory(user.telegram_user_id)) {
+    if (!item.effect_json || !['weapon', 'staff', 'armor', 'accessory'].includes(item.category)) continue;
+    if (equipped[item.category] && equipped[item.category].rarity > item.rarity) continue;
+    equipped[item.category] = item;
+  }
+
+  const renderSlot = (item) => {
+    if (item) {
+      const tier = item.upgrade_tier > 0 ? ` +${item.upgrade_tier}` : '';
+      const rarity = RARITY_EMOJI[item.rarity] || '';
+      return `${rarity} ${item.display_name}${tier}`;
+    }
+    return '(Kosong)';
+  };
+
+  // Add equipment to profile
+  msg += `${divider('─', 30)}\n`;
+  msg += `**🗡️ Equipment:**\n`;
+  msg += `┌─────────────────┬─────────────────┐\n`;
+  msg += `│ ⚔️ Weapon       │ 🪄 Staff        │\n`;
+  msg += `│ ${renderSlot(equipped.weapon).padEnd(15)} │ ${renderSlot(equipped.staff).padEnd(15)} │\n`;
+  msg += `├─────────────────┼─────────────────┤\n`;
+  msg += `│ 🛡️ Armor        │ 💍 Accessory    │\n`;
+  msg += `│ ${renderSlot(equipped.armor).padEnd(15)} │ ${renderSlot(equipped.accessory).padEnd(15)} │\n`;
+  msg += `└─────────────────┴─────────────────┘\n\n`;
+
+  // Equipment effects
+  const effects = [];
+  for (const [, item] of Object.entries(equipped)) {
+    if (!item) continue;
+    try {
+      const eff = JSON.parse(item.effect_json);
+      if (eff.atk_bonus) effects.push(`ATK+${eff.atk_bonus}`);
+      if (eff.def_bonus) effects.push(`DEF+${eff.def_bonus}`);
+      if (eff.magic_atk_bonus) effects.push(`Magic+${eff.magic_atk_bonus}`);
+      if (eff.crit_rate) effects.push(`Crit+${Math.round(eff.crit_rate * 100)}%`);
+    } catch {}
+  }
+  if (effects.length) msg += `${effects.join(' | ')}\n`;
   return msg;
 }
 
