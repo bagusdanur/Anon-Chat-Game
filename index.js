@@ -34,6 +34,9 @@ const { rateLimitMessage, rateLimitCommand } = require('./src/middleware/rateLim
 const { containsBadWord } = require('./src/moderation/wordFilter');
 const { getRandomTopic } = require('./src/icebreakers');
 const { setupRpg, clearRaidSession } = require('./src/rpg/controller');
+const { progressBar } = require('./src/format');
+const { CLASS_DEFS, xpToNextLevel, getCurrentHp, getCurrentEnergy, getEquipmentBonus, getInventory } = require('./src/rpg/db_rpg');
+const { RARITY_EMOJI } = require('./src/rpg/profile');
 
 // ===== GLOBAL ERROR HANDLER =====
 // Mencegah error seperti "query is too old" atau error Telegram lainnya crash bot
