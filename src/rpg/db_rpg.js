@@ -495,9 +495,9 @@ function clearStatusEffects(userId) {
 
 // ===== QUEST SYSTEM =====
 const DAILY_QUESTS = [
-  { quest_id: 'daily_hunt_3',    name: '🗡️ Pemburu Pemula',       description: 'Hunt monster 3 kali',       type: 'daily', action_type: 'hunt',     target_count: 3,  xp_reward: 50,  gold_reward: 30 },
+  { quest_id: 'daily_hunt_3',    name: '🗡️ Pemburu Pemula',       description: 'Hunt monster 3 kali',       type: 'daily', action_type: 'hunt',     target_count: 3,  xp_reward: 50,  gold_reward: 30, item_reward: null },
   { quest_id: 'daily_fish_3',    name: '🎣 Pemancing Ulung',       description: 'Mancing 3 kali',            type: 'daily', action_type: 'fish',     target_count: 3,  xp_reward: 40,  gold_reward: 25, item_reward: null },
-  { quest_id: 'daily_mine_2',    name: '⛏️ Penambang Rajin',      description: 'Menambang 2 kali',          type: 'daily', action_type: 'mine',     target_count: 2,  xp_reward: 60,  gold_reward: 35 },
+  { quest_id: 'daily_mine_2',    name: '⛏️ Penambang Rajin',      description: 'Menambang 2 kali',          type: 'daily', action_type: 'mine',     target_count: 2,  xp_reward: 60,  gold_reward: 35, item_reward: null },
   { quest_id: 'daily_craft_1',   name: '⚒️ Tukang Crafts',        description: 'Craft 1 item apapun',        type: 'daily', action_type: 'craft',    target_count: 1,  xp_reward: 40,  gold_reward: 20, item_reward: null },
   { quest_id: 'daily_sell_3',    name: '💰 Pedagang Kecil',        description: 'Jual 3 item',               type: 'daily', action_type: 'sell',     target_count: 3,  xp_reward: 30,  gold_reward: 40, item_reward: null },
   { quest_id: 'daily_dungeon_1', name: '🏰 Penjelajah Dungeon',   description: 'Selesaikan 1 dungeon raid',  type: 'daily', action_type: 'dungeon',  target_count: 1,  xp_reward: 100, gold_reward: 50, item_reward: 'ramuan_kecil' },
