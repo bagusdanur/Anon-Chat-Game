@@ -449,6 +449,72 @@ bot.command('help', (ctx) => {
     '   /daily — Hadiah harian',
     '   /give — Kirim gold ke partner',
   ].join('\n'), { parse_mode: 'Markdown' });
+
+
+bot.command('equip', rateLimitCommand, (ctx) => {
+  const userId = ctx.chat.id;
+  const args = ctx.message.text.split(' ').slice(1);
+  const input = args.join('_').toLowerCase();
+
+  const user = getOrCreateUser(userId);
+  if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
+
+  const cls = CLASS_DEFS[user.class_name];
+  const equip = getEquippedBonus(userId);
+  const equipped = getEquipped(userId);
+
+  if (!input) {
+    const renderSlot = (item) => {
+      if (item) {
+        const tier = item.upgrade_tier > 0 ? ` +${item.upgrade_tier}` : '';
+        const rarity = RARITY_EMOJI[item.rarity] || '';
+        return `${rarity} ${item.display_name}${tier}`;
+      }
+      return '(Kosong)';
+    };
+
+    let msg = `🗡️ **Equipment — ${cls.name}**\n`;
+    msg += `══════════════════════════════\n\n`;
+    msg += `┌─────────────────┬─────────────────┐\n`;
+    msg += `│ ⚔️ Weapon       │ 🪄 Staff        │\n`;
+    msg += `│ ${renderSlot(equipped.weapon).padEnd(15)} │ ${renderSlot(equipped.staff).padEnd(15)} │\n`;
+    msg += `├─────────────────┼─────────────────┤\n`;
+    msg += `│ 🛡️ Armor        │ 💍 Accessory    │\n`;
+    msg += `│ ${renderSlot(equipped.armor).padEnd(15)} │ ${renderSlot(equipped.accessory).padEnd(15)} │\n`;
+    msg += `└─────────────────┴─────────────────┘\n\n`;
+    msg += `──────────────────────────────\n`;
+    msg += `📈 **Total Bonus:**\n`;
+    msg += `⚔️ ATK +${equip.atkBonus} | 🛡️ DEF +${equip.defBonus}\n`;
+    if (equip.magicAtkBonus > 0) msg += `🔮 Magic +${equip.magicAtkBonus}\n`;
+    if (equip.critRate > 0) msg += `💥 Crit +${Math.round(equip.critRate * 100)}%\n`;
+    msg += `\n💡 Gunakan: \`/equip [nama_item]\``;
+    return ctx.reply(msg, { parse_mode: 'Markdown' });
+  }
+
+  const invItem = getInventory(userId).find(i => i.item_id === input);
+  if (!invItem) return ctx.reply(`❌ Item "${input}" tidak ada di inventory.`);
+  const result = equipItem(userId, invItem.item_id);
+  if (!result.success) return ctx.reply(`❌ ${result.reason}`);
+  ctx.reply(`✅ **${result.item}** terpasang di slot **${result.slot}**!`, { parse_mode: 'Markdown' });
+});
+
+bot.command('unequip', rateLimitCommand, (ctx) => {
+  const userId = ctx.chat.id;
+  const args = ctx.message.text.split(' ').slice(1);
+  const slot = args[0]?.toLowerCase();
+
+  const user = getOrCreateUser(userId);
+  if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
+
+  if (!slot || !['weapon', 'staff', 'armor', 'accessory'].includes(slot)) {
+    return ctx.reply('Penggunaan: /unequip [weapon/staff/armor/accessory]');
+  }
+
+  const result = unequipSlot(userId, slot);
+  if (!result.success) return ctx.reply(`❌ ${result.reason}`);
+  ctx.reply(`✅ **${result.item}** dilepas dari slot **${result.slot}**!`, { parse_mode: 'Markdown' });
+});
+
 });
 
 
