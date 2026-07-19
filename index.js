@@ -384,8 +384,6 @@ bot.command('party', rateLimitCommand, (ctx) => {
 
   const clsA = CLASS_DEFS[user.class_name];
   const clsB = CLASS_DEFS[partner.class_name];
-  const equipA = getEquipmentBonus(userId);
-  const equipB = getEquipmentBonus(partnerId);
 
   const renderBar = (cur, max, len = 8) => {
     const filled = Math.min(len, Math.round((Math.max(0, cur) / max) * len));
@@ -397,8 +395,6 @@ bot.command('party', rateLimitCommand, (ctx) => {
   // Player A
   msg += `<b>${clsA.name} — Lv.${user.level}</b>\n`;
   msg += `❤️ HP: ${renderBar(user.hp, user.max_hp)}\n`;
-  msg += `⚔️ ATK: ${user.atk + equipA.atkBonus} | 🛡️ DEF: ${user.def + equipA.defBonus}\n`;
-  msg += `🔮 Magic: ${user.magic_atk + equipA.magicAtkBonus} | 💥 Crit: ${Math.round((user.crit_rate + equipA.critRate) * 100)}%\n`;
   msg += `💰 Gold: ${user.gold}g\n\n`;
 
   msg += `<b>VS</b>\n\n`;
@@ -406,13 +402,9 @@ bot.command('party', rateLimitCommand, (ctx) => {
   // Player B (Partner)
   msg += `<b>${clsB.name} — Lv.${partner.level}</b>\n`;
   msg += `❤️ HP: ${renderBar(partner.hp, partner.max_hp)}\n`;
-  msg += `⚔️ ATK: ${partner.atk + equipB.atkBonus} | 🛡️ DEF: ${partner.def + equipB.defBonus}\n`;
-  msg += `🔮 Magic: ${partner.magic_atk + equipB.magicAtkBonus} | 💥 Crit: ${Math.round((partner.crit_rate + equipB.critRate) * 100)}%\n`;
   msg += `💰 Gold: ${partner.gold}g\n\n`;
 
   // Party summary
-  const totalAtk = (user.atk + equipA.atkBonus) + (partner.atk + equipB.atkBonus);
-  const totalDef = (user.def + equipA.defBonus) + (partner.def + equipB.defBonus);
   const avgLv = Math.floor((user.level + partner.level) / 2);
   msg += `📊 <b>Party Summary:</b>\n`;
   msg += `   Avg Level: ${avgLv} | Total ATK: ${totalAtk} | Total DEF: ${totalDef}`;
@@ -448,93 +440,11 @@ bot.command('help', (ctx) => {
     '💰 *Economy:*',
     '   /inv — Inventaris',
     '   /shop — Toko',
-    '   /craft — Craft equipment',
-    '   /upgrade — Upgrade equipment',
-    '   /equip — Lihat equipment aktif',
     '   /sell — Jual item',
     '   /use — Pakai item',
     '   /give — Kirim gold ke partner',
   ].join('\n'), { parse_mode: 'Markdown' });
 });
-
-bot.command('equip', rateLimitCommand, (ctx) => {
-  const userId = ctx.chat.id;
-  const user = getOrCreateUser(userId);
-  if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
-
-  const cls = CLASS_DEFS[user.class_name];
-  const equip = getEquipmentBonus(userId);
-  const items = getInventory(userId);
-  const nextXp = xpToNextLevel(user.level);
-  const hp = getCurrentHp(user);
-  const energy = getCurrentEnergy(user);
-  const streak = user.win_streak || 0;
-
-  // Auto-equip best items
-  const equipped = { weapon: null, staff: null, armor: null, accessory: null };
-  for (const item of items) {
-    if (!item.effect_json || !['weapon', 'staff', 'armor', 'accessory'].includes(item.category)) continue;
-    if (equipped[item.category] && equipped[item.category].rarity > item.rarity) continue;
-    equipped[item.category] = item;
-  }
-
-  const renderSlot = (item) => {
-    if (item) {
-      const tier = item.upgrade_tier > 0 ? ` +${item.upgrade_tier}` : '';
-      const rarity = RARITY_EMOJI[item.rarity] || '';
-      return `${rarity} ${item.display_name}${tier}`;
-    }
-    return '(Kosong)';
-  };
-
-  const dmgType = cls.damageType === 'magic' ? '🔮 Magic' : '⚔️ Physical';
-  const critRate = Math.min(95, Math.round((user.crit_rate || 5) + equip.critRate * 100));
-  const critMulti = Math.round((user.crit_multi || 1.5) + equip.critMulti);
-
-  let msg = `╔═══════════════════════════════╗\n`;
-  msg += `║  ${cls.name} — Lv.${user.level}          ║\n`;
-  msg += `╚═══════════════════════════════╝\n\n`;
-
-  msg += `❤️ HP:    ${progressBar(hp, user.max_hp, 8)} ${hp}/${user.max_hp}\n`;
-  msg += `✨ XP:    ${progressBar(user.xp, nextXp, 8)} ${user.xp}/${nextXp}\n`;
-  msg += `⚡ Energy: ${progressBar(energy, 10, 8)} ${energy}/10\n\n`;
-
-  msg += `┌─────────────────┬─────────────────┐\n`;
-  msg += `│ ⚔️ Weapon       │ 🪄 Staff        │\n`;
-  msg += `│ ${renderSlot(equipped.weapon).padEnd(15)} │ ${renderSlot(equipped.staff).padEnd(15)} │\n`;
-  msg += `├─────────────────┼─────────────────┤\n`;
-  msg += `│ 🛡️ Armor        │ 💍 Accessory    │\n`;
-  msg += `│ ${renderSlot(equipped.armor).padEnd(15)} │ ${renderSlot(equipped.accessory).padEnd(15)} │\n`;
-  msg += `└─────────────────┴─────────────────┘\n\n`;
-
-  msg += `📊 Active Effects:\n`;
-  msg += `───────────────────────────\n`;
-  for (const [slot, item] of Object.entries(equipped)) {
-    if (!item) continue;
-    try {
-      const eff = JSON.parse(item.effect_json);
-      const effects = [];
-      if (eff.atk_bonus) effects.push(`ATK +${eff.atk_bonus}`);
-      if (eff.def_bonus) effects.push(`DEF +${eff.def_bonus}`);
-      if (eff.magic_atk_bonus) effects.push(`Magic +${eff.magic_atk_bonus}`);
-      if (eff.crit_rate) effects.push(`Crit +${Math.round(eff.crit_rate * 100)}%`);
-      if (effects.length) msg += `${item.display_name}: ${effects.join(', ')}\n`;
-    } catch {}
-  }
-
-  msg += `\n───────────────────────────\n`;
-  msg += `📈 Total Stats:\n`;
-  msg += `⚔️ ATK: ${user.atk + equip.atkBonus} | 🛡️ DEF: ${user.def + equip.defBonus}\n`;
-  msg += `🔮 Magic: ${(user.magic_atk || 0) + equip.magicAtkBonus} | 🎯 Type: ${dmgType}\n`;
-  msg += `💥 Crit: ${critRate}% / ${critMulti}%\n`;
-  msg += `🛡️ Resist: Phys ${Math.round((user.phys_resist || 0) * 100)}% | Magic ${Math.round((user.magic_resist || 0) * 100)}%\n`;
-  msg += `💰 Gold: ${user.gold}g\n`;
-  if (streak > 0) msg += `🔥 Win Streak: ${streak}x\n`;
-
-  ctx.reply(msg);
-});
-
-
 
 
 // ===== RELAY PESAN =====
@@ -612,9 +522,6 @@ const botCommands = [
   // === ECONOMY ===
   { command: 'inv',      description: '🎒 Inventaris' },
   { command: 'shop',     description: '🏪 Toko' },
-  { command: 'craft',    description: '⚒️ Craft equipment' },
-  { command: 'equip',    description: '🗡️ Lihat equipment aktif' },
-  { command: 'upgrade',  description: '⬆️ Upgrade equipment' },
   { command: 'sell',     description: '💰 Jual item' },
   { command: 'use',      description: '🧪 Pakai item' },
   { command: 'daily',    description: '🎁 Hadiah harian' },
