@@ -2,7 +2,8 @@
 // Fase 2: /hunt, /fish, /mine + sistem energi
 const {
   getOrCreateUser, getCurrentEnergy, spendEnergy, getCurrentHp,
-  addXp, addGold, addItem, updateHp, CLASS_DEFS
+  addXp, addGold, addItem, updateHp, CLASS_DEFS,
+  incrementQuestProgress
 } = require('./db_rpg');
 const { RARITY_EMOJI } = require('./profile');
 
@@ -157,6 +158,7 @@ function setupGrind(bot, { rateLimitCommand }) {
 
       const { leveled, newLevel } = addXp(userId, xpGain);
       addGold(userId, goldGain);
+      incrementQuestProgress(userId, 'hunt');
       const newHp = Math.max(1, currentHp - result.damageTaken);
       updateHp(userId, newHp);
 
@@ -214,6 +216,7 @@ function setupGrind(bot, { rateLimitCommand }) {
 
     // Satu kali addXp, cek level-up
     const { leveled, newLevel } = addXp(userId, xpGain);
+    incrementQuestProgress(userId, 'fish');
     if (leveled && leveled.length > 0) {
       msg += `\n\n🎉 **LEVEL UP!** Kamu sekarang Level **${newLevel}**! Stats meningkat!`;
     }
@@ -256,6 +259,7 @@ function setupGrind(bot, { rateLimitCommand }) {
 
     const { leveled, newLevel } = addXp(userId, xpGain);
     addGold(userId, goldGain);
+    incrementQuestProgress(userId, 'mine');
 
     let msg = `⛏️ **Menambang** ⛏️\n\nKamu memukul batu dengan beliungmu...\n\n`;
     if (item) {

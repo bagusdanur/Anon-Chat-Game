@@ -6,7 +6,8 @@ const {
   addXp, addGold, addItem, updateHp, getCurrentHp,
   createDungeonRun, finalizeDungeonRun, CLASS_DEFS, getEquipmentBonus,
   calcPhysicalDamage, calcMagicDamage, rollCrit,
-  addStatusEffect, tickStatusEffects, hasStatusEffect, clearStatusEffects
+  addStatusEffect, tickStatusEffects, hasStatusEffect, clearStatusEffects,
+  incrementQuestProgress
 } = require('./db_rpg');
 const { renderHpBar } = require('./profile');
 
@@ -263,6 +264,8 @@ function checkRaidResolve(bot, pairKey) {
     const xpResultA = addXp(chatIdA, xpReward);
     const xpResultB = addXp(chatIdB, xpReward);
     addGold(chatIdA, goldReward);
+    incrementQuestProgress(chatIdA, 'dungeon');
+    incrementQuestProgress(chatIdB, 'dungeon');
     addGold(chatIdB, goldReward);
     addItem(lootWinner, raid.boss.legendaryDrop);
 

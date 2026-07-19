@@ -78,6 +78,31 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions_log(from_user_id, to_user_id);
   CREATE INDEX IF NOT EXISTS idx_dungeon_players ON dungeon_runs(player_a_id, player_b_id);
   CREATE INDEX IF NOT EXISTS idx_status_effects_user ON status_effects(user_id);
+
+  CREATE TABLE IF NOT EXISTS quests (
+    quest_id     TEXT PRIMARY KEY,
+    name         TEXT NOT NULL,
+    description  TEXT NOT NULL,
+    type         TEXT NOT NULL CHECK (type IN ('daily','weekly','once')),
+    action_type  TEXT NOT NULL,
+    target_count INTEGER NOT NULL DEFAULT 1,
+    xp_reward    INTEGER NOT NULL DEFAULT 0,
+    gold_reward  INTEGER NOT NULL DEFAULT 0,
+    item_reward  TEXT,
+    created_at   INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS quest_progress (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id      TEXT NOT NULL,
+    quest_id     TEXT NOT NULL,
+    current      INTEGER NOT NULL DEFAULT 0,
+    claimed      BOOLEAN NOT NULL DEFAULT 0,
+    reset_at     INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(user_id, quest_id, reset_at)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_quest_progress_user ON quest_progress(user_id);
 `);
 
 // ===== MIGRATE: tambah kolom baru jika belum ada =====
@@ -450,6 +475,92 @@ function clearStatusEffects(userId) {
   db.prepare('DELETE FROM status_effects WHERE user_id = ?').run(userId.toString());
 }
 
+// ===== QUEST SYSTEM =====
+const DAILY_QUESTS = [
+  { quest_id: 'daily_hunt_3',    name: '🗡️ Pemburu Pemula',       description: 'Hunt monster 3 kali',       type: 'daily', action_type: 'hunt',     target_count: 3,  xp_reward: 50,  gold_reward: 30 },
+  { quest_id: 'daily_fish_3',    name: '🎣 Pemancing Ulung',       description: 'Mancing 3 kali',            type: 'daily', action_type: 'fish',     target_count: 3,  xp_reward: 40,  gold_reward: 25 },
+  { quest_id: 'daily_mine_2',    name: '⛏️ Penambang Rajin',      description: 'Menambang 2 kali',          type: 'daily', action_type: 'mine',     target_count: 2,  xp_reward: 60,  gold_reward: 35 },
+  { quest_id: 'daily_craft_1',   name: '⚒️ Tukang Crafts',        description: 'Craft 1 item apapun',        type: 'daily', action_type: 'craft',    target_count: 1,  xp_reward: 40,  gold_reward: 20 },
+  { quest_id: 'daily_sell_3',    name: '💰 Pedagang Kecil',        description: 'Jual 3 item',               type: 'daily', action_type: 'sell',     target_count: 3,  xp_reward: 30,  gold_reward: 40 },
+  { quest_id: 'daily_dungeon_1', name: '🏰 Penjelajah Dungeon',   description: 'Selesaikan 1 dungeon raid',  type: 'daily', action_type: 'dungeon',  target_count: 1,  xp_reward: 100, gold_reward: 50, item_reward: 'ramuan_kecil' },
+  { quest_id: 'daily_give_1',    name: '🤝 Dermawan',             description: 'Kirim gold ke partner 1 kali',type: 'daily', action_type: 'give',     target_count: 1,  xp_reward: 30,  gold_reward: 15 },
+  { quest_id: 'daily_upgrade_1', name: '⬆️ Upgrade Master',       description: 'Upgrade equipment 1 kali',   type: 'daily', action_type: 'upgrade',  target_count: 1,  xp_reward: 50,  gold_reward: 25 },
+  { quest_id: 'daily_use_1',     name: '🧪 Apoteker',             description: 'Pakai item 1 kali',          type: 'daily', action_type: 'use',      target_count: 1,  xp_reward: 20,  gold_reward: 10 },
+  { quest_id: 'daily_chat_10',   name: '💬 Social Butterfly',     description: 'Kirim 10 pesan ke partner',  type: 'daily', action_type: 'message',  target_count: 10, xp_reward: 30,  gold_reward: 20 },
+];
+
+// Seed quests ke database
+const insertQuest = db.prepare(`
+  INSERT OR IGNORE INTO quests (quest_id, name, description, type, action_type, target_count, xp_reward, gold_reward, item_reward, created_at)
+  VALUES (@quest_id, @name, @description, @type, @action_type, @target_count, @xp_reward, @gold_reward, @item_reward, 0)
+`);
+const seedQuests = db.transaction(() => { DAILY_QUESTS.forEach(q => insertQuest.run(q)); });
+seedQuests();
+
+function getTodayReset() {
+  // Reset harian jam 00:00 UTC+7
+  const now = new Date();
+  const utc7 = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+  utc7.setHours(0, 0, 0, 0);
+  return Math.floor(utc7.getTime() / 1000);
+}
+
+function getQuestProgress(userId, questId) {
+  const resetAt = getTodayReset();
+  return db.prepare('SELECT * FROM quest_progress WHERE user_id = ? AND quest_id = ? AND reset_at = ?')
+    .get(userId.toString(), questId, resetAt);
+}
+
+function incrementQuestProgress(userId, actionType) {
+  const resetAt = getTodayReset();
+  const quests = db.prepare('SELECT * FROM quests WHERE action_type = ?').all(actionType);
+  for (const quest of quests) {
+    if (quest.type !== 'daily') continue;
+    const progress = getQuestProgress(userId, quest.quest_id);
+    if (!progress) {
+      // Create new progress
+      db.prepare('INSERT INTO quest_progress (user_id, quest_id, current, claimed, reset_at) VALUES (?, ?, 1, 0, ?)')
+        .run(userId.toString(), quest.quest_id, resetAt);
+    } else if (progress.current < quest.target_count && !progress.claimed) {
+      db.prepare('UPDATE quest_progress SET current = current + 1 WHERE id = ?')
+        .run(progress.id);
+    }
+  }
+}
+
+function claimQuest(userId, questId) {
+  const resetAt = getTodayReset();
+  const progress = getQuestProgress(userId, questId);
+  if (!progress || progress.claimed) return { success: false, reason: 'sudah diklaim atau belum ada progress' };
+
+  const quest = db.prepare('SELECT * FROM quests WHERE quest_id = ?').get(questId);
+  if (!quest) return { success: false, reason: 'quest tidak ditemukan' };
+  if (progress.current < quest.target_count) return { success: false, reason: 'belum selesai' };
+
+  // Mark claimed
+  db.prepare('UPDATE quest_progress SET claimed = 1 WHERE id = ?').run(progress.id);
+
+  // Give rewards
+  if (quest.xp_reward > 0) addXp(userId, quest.xp_reward);
+  if (quest.gold_reward > 0) addGold(userId, quest.gold_reward);
+  if (quest.item_reward) addItem(userId, quest.item_reward);
+
+  return { success: true, quest, progress };
+}
+
+function getAllDailyQuests(userId) {
+  const resetAt = getTodayReset();
+  return DAILY_QUESTS.map(q => {
+    const progress = getQuestProgress(userId, q.quest_id);
+    return {
+      ...q,
+      current: progress ? progress.current : 0,
+      claimed: progress ? progress.claimed : false,
+      done: progress ? progress.current >= q.target_count : false,
+    };
+  });
+}
+
 // ===== DAMAGE CALCULATION =====
 function calcPhysicalDamage(attacker, defender, baseDmg, skillMulti = 1, ignoreDef = 0) {
   const cls = CLASS_DEFS[attacker.classId || attacker.class_name];
@@ -495,4 +606,6 @@ module.exports = {
   addStatusEffect, getStatusEffects, tickStatusEffects, hasStatusEffect, clearStatusEffects,
   // Damage calculation
   calcPhysicalDamage, calcMagicDamage, rollCrit,
+  // Quest system
+  incrementQuestProgress, claimQuest, getAllDailyQuests,
 };

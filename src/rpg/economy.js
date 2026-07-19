@@ -5,7 +5,8 @@ const { db } = require('../db');
 const {
   getOrCreateUser, getInventory, getItem, removeItem, addItem,
   spendGold, addGold, getCatalogItem, upgradeItem, updateHp,
-  getCurrentHp, logTransaction, addXp
+  getCurrentHp, logTransaction, addXp,
+  incrementQuestProgress
 } = require('./db_rpg');
 const { RARITY_EMOJI } = require('./profile');
 
@@ -184,6 +185,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
       // Invalidate cache setelah sell
       invCache.delete(userId.toString());
       ctx.reply(`✅ Berhasil menjual <b>${invItem.display_name}</b> seharga ${invItem.sell_price}g!`, { parse_mode: 'HTML' });
+      incrementQuestProgress(userId, 'sell');
     } else {
       ctx.reply(`❌ Gagal menjual item. Pastikan kamu punya item tersebut.`);
     }
@@ -279,6 +281,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const catalog = getCatalogItem(recipe.result);
     const rarity = catalog ? RARITY_EMOJI[catalog.rarity] || '' : '';
     ctx.reply(`⚒️ <b>Crafting Berhasil!</b>\n\n${rarity} ${recipe.name} sudah masuk inventory!\n💰 Biaya: ${recipe.gold}g`, { parse_mode: 'HTML' });
+    incrementQuestProgress(userId, 'craft');
   });
 
   // ===== /use (terima nomor ID dari /inv atau nama) =====
@@ -315,6 +318,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     removeItem(userId, itemId, 1);
     invCache.delete(userId.toString());
     ctx.reply(msg, { parse_mode: 'HTML' });
+    incrementQuestProgress(userId, 'use');
   });
 
   // ===== /daily =====
@@ -460,6 +464,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     invCache.delete(userId.toString());
     const statType = invItem.category === 'weapon' ? 'ATK' : 'DEF';
     ctx.answerCbQuery('Upgrade berhasil!');
+    incrementQuestProgress(userId, 'upgrade');
     ctx.editMessageText(
       `⚒️ <b>Upgrade Berhasil!</b>\n\n<b>${invItem.display_name}</b> → <b>+${nextTier}</b>\n+2 ${statType} ditambahkan ke karakter!\n\n<i>Cek /profile untuk stats terbaru.</i>`,
       { parse_mode: 'HTML' }
@@ -508,6 +513,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     logTransaction(userId, null, tax, 'give_tax');
 
     ctx.reply(`✅ Berhasil mengirim *${received}g* ke partner (pajak 5% = ${tax}g).`, { parse_mode: 'Markdown' });
+    incrementQuestProgress(userId, 'give');
     bot.telegram.sendMessage(partnerId, `💰 Kamu menerima *${received}g* dari partner!`, { parse_mode: 'Markdown' }).catch(() => {});
   });
 }

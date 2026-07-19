@@ -179,7 +179,7 @@ const HELP_PAGES = [
   // PAGE 8: Dungeon & Tips
   {
     id: 'dungeon',
-    title: '📖 Panduan RPG — Halaman 8/8',
+    title: '📖 Panduan RPG — Halaman 8/10',
     text:
       `<b>🏰 Dungeon Raid (Co-op)</b>\n\n` +
       `<b>Alur:</b>\n` +
@@ -195,14 +195,61 @@ const HELP_PAGES = [
       `   🧪 Item — Heal 15% HP + bersihkan debuff\n\n` +
       `<b>⚠️ Boss Mechanics:</b>\n` +
       `   • Setiap 3 turn: serangan berat → BERTAHAN!\n` +
-      `   • HP < 50%: ENRAGE → ATK +30%!\n` +
+      `   • HP &lt; 50%: ENRAGE → ATK +30%!\n` +
       `   • Cooldown 10 menit setelah raid selesai\n\n` +
       `<b>🏆 Tips:</b>\n` +
       `   • Pilih skill berdasarkan boss resistance!\n` +
       `   • Pencuri bagus lawan Goblin (Phys Resist rendah)\n` +
-      `   • Penyihir bagus lawan Laba-laba (Magic Resist rendah)\n\n` +
+      `   • Penyihir bagus lawan Laba-laba (Magic Resist rendah)`,
+    nav: ['economy', 'quest']
+  },
+
+  // PAGE 9: Quest System (BARU!)
+  {
+    id: 'quest',
+    title: '📖 Panduan RPG — Halaman 9/10',
+    text:
+      `<b>📋 Quest Harian</b>\n\n` +
+      `Dapatkan reward tambahan dengan menyelesaikan quest harian!\n\n` +
+      `<b>Commands:</b>\n` +
+      `   <code>/quest</code> — Lihat semua quest & progress\n` +
+      `   <code>/quest claim [id]</code> — Klaim reward\n\n` +
+      `<b>10 Quest Harian:</b>\n` +
+      `   🗡️ Pemburu Pemula — Hunt 3x (50xp + 30g)\n` +
+      `   🎣 Pemancing Ulung — Mancing 3x (40xp + 25g)\n` +
+      `   ⛏️ Penambang Rajin — Mine 2x (60xp + 35g)\n` +
+      `   ⚒️ Tukang Crafts — Craft 1x (40xp + 20g)\n` +
+      `   💰 Pedagang Kecil — Jual 3x (30xp + 40g)\n` +
+      `   🏰 Penjelajah Dungeon — Dungeon 1x (100xp + 50g + Ramuan)\n` +
+      `   🤝 Dermawan — Give gold 1x (30xp + 15g)\n` +
+      `   ⬆️ Upgrade Master — Upgrade 1x (50xp + 25g)\n` +
+      `   🧪 Apoteker — Use item 1x (20xp + 10g)\n` +
+      `   💬 Social Butterfly — Chat 10x (30xp + 20g)\n\n` +
+      `<b>⏰ Reset:</b> Jam 00:00 (UTC+7) setiap hari`,
+    nav: ['dungeon', 'party']
+  },
+
+  // PAGE 10: Party Stats (BARU!)
+  {
+    id: 'party',
+    title: '📖 Panduan RPG — Halaman 10/10',
+    text:
+      `<b>👥 Party Stats</b>\n\n` +
+      `Lihat stats lengkap kamu dan partner!\n\n` +
+      `<b>Command:</b>\n` +
+      `   <code>/party</code> — Tampilkan stats party\n\n` +
+      `<b>Yang Ditampilkan:</b>\n` +
+      `   • Level, HP, ATK, DEF kedua pemain\n` +
+      `   • Magic ATK, Crit Rate, Gold\n` +
+      `   • Avg Level party\n` +
+      `   • Total ATK & DEF party\n\n` +
+      `<b>💡 Tips:</b>\n` +
+      `   • Gunakan <code>/party</code> sebelum dungeon\n` +
+      `   • Pastikan stats seimbang\n` +
+      `   • Kombinasi Ksatria + Penyihir = Physical + Magic\n` +
+      `   • Kombinasi Pencuri + Penyihir = High Crit + Magic\n\n` +
       `<i>Selamat bertualang, Petualang! 🎮⚔️</i>`,
-    nav: ['economy', null]
+    nav: ['quest', null]
   },
 ];
 
@@ -233,8 +280,10 @@ function buildIndexMessage() {
     `4️⃣ Energi & Grinding\n` +
     `5️⃣ Leveling & Stats\n` +
     `6️⃣ Equipment (4 Slot)\n` +
-    `7️⃣ Ekonomi & Status Effects\n` +
-    `8️⃣ Dungeon Raid & Tips`;
+    `7️⃣ Ekonomi, Crafting & Status Effects\n` +
+    `8️⃣ Dungeon Raid & Tips\n` +
+    `9️⃣ Quest Harian\n` +
+    `🔟 Party Stats`;
 
   const buttons = [
     [Markup.button.callback('1️⃣ Intro & Cara Mulai',           'help:page:intro')],
@@ -243,8 +292,10 @@ function buildIndexMessage() {
     [Markup.button.callback('4️⃣ Energi & Grinding',            'help:page:grinding')],
     [Markup.button.callback('5️⃣ Leveling & Stats',             'help:page:leveling')],
     [Markup.button.callback('6️⃣ Equipment (4 Slot)',           'help:page:equipment')],
-    [Markup.button.callback('7️⃣ Ekonomi & Status Effects',    'help:page:economy')],
+    [Markup.button.callback('7️⃣ Ekonomi & Crafting',          'help:page:economy')],
     [Markup.button.callback('8️⃣ Dungeon Raid & Tips',         'help:page:dungeon')],
+    [Markup.button.callback('9️⃣ Quest Harian',                'help:page:quest')],
+    [Markup.button.callback('🔟 Party Stats',                  'help:page:party')],
   ];
 
   return {

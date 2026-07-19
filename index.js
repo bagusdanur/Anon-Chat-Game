@@ -315,6 +315,108 @@ bot.command('report', (ctx) => {
 // Set up RPG module
 setupRpg(bot, { getPartnerId, rateLimitCommand });
 
+// ===== QUEST SYSTEM =====
+const { incrementQuestProgress, claimQuest, getAllDailyQuests } = require('./src/rpg/db_rpg');
+
+bot.command('quest', rateLimitCommand, (ctx) => {
+  const userId = ctx.chat.id;
+  const user = getOrCreateUser(userId);
+  if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
+
+  const args = ctx.message.text.split(' ').slice(1);
+  const action = args[0];
+
+  // /quest claim [id] — klaim reward
+  if (action === 'claim') {
+    const questId = args[1];
+    if (!questId) return ctx.reply('Penggunaan: <code>/quest claim [nama_quest]</code>\nContoh: <code>/quest claim daily_hunt_3</code>', { parse_mode: 'HTML' });
+    const result = claimQuest(userId, questId);
+    if (!result.success) return ctx.reply(`❌ ${result.reason}`);
+    const q = result.quest;
+    let msg = `✅ <b>Quest Diklaim!</b>\n\n${q.name}\n`;
+    if (q.xp_reward > 0) msg += `✨ +${q.xp_reward} XP\n`;
+    if (q.gold_reward > 0) msg += `💰 +${q.gold_reward}g\n`;
+    if (q.item_reward) msg += `🎁 +1 item\n`;
+    return ctx.reply(msg, { parse_mode: 'HTML' });
+  }
+
+  // /quest — tampilkan semua quest harian
+  const quests = getAllDailyQuests(userId);
+  let msg = `📋 <b>Quest Harian</b> _(reset jam 00:00)_\n\n`;
+
+  let totalClaimed = 0, totalDone = 0;
+  for (const q of quests) {
+    const progress = Math.min(q.current, q.target_count);
+    const bar = '█'.repeat(progress) + '░'.repeat(q.target_count - progress);
+    let status = '';
+    if (q.claimed) status = '✅';
+    else if (q.done) status = '🔘 /quest claim ' + q.quest_id;
+    else status = `${progress}/${q.target_count}`;
+
+    msg += `${q.name}\n`;
+    msg += `   ${q.description}\n`;
+    msg += `   ${bar} ${status}\n`;
+    msg += `   🎁 ${q.xp_reward}xp + ${q.gold_reward}g`;
+    if (q.item_reward) msg += ` + 1 item`;
+    msg += '\n\n';
+    if (q.claimed) claimedCount++;
+  }
+
+  const total = quests.length;
+  const claimed = quests.filter(q => q.claimed).length;
+  msg = `📋 <b>Quest Harian</b> — ${claimed}/${total} diklaim\n\nReset: Jam 00:00 (UTC+7)\n\n` + msg;
+
+  return ctx.reply(msg, { parse_mode: 'HTML' });
+});
+
+// ===== PARTY STATS =====
+bot.command('party', rateLimitCommand, (ctx) => {
+  const userId = ctx.chat.id;
+  const partnerId = getPartnerId(userId);
+  if (!partnerId) return ctx.reply('❌ Kamu harus sedang terhubung dengan partner (/search) untuk melihat party stats.');
+
+  const user = getOrCreateUser(userId);
+  const partner = getOrCreateUser(partnerId);
+  if (!user || !partner) return ctx.reply('⚠️ Kedua pemain harus sudah punya karakter (/profile).');
+
+  const clsA = CLASS_DEFS[user.class_name];
+  const clsB = CLASS_DEFS[partner.class_name];
+  const equipA = getEquipmentBonus(userId);
+  const equipB = getEquipmentBonus(partnerId);
+
+  const renderBar = (cur, max, len = 8) => {
+    const filled = Math.min(len, Math.round((Math.max(0, cur) / max) * len));
+    return '🟩'.repeat(filled) + '⬛'.repeat(len - filled) + ` ${Math.max(0, cur)}/${max}`;
+  };
+
+  let msg = `👥 <b>Party Status</b>\n\n`;
+
+  // Player A
+  msg += `<b>${clsA.name} — Lv.${user.level}</b>\n`;
+  msg += `❤️ HP: ${renderBar(user.hp, user.max_hp)}\n`;
+  msg += `⚔️ ATK: ${user.atk + equipA.atkBonus} | 🛡️ DEF: ${user.def + equipA.defBonus}\n`;
+  msg += `🔮 Magic: ${user.magic_atk + equipA.magicAtkBonus} | 💥 Crit: ${Math.round((user.crit_rate + equipA.critRate) * 100)}%\n`;
+  msg += `💰 Gold: ${user.gold}g\n\n`;
+
+  msg += `<b>VS</b>\n\n`;
+
+  // Player B (Partner)
+  msg += `<b>${clsB.name} — Lv.${partner.level}</b>\n`;
+  msg += `❤️ HP: ${renderBar(partner.hp, partner.max_hp)}\n`;
+  msg += `⚔️ ATK: ${partner.atk + equipB.atkBonus} | 🛡️ DEF: ${partner.def + equipB.defBonus}\n`;
+  msg += `🔮 Magic: ${partner.magic_atk + equipB.magicAtkBonus} | 💥 Crit: ${Math.round((partner.crit_rate + equipB.critRate) * 100)}%\n`;
+  msg += `💰 Gold: ${partner.gold}g\n\n`;
+
+  // Party summary
+  const totalAtk = (user.atk + equipA.atkBonus) + (partner.atk + equipB.atkBonus);
+  const totalDef = (user.def + equipA.defBonus) + (partner.def + equipB.defBonus);
+  const avgLv = Math.floor((user.level + partner.level) / 2);
+  msg += `📊 <b>Party Summary:</b>\n`;
+  msg += `   Avg Level: ${avgLv} | Total ATK: ${totalAtk} | Total DEF: ${totalDef}`;
+
+  return ctx.reply(msg, { parse_mode: 'HTML' });
+});
+
 // ===== RELAY PESAN =====
 // Nge-forward semua jenis pesan (teks, foto, stiker, voice, dll) tanpa nunjukin identitas asli
 bot.on('message', rateLimitMessage, async (ctx) => {
@@ -337,6 +439,7 @@ bot.on('message', rateLimitMessage, async (ctx) => {
     // copyMessage mengirim ulang konten TANPA label "forwarded from", jadi identitas tetap anonim
     await ctx.telegram.copyMessage(partnerId, chatId, ctx.message.message_id);
     logger.info({ event: 'message_relayed', from: chatId, to: partnerId });
+      incrementQuestProgress(chatId, 'message');
   } catch (err) {
     logger.error({ event: 'message_relay_failed', from: chatId, to: partnerId, error: err.message });
     ctx.reply('Gagal mengirim pesan ke partner. Mungkin partner sudah memblokir bot.');
@@ -376,6 +479,8 @@ const botCommands = [
   { command: 'dungeon',  description: '🏰 Raid boss bersama partner' },
   { command: 'inv',      description: '🎒 Lihat inventaris' },
   { command: 'shop',     description: '🏪 Toko item' },
+  { command: 'quest',    description: '📋 Quest harian & reward' },
+  { command: 'party',    description: '👥 Lihat stats party' },
   { command: 'craft',    description: '⚒️ Craft equipment dari material' },
   { command: 'upgrade',  description: '⬆️ Upgrade equipment' },
   { command: 'sell',     description: '💰 Jual item' },
