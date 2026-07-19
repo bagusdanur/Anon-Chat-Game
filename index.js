@@ -417,6 +417,43 @@ bot.command('party', rateLimitCommand, (ctx) => {
   return ctx.reply(msg, { parse_mode: 'HTML' });
 });
 
+
+bot.command('help', (ctx) => {
+  ctx.reply([
+    '📖 *Anonymous Chat Bot — Commands*',
+    '',
+    '🎭 *Anonymous Chat:*',
+    '   /search — Cari partner chat',
+    '   /next — Cari partner baru',
+    '   /stop — Keluar dari chat',
+    '   /topic — Topik obrolan acak',
+    '   /report — Laporkan partner',
+    '   /setting — Atur gender & bahasa',
+    '   /lang — Pilih bahasa (id/en/any)',
+    '',
+    '⚔️ *RPG Commands:*',
+    '   /profile — Profil karakter',
+    '   /helprpg — Panduan RPG lengkap',
+    '   /hunt — Berburu monster',
+    '   /fish — Mancing',
+    '   /mine — Menambang',
+    '   /dungeon — Raid co-op',
+    '   /duel — PvP Duel',
+    '   /quest — Quest harian',
+    '   /party — Stats party',
+    '',
+    '💰 *Economy:*',
+    '   /inv — Inventaris',
+    '   /shop — Toko',
+    '   /craft — Craft equipment',
+    '   /upgrade — Upgrade equipment',
+    '   /sell — Jual item',
+    '   /use — Pakai item',
+    '   /give — Kirim gold ke partner',
+  ].join('\n'), { parse_mode: 'Markdown' });
+});
+
+
 // ===== RELAY PESAN =====
 // Nge-forward semua jenis pesan (teks, foto, stiker, voice, dll) tanpa nunjukin identitas asli
 bot.on('message', rateLimitMessage, async (ctx) => {
@@ -537,37 +574,3 @@ process.on('uncaughtException', (err) => {
   logger.error({ event: 'uncaught_exception', msg }, 'Uncaught exception — bot tetap berjalan');
 });
 
-bot.command('help', (ctx) => {
-  ctx.reply([
-    '📖 *Anonymous Chat Bot — Commands*',
-    '',
-    '🎭 *Anonymous Chat:*',
-    '   /search — Cari partner chat',
-    '   /next — Cari partner baru',
-    '   /stop — Keluar dari chat',
-    '   /topic — Topik obrolan acak',
-    '   /report — Laporkan partner',
-    '   /setting — Atur gender & bahasa',
-    '   /lang — Pilih bahasa (id/en/any)',
-    '',
-    '⚔️ *RPG Commands:*',
-    '   /profile — Profil karakter',
-    '   /helprpg — Panduan RPG lengkap',
-    '   /hunt — Berburu monster',
-    '   /fish — Mancing',
-    '   /mine — Menambang',
-    '   /dungeon — Raid co-op',
-    '   /duel — PvP Duel',
-    '   /quest — Quest harian',
-    '   /party — Stats party',
-    '',
-    '💰 *Economy:*',
-    '   /inv — Inventaris',
-    '   /shop — Toko',
-    '   /craft — Craft equipment',
-    '   /upgrade — Upgrade equipment',
-    '   /sell — Jual item',
-    '   /use — Pakai item',
-    '   /give — Kirim gold ke partner',
-  ].join('\n'), { parse_mode: 'Markdown' });
-});
