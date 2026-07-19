@@ -594,6 +594,69 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     incrementQuestProgress(userId, 'give');
     bot.telegram.sendMessage(partnerId, `💰 Kamu menerima *${received}g* dari partner!`, { parse_mode: 'Markdown' }).catch(() => {});
   });
+
+  // ===== /equip — Pasang Equipment =====
+  bot.command('equip', rateLimitCommand, (ctx) => {
+    const userId = ctx.chat.id;
+    const args = ctx.message.text.split(' ').slice(1);
+    const input = args.join('_').toLowerCase();
+
+    const user = getOrCreateUser(userId);
+    if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
+
+    if (!input) {
+      // Show equipped items
+      const equipped = getEquipped(userId);
+      let msg = '🗡️ <b>Equipment yang Dipasang</b>\n\n';
+      const slots = [
+        { key: 'weapon', icon: '⚔️', label: 'Weapon' },
+        { key: 'staff', icon: '🪄', label: 'Staff' },
+        { key: 'armor', icon: '🛡️', label: 'Armor' },
+        { key: 'accessory', icon: '💍', label: 'Accessory' },
+      ];
+      for (const slot of slots) {
+        const item = equipped[slot.key];
+        if (item) {
+          const tier = item.upgrade_tier > 0 ? ` +${item.upgrade_tier}` : '';
+          const rarity = RARITY_EMOJI[item.rarity] || '';
+          msg += `${slot.icon} <b>${slot.label}:</b> ${rarity} ${item.display_name}${tier}\n`;
+        } else {
+          msg += `${slot.icon} <b>${slot.label}:</b> <i>Kosong</i>\n`;
+        }
+      }
+      msg += '\n💡 Gunakan: <code>/equip [nama_item]</code>';
+      return ctx.reply(msg, { parse_mode: 'HTML' });
+    }
+
+    // Find item in inventory
+    const invItem = getItem(userId, input) || getInventory(userId).find(i => i.item_id === input);
+    if (!invItem) return ctx.reply(`❌ Item "${input}" tidak ada di inventory.`);
+
+    const result = equipItem(userId, invItem.item_id);
+    if (!result.success) return ctx.reply(`❌ ${result.reason}`);
+
+    ctx.reply(`✅ <b>${result.item}</b> terpasang di slot <b>${result.slot}</b>!`, { parse_mode: 'HTML' });
+  });
+
+  // ===== /unequip — Lepas Equipment =====
+  bot.command('unequip', rateLimitCommand, (ctx) => {
+    const userId = ctx.chat.id;
+    const args = ctx.message.text.split(' ').slice(1);
+    const slot = args[0]?.toLowerCase();
+
+    const user = getOrCreateUser(userId);
+    if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
+
+    if (!slot || !['weapon', 'staff', 'armor', 'accessory'].includes(slot)) {
+      return ctx.reply('Penggunaan: <code>/unequip [weapon/staff/armor/accessory]</code>', { parse_mode: 'HTML' });
+    }
+
+    const result = unequipSlot(userId, slot);
+    if (!result.success) return ctx.reply(`❌ ${result.reason}`);
+
+    ctx.reply(`✅ <b>${result.item}</b> dilepas dari slot <b>${result.slot}</b>!`, { parse_mode: 'HTML' });
+  });
+
 }
 
 module.exports = { setupEconomy, SHOP_ITEMS };
