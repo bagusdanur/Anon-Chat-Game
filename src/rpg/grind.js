@@ -114,12 +114,13 @@ function setupGrind(bot, { rateLimitCommand }) {
       return ctx.reply(`⚡ Energimu cuma ${energy}/10. Butuh ${energyCost} buat /hunt. Regen +1 dalam ~${minsUntilRegen} menit.`);
     }
 
-    spendEnergy(userId, energyCost);
-
+    // Cek HP SEBELUM spend energy (energy baru dikurangi jika HP cukup)
     const currentHp = getCurrentHp(user);
     if (currentHp <= 0) {
       return ctx.reply('❤️ HP kamu habis! Pakai /inv lalu gunakan Ramuan untuk pulih, atau tunggu regen otomatis.');
     }
+
+    spendEnergy(userId, energyCost);
 
     const tier = getMonsterTier(user.level);
     const monster = pickRandom(tier.list);

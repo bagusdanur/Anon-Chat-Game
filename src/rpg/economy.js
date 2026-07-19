@@ -1,6 +1,7 @@
 // src/rpg/economy.js
 // Fase 3 & 4: /inv, /shop, /buy, /sell, /daily, /craft, /upgrade, /give
 const { Markup } = require('telegraf');
+const { db } = require('../db');
 const {
   getOrCreateUser, getInventory, getItem, removeItem, addItem,
   spendGold, addGold, getCatalogItem, upgradeItem, updateHp,
@@ -146,6 +147,8 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
       // Invalidate cache setelah sell
       invCache.delete(userId.toString());
       ctx.reply(`✅ Berhasil menjual <b>${invItem.display_name}</b> seharga ${invItem.sell_price}g!`, { parse_mode: 'HTML' });
+    } else {
+      ctx.reply(`❌ Gagal menjual item. Pastikan kamu punya item tersebut.`);
     }
   });
 
@@ -301,21 +304,30 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
       if (oreItem) totalOre += oreItem.quantity;
     }
 
-    if (totalOre < oreNeeded || !spendGold(userId, goldNeeded)) {
+    if (totalOre < oreNeeded) {
       return ctx.answerCbQuery('Material tidak cukup!', { show_alert: true });
     }
 
-    let remaining = oreNeeded;
-    for (const oreId of oreTypes) {
-      if (remaining <= 0) break;
-      const oreItem = getItem(userId, oreId);
-      if (!oreItem) continue;
-      const use = Math.min(remaining, oreItem.quantity);
-      removeItem(userId, oreId, use);
-      remaining -= use;
+    // Atomic: spendGold + removeItem ore + upgradeItem dalam satu transaction
+    const upgradeSuccess = db.transaction(() => {
+      if (!spendGold(userId, goldNeeded)) return false;
+      let remaining = oreNeeded;
+      for (const oreId of oreTypes) {
+        if (remaining <= 0) break;
+        const oreItem = getItem(userId, oreId);
+        if (!oreItem) continue;
+        const use = Math.min(remaining, oreItem.quantity);
+        removeItem(userId, oreId, use);
+        remaining -= use;
+      }
+      upgradeItem(userId, itemId);
+      return true;
+    })();
+
+    if (!upgradeSuccess) {
+      return ctx.answerCbQuery('Gold tidak cukup!', { show_alert: true });
     }
 
-    upgradeItem(userId, itemId);
     invCache.delete(userId.toString());
     const statType = invItem.category === 'weapon' ? 'ATK' : 'DEF';
     ctx.answerCbQuery('Upgrade berhasil!');
@@ -352,10 +364,17 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const tax = Math.floor(amount * 0.05);
     const received = amount - tax;
 
-    if (!spendGold(userId, amount)) {
+    // Atomic: spendGold + addGold dalam satu transaction
+    const transferSuccess = db.transaction(() => {
+      if (!spendGold(userId, amount)) return false;
+      addGold(partnerId, received);
+      return true;
+    })();
+
+    if (!transferSuccess) {
       return ctx.reply(`❌ Gold tidak cukup! Butuh ${amount}g. Saldo: ${user.gold}g.`);
     }
-    addGold(partnerId, received);
+
     logTransaction(userId, partnerId, received, 'give_transfer');
     logTransaction(userId, null, tax, 'give_tax');
 

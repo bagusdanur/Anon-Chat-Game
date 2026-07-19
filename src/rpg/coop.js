@@ -396,6 +396,7 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
       runId,
       turnNumber: 1,
       enrageAnnounced: false,
+      lastActivity: Date.now(), // Timeout tracking
       boss: {
         id: bossTier.id,
         name: bossTier.name,
@@ -448,13 +449,24 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
   });
 
   // Combat action handler
-  bot.action(/^raid:(.+):(\d+):(attack|defend|skill|item)$/, rateLimitCommand, (ctx) => {
+  bot.action(/^raid:(.+):(\\d+):(attack|defend|skill|item)$/, rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
     const [, pairKey, turnStr, actionType] = ctx.match;
     const turnNumber = parseInt(turnStr);
 
     const raid = raidSessions.get(pairKey);
     if (!raid) return ctx.answerCbQuery('Raid sudah selesai.', { show_alert: true });
+
+    // Timeout check: auto-abandon jika inactive > 5 menit
+    const RAID_TIMEOUT_MS = 5 * 60 * 1000;
+    if (Date.now() - raid.lastActivity > RAID_TIMEOUT_MS) {
+      finalizeDungeonRun(raid.runId, 'abandoned', null);
+      raidSessions.delete(pairKey);
+      bot.telegram.sendMessage(raid.chatIdA, '⏰ Raid dibatalkan karena tidak ada aktivitas selama 5 menit.').catch(() => {});
+      bot.telegram.sendMessage(raid.chatIdB, '⏰ Raid dibatalkan karena tidak ada aktivitas selama 5 menit.').catch(() => {});
+      return ctx.answerCbQuery('Raid timeout!', { show_alert: true });
+    }
+
     if (raid.turnNumber !== turnNumber) return ctx.answerCbQuery('Turn ini sudah berlalu.', { show_alert: true });
     if (raid.actions[userId]) return ctx.answerCbQuery('Kamu sudah memilih!', { show_alert: true });
 
@@ -465,8 +477,14 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
     }
 
     raid.actions[userId] = { type: actionType };
+    raid.lastActivity = Date.now(); // Update activity timestamp
     ctx.answerCbQuery('Aksi dikonfirmasi!');
-    ctx.reply('⏳ Menunggu partner...');
+
+    // Hanya kirim "Menunggu partner..." jika partner belum pilih aksi
+    const partnerChatId = userId === raid.chatIdA ? raid.chatIdB : raid.chatIdA;
+    if (!raid.actions[partnerChatId]) {
+      ctx.reply('⏳ Menunggu partner...');
+    }
 
     checkRaidResolve(bot, pairKey);
   });

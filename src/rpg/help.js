@@ -206,14 +206,14 @@ function setupHelp(bot, { rateLimitCommand }) {
     if (!page) return ctx.answerCbQuery('Halaman tidak ditemukan.', { show_alert: true });
     ctx.answerCbQuery();
     const { text, options } = buildPageMessage(page);
-    ctx.editMessageText(text, options).catch(() => ctx.reply(text, options));
+    ctx.editMessageText(text, options).catch(() => {});
   });
 
   // Kembali ke daftar isi
   bot.action('help:index', rateLimitCommand, (ctx) => {
     ctx.answerCbQuery();
     const { text, options } = buildIndexMessage();
-    ctx.editMessageText(text, options).catch(() => ctx.reply(text, options));
+    ctx.editMessageText(text, options).catch(() => {});
   });
 }
 
