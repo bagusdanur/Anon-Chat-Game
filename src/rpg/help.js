@@ -29,7 +29,7 @@ const HELP_PAGES = [
     text:
       `<b>⚔️ Sistem Damage: Physical vs Magic</b>\n\n` +
       `Setiap kelas punya tipe damage yang berbeda!\n\n` +
-      `<b>⚔️ Physical Damage (Ksatria & Pencuri):</n>` +
+      `<b>⚔️ Physical Damage (Ksatria & Pencuri):</b>\n` +
       `   • Dipengaruhi stat ATK\n` +
       `   • Dikurangi Physical Resist musuh\n` +
       `   • Cocok lawan boss dengan Magic Resist tinggi\n\n` +
