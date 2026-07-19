@@ -549,7 +549,7 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
   });
 
   // Combat action handler
-  bot.action(/^raid:(.+):(\\d+):(attack|defend|skill|item)$/, rateLimitCommand, (ctx) => {
+  bot.action(/^raid:(.+):(\d+):(attack|defend|skill|item)$/, rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
     const [, pairKey, turnStr, actionType] = ctx.match;
     const turnNumber = parseInt(turnStr);
