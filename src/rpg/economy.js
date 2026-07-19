@@ -529,10 +529,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     ctx.reply(`✅ Berhasil mengirim *${received}g* ke partner (pajak 5% = ${tax}g).`, { parse_mode: 'Markdown' });
     incrementQuestProgress(userId, 'give');
     bot.telegram.sendMessage(partnerId, `💰 Kamu menerima *${received}g* dari partner!`, { parse_mode: 'Markdown' }).catch(() => {});
-  });
-}
-
-// ===== /equip — Lihat Equipment Aktif =====
+  // ===== /equip — Lihat Equipment Aktif =====
   bot.command('equip', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
     const user = getOrCreateUser(userId);
@@ -597,5 +594,10 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
 
     ctx.reply(msg);
   });
+
+});
+}
+
+
 
 module.exports = { setupEconomy, SHOP_ITEMS };
