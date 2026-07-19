@@ -17,6 +17,43 @@ const SHOP_ITEMS = [
   { id: 4, item_id: 'beliung_plus',  buy_price: 300 },
 ];
 
+// ===== CRAFTING RECIPES =====
+const CRAFT_RECIPES = [
+  // Weapons
+  { id: 1, result: 'pedang_besi', name: '🗡️ Pedang Besi', gold: 100,
+    materials: [{ item: 'besi', qty: 5 }, { item: 'tembaga', qty: 3 }] },
+  { id: 2, result: 'pedang_naga', name: '🐉 Pedang Naga', gold: 500,
+    materials: [{ item: 'besi', qty: 10 }, { item: 'fragmen_naga', qty: 5 }, { item: 'sisik_naga', qty: 3 }] },
+  // Staffs
+  { id: 3, result: 'tongkat_ranting', name: '🪄 Tongkat Ranting', gold: 50,
+    materials: [{ item: 'batu_bara', qty: 3 }, { item: 'tembaga', qty: 2 }] },
+  { id: 4, result: 'tongkat_api', name: '🔥 Tongkat Api', gold: 150,
+    materials: [{ item: 'batu_bara', qty: 8 }, { item: 'perak', qty: 3 }] },
+  { id: 5, result: 'tongkat_es', name: '❄️ Tongkat Es', gold: 400,
+    materials: [{ item: 'perak', qty: 8 }, { item: 'berlian', qty: 5 }] },
+  // Armor
+  { id: 6, result: 'perisai_besi', name: '🛡️ Perisai Besi', gold: 120,
+    materials: [{ item: 'besi', qty: 8 }, { item: 'kulit_kasar', qty: 5 }] },
+  { id: 7, result: 'jubah_terkutuk', name: '🧥 Jubah Terkutuk', gold: 300,
+    materials: [{ item: 'perak', qty: 5 }, { item: 'emas_ore', qty: 2 }] },
+  { id: 8, result: 'armor_naga', name: '🐉 Armor Naga', gold: 600,
+    materials: [{ item: 'emas_ore', qty: 5 }, { item: 'fragmen_naga', qty: 8 }, { item: 'sisik_naga', qty: 5 }] },
+  // Accessories
+  { id: 9, result: 'cincin_perak', name: '💍 Cincin Perak', gold: 60,
+    materials: [{ item: 'perak', qty: 3 }, { item: 'mutiara', qty: 1 }] },
+  { id: 10, result: 'cincin_keberuntungan', name: '💍 Cincin Keberuntungan', gold: 200,
+    materials: [{ item: 'perak', qty: 5 }, { item: 'mutiara', qty: 3 }] },
+  { id: 11, result: 'kalung_kekuatan', name: '📿 Kalung Kekuatan', gold: 180,
+    materials: [{ item: 'emas_ore', qty: 2 }, { item: 'perak', qty: 4 }] },
+  { id: 12, result: 'kalung_naga', name: '🐉 Kalung Naga', gold: 500,
+    materials: [{ item: 'emas_ore', qty: 5 }, { item: 'fragmen_naga', qty: 3 }, { item: 'berlian', qty: 2 }] },
+  // Consumables
+  { id: 13, result: 'ramuan_kecil', name: '🧪 Ramuan Kecil', gold: 5,
+    materials: [{ item: 'daging_mentah', qty: 3 }] },
+  { id: 14, result: 'ramuan_besar', name: '🧪 Ramuan Besar', gold: 20,
+    materials: [{ item: 'daging_mentah', qty: 8 }, { item: 'ikan_salmon', qty: 2 }] },
+];
+
 // Cache inventory per user (session, bukan persisten) untuk resolusi ID numerik
 // key: userId, value: [item_id, ...] berurutan sesuai tampilan /inv
 const invCache = new Map();
@@ -150,6 +187,98 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     } else {
       ctx.reply(`❌ Gagal menjual item. Pastikan kamu punya item tersebut.`);
     }
+  });
+
+  // ===== /craft — Crafting Equipment dari Material =====
+  bot.command('craft', rateLimitCommand, (ctx) => {
+    const userId = ctx.chat.id;
+    const args = ctx.message.text.split(' ').slice(1);
+    const input = args.join(' ').toLowerCase();
+
+    const user = getOrCreateUser(userId);
+    if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
+
+    // Tanpa argumen → tampilkan daftar resep
+    if (!input) {
+      let msg = `⚒️ <b>Tukang Crafts — Resep Crafting</b>\n\n`;
+      msg += `Gunakan: <code>/craft [nama]</code> atau <code>/craft [nomor]</code>\n\n`;
+
+      // Group by category
+      const categories = {
+        '⚔️ Weapons': CRAFT_RECIPES.filter(r => getCatalogItem(r.result)?.category === 'weapon'),
+        '🪄 Staffs': CRAFT_RECIPES.filter(r => getCatalogItem(r.result)?.category === 'staff'),
+        '🛡️ Armor': CRAFT_RECIPES.filter(r => getCatalogItem(r.result)?.category === 'armor'),
+        '💍 Accessories': CRAFT_RECIPES.filter(r => getCatalogItem(r.result)?.category === 'accessory'),
+        '🧪 Consumables': CRAFT_RECIPES.filter(r => getCatalogItem(r.result)?.category === 'consumable'),
+      };
+
+      for (const [catName, recipes] of Object.entries(categories)) {
+        if (recipes.length === 0) continue;
+        msg += `<b>${catName}:</b>\n`;
+        for (const r of recipes) {
+          const catalog = getCatalogItem(r.result);
+          const rarity = catalog ? RARITY_EMOJI[catalog.rarity] || '' : '';
+          const mats = r.materials.map(m => `${m.qty}x ${m.item.replace(/_/g, ' ')}`).join(' + ');
+          msg += `  <code>[${r.id}]</code> ${rarity} ${r.name} — ${r.gold}g\n`;
+          msg += `     └─ ${mats}\n`;
+        }
+        msg += '\n';
+      }
+      return ctx.reply(msg, { parse_mode: 'HTML' });
+    }
+
+    // Cari resep berdasarkan nomor atau nama
+    let recipe = null;
+    const num = parseInt(input);
+    if (!isNaN(num)) {
+      recipe = CRAFT_RECIPES.find(r => r.id === num);
+    } else {
+      const cleanInput = input.replace(/\s+/g, '_');
+      recipe = CRAFT_RECIPES.find(r => r.result === cleanInput || r.name.toLowerCase().includes(input));
+    }
+
+    if (!recipe) return ctx.reply(`❌ Resep "${input}" tidak ditemukan. Ketik <code>/craft</code> untuk lihat daftar.`, { parse_mode: 'HTML' });
+
+    // Cek gold
+    if (user.gold < recipe.gold) {
+      return ctx.reply(`❌ Gold tidak cukup! Butuh ${recipe.gold}g. Saldo: ${user.gold}g.`);
+    }
+
+    // Cek material
+    const missing = [];
+    for (const mat of recipe.materials) {
+      const invItem = getItem(userId, mat.item);
+      const have = invItem ? invItem.quantity : 0;
+      if (have < mat.qty) {
+        missing.push(`${mat.qty}x ${mat.item.replace(/_/g, ' ')} (punya: ${have})`);
+      }
+    }
+
+    if (missing.length > 0) {
+      return ctx.reply(`❌ Material tidak cukup!\n\nYang kurang:\n${missing.map(m => `• ${m}`).join('\n')}`);
+    }
+
+    // Craft! (atomic transaction)
+    const craftSuccess = db.transaction(() => {
+      // Kurangi gold
+      if (!spendGold(userId, recipe.gold)) return false;
+      // Kurangi material
+      for (const mat of recipe.materials) {
+        if (!removeItem(userId, mat.item, mat.qty)) return false;
+      }
+      // Tambah hasil
+      addItem(userId, recipe.result);
+      return true;
+    })();
+
+    if (!craftSuccess) {
+      return ctx.reply('❌ Gagal crafting! Terjadi kesalahan.');
+    }
+
+    invCache.delete(userId.toString());
+    const catalog = getCatalogItem(recipe.result);
+    const rarity = catalog ? RARITY_EMOJI[catalog.rarity] || '' : '';
+    ctx.reply(`⚒️ <b>Crafting Berhasil!</b>\n\n${rarity} ${recipe.name} sudah masuk inventory!\n💰 Biaya: ${recipe.gold}g`, { parse_mode: 'HTML' });
   });
 
   // ===== /use (terima nomor ID dari /inv atau nama) =====

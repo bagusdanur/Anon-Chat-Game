@@ -158,6 +158,15 @@ const HELP_PAGES = [
       `   <code>/shop</code> — Lihat toko\n` +
       `   <code>/buy nama_item</code> — Beli item\n` +
       `   <code>/give 100</code> — Kirim gold ke partner (pajak 5%)\n\n` +
+      `<b>⚒️ Crafting (BARU!):</b>\n` +
+      `   <code>/craft</code> — Lihat semua resep\n` +
+      `   <code>/craft [nomor]</code> — Craft item (contoh: /craft 1)\n` +
+      `   <code>/craft [nama]</code> — Craft by name (contoh: /craft pedang besi)\n\n` +
+      `<b>🗡️ Contoh Resep:</b>\n` +
+      `   🗡️ Pedang Besi — 5 Besi + 3 Tembaga + 100g\n` +
+      `   🔥 Tongkat Api — 8 Batu Bara + 3 Perak + 150g\n` +
+      `   🛡️ Perisai Besi — 8 Besi + 5 Kulit + 120g\n` +
+      `   🐉 Pedang Naga — 10 Besi + 5 Fragmen Naga + 500g\n\n` +
       `<b>🟠 Rarity:</b>\n` +
       `   ⚪ Common → 🟢 Uncommon → 🔵 Rare → 🟣 Epic → 🟠 Legendary\n\n` +
       `<b>💫 Status Effects (Dungeon):</b>\n` +

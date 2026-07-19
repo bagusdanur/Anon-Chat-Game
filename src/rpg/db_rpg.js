@@ -128,6 +128,17 @@ const SEED_ITEMS = [
   // shop tools
   { item_id: 'kail_plus',      display_name: '🎣 Kail Pancing+',  category: 'material', rarity: 'uncommon', sell_price: 80, effect_json: JSON.stringify({ fish_rarity_boost: 1 }) },
   { item_id: 'beliung_plus',   display_name: '⛏️ Beliung Tambang+',category: 'material',rarity: 'uncommon', sell_price: 120, effect_json: JSON.stringify({ mine_rarity_boost: 1 }) },
+  // craftable weapons
+  { item_id: 'pedang_besi',     display_name: '🗡️ Pedang Besi',     category: 'weapon', rarity: 'rare',     sell_price: 80,  effect_json: JSON.stringify({ atk_bonus: 4, crit_rate: 0.05 }) },
+  { item_id: 'pedang_naga',     display_name: '🐉 Pedang Naga',     category: 'weapon', rarity: 'legendary', sell_price: 0,   effect_json: JSON.stringify({ atk_bonus: 8, crit_rate: 0.12, crit_multi: 0.3 }) },
+  // craftable staffs
+  { item_id: 'tongkat_es',      display_name: '❄️ Tongkat Es',      category: 'staff', rarity: 'legendary', sell_price: 0,   effect_json: JSON.stringify({ magic_atk_bonus: 10, crit_rate: 0.10 }) },
+  // craftable armor
+  { item_id: 'perisai_besi',    display_name: '🛡️ Perisai Besi',    category: 'armor', rarity: 'rare',     sell_price: 60,  effect_json: JSON.stringify({ def_bonus: 4, phys_resist: 0.05 }) },
+  { item_id: 'armor_naga',      display_name: '🐉 Armor Naga',      category: 'armor', rarity: 'legendary', sell_price: 0,   effect_json: JSON.stringify({ def_bonus: 10, phys_resist: 0.15, magic_resist: 0.10 }) },
+  // craftable accessories
+  { item_id: 'cincin_keberuntungan', display_name: '💍 Cincin Keberuntungan', category: 'accessory', rarity: 'rare', sell_price: 100, effect_json: JSON.stringify({ crit_rate: 0.08, atk_bonus: 2 }) },
+  { item_id: 'kalung_naga',     display_name: '🐉 Kalung Naga',     category: 'accessory', rarity: 'legendary', sell_price: 0, effect_json: JSON.stringify({ atk_bonus: 4, magic_atk_bonus: 4, crit_rate: 0.10, phys_resist: 0.05 }) },
 ];
 
 const insertItem = db.prepare(`
