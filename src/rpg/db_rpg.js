@@ -14,6 +14,11 @@ db.exec(`
     max_hp           INTEGER NOT NULL DEFAULT 50,
     atk              INTEGER NOT NULL DEFAULT 5,
     def              INTEGER NOT NULL DEFAULT 5,
+    magic_atk        INTEGER NOT NULL DEFAULT 0,
+    crit_rate        REAL NOT NULL DEFAULT 0.05,
+    crit_multi       REAL NOT NULL DEFAULT 1.5,
+    phys_resist      REAL NOT NULL DEFAULT 0,
+    magic_resist     REAL NOT NULL DEFAULT 0,
     energy_current   INTEGER NOT NULL DEFAULT 10,
     energy_last_update INTEGER NOT NULL DEFAULT 0,
     last_dungeon_at  INTEGER DEFAULT NULL,
@@ -34,7 +39,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS items_catalog (
     item_id      TEXT PRIMARY KEY,
     display_name TEXT NOT NULL,
-    category     TEXT NOT NULL CHECK (category IN ('consumable','material','weapon','armor')),
+    category     TEXT NOT NULL CHECK (category IN ('consumable','material','weapon','staff','armor','accessory')),
     rarity       TEXT NOT NULL CHECK (rarity IN ('common','uncommon','rare','epic','legendary')),
     sell_price   INTEGER DEFAULT 0,
     effect_json  TEXT
@@ -60,10 +65,27 @@ db.exec(`
     ended_at     INTEGER
   );
 
+  CREATE TABLE IF NOT EXISTS status_effects (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id      TEXT NOT NULL,
+    effect_type  TEXT NOT NULL CHECK (effect_type IN ('burn','bleed','stun','shield')),
+    duration     INTEGER NOT NULL DEFAULT 3,
+    power        REAL NOT NULL DEFAULT 0,
+    created_at   INTEGER NOT NULL
+  );
+
   CREATE INDEX IF NOT EXISTS idx_inventory_user ON rpg_inventory(telegram_user_id);
   CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions_log(from_user_id, to_user_id);
   CREATE INDEX IF NOT EXISTS idx_dungeon_players ON dungeon_runs(player_a_id, player_b_id);
+  CREATE INDEX IF NOT EXISTS idx_status_effects_user ON status_effects(user_id);
 `);
+
+// ===== MIGRATE: tambah kolom baru jika belum ada =====
+try { db.exec('ALTER TABLE rpg_users ADD COLUMN magic_atk INTEGER DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE rpg_users ADD COLUMN crit_rate REAL DEFAULT 0.05'); } catch(e) {}
+try { db.exec('ALTER TABLE rpg_users ADD COLUMN crit_multi REAL DEFAULT 1.5'); } catch(e) {}
+try { db.exec('ALTER TABLE rpg_users ADD COLUMN phys_resist REAL DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE rpg_users ADD COLUMN magic_resist REAL DEFAULT 0'); } catch(e) {}
 
 // ===== SEED ITEMS CATALOG =====
 const SEED_ITEMS = [
@@ -90,12 +112,19 @@ const SEED_ITEMS = [
   { item_id: 'mutiara',        display_name: '🫧 Mutiara',        category: 'material', rarity: 'epic',     sell_price: 120, effect_json: null },
   { item_id: 'sepatu_rusak',   display_name: '👟 Sepatu Bot Rusak',category: 'material', rarity: 'common',  sell_price: 0,   effect_json: null },
   // weapons & armor (dari loot)
-  { item_id: 'pedang_karatan', display_name: '⚔️ Pedang Karatan', category: 'weapon', rarity: 'rare',      sell_price: 30,  effect_json: JSON.stringify({ atk_bonus: 2 }) },
-  { item_id: 'jubah_terkutuk', display_name: '🧥 Jubah Terkutuk', category: 'armor',  rarity: 'epic',      sell_price: 0,   effect_json: JSON.stringify({ def_bonus: 5 }) },
+  { item_id: 'pedang_karatan', display_name: '⚔️ Pedang Karatan', category: 'weapon', rarity: 'rare',      sell_price: 30,  effect_json: JSON.stringify({ atk_bonus: 2, crit_rate: 0.05 }) },
+  { item_id: 'jubah_terkutuk', display_name: '🧥 Jubah Terkutuk', category: 'armor',  rarity: 'epic',      sell_price: 0,   effect_json: JSON.stringify({ def_bonus: 5, magic_resist: 0.10 }) },
+  // staffs (magic weapons)
+  { item_id: 'tongkat_ranting', display_name: '🪄 Tongkat Ranting', category: 'staff', rarity: 'uncommon', sell_price: 20,  effect_json: JSON.stringify({ magic_atk_bonus: 3 }) },
+  { item_id: 'tongkat_api',     display_name: '🔥 Tongkat Api',     category: 'staff', rarity: 'rare',     sell_price: 60,  effect_json: JSON.stringify({ magic_atk_bonus: 6, crit_rate: 0.08 }) },
+  // accessories
+  { item_id: 'cincin_perak',    display_name: '💍 Cincin Perak',    category: 'accessory', rarity: 'uncommon', sell_price: 25,  effect_json: JSON.stringify({ crit_rate: 0.05 }) },
+  { item_id: 'kalung_kekuatan', display_name: '📿 Kalung Kekuatan', category: 'accessory', rarity: 'rare',     sell_price: 80,  effect_json: JSON.stringify({ atk_bonus: 3, magic_atk_bonus: 3 }) },
+  { item_id: 'amulet_pertahanan',display_name:'🛡️ Amulet Pertahanan',category: 'accessory',rarity: 'rare',    sell_price: 80,  effect_json: JSON.stringify({ def_bonus: 3, phys_resist: 0.05, magic_resist: 0.05 }) },
   // legendary raid drops
-  { item_id: 'pedang_goblin',  display_name: '🗡️ Pedang Goblin Bertuah',  category: 'weapon', rarity: 'legendary', sell_price: 0, effect_json: JSON.stringify({ atk_bonus: 6 }) },
-  { item_id: 'jaring_sutra',   display_name: '🕸️ Jaring Sutra Ratu',      category: 'armor',  rarity: 'legendary', sell_price: 0, effect_json: JSON.stringify({ def_bonus: 8 }) },
-  { item_id: 'mahkota_terkutuk',display_name:'👑 Mahkota Terkutuk',       category: 'armor',  rarity: 'legendary', sell_price: 0, effect_json: JSON.stringify({ atk_bonus: 10, def_bonus: 10 }) },
+  { item_id: 'pedang_goblin',  display_name: '🗡️ Pedang Goblin Bertuah',  category: 'weapon', rarity: 'legendary', sell_price: 0, effect_json: JSON.stringify({ atk_bonus: 6, crit_rate: 0.10, crit_multi: 0.3 }) },
+  { item_id: 'jaring_sutra',   display_name: '🕸️ Jaring Sutra Ratu',      category: 'armor',  rarity: 'legendary', sell_price: 0, effect_json: JSON.stringify({ def_bonus: 8, magic_resist: 0.15 }) },
+  { item_id: 'mahkota_terkutuk',display_name:'👑 Mahkota Terkutuk',       category: 'accessory', rarity: 'legendary', sell_price: 0, effect_json: JSON.stringify({ atk_bonus: 5, magic_atk_bonus: 5, def_bonus: 5, crit_rate: 0.10 }) },
   // shop tools
   { item_id: 'kail_plus',      display_name: '🎣 Kail Pancing+',  category: 'material', rarity: 'uncommon', sell_price: 80, effect_json: JSON.stringify({ fish_rarity_boost: 1 }) },
   { item_id: 'beliung_plus',   display_name: '⛏️ Beliung Tambang+',category: 'material',rarity: 'uncommon', sell_price: 120, effect_json: JSON.stringify({ mine_rarity_boost: 1 }) },
@@ -110,17 +139,44 @@ seedAll();
 
 // ===== CLASS DEFINITIONS =====
 const CLASS_DEFS = {
-  ksatria: { name: '⚔️ Ksatria', base_hp: 50, base_atk: 5, base_def: 5, growth: { hp: 8, atk: 1.5, def: 2 } },
-  penyihir: { name: '🔥 Penyihir', base_hp: 35, base_atk: 8, base_def: 2, growth: { hp: 5, atk: 2.5, def: 1 } },
-  pencuri: { name: '🗡️ Pencuri', base_hp: 40, base_atk: 6, base_def: 3, growth: { hp: 6, atk: 2, def: 1.5 } },
+  ksatria: {
+    name: '⚔️ Ksatria', damageType: 'physical',
+    base_hp: 50, base_atk: 5, base_def: 5, base_magic_atk: 0,
+    base_crit_rate: 0.05, base_crit_multi: 1.5,
+    growth: { hp: 8, atk: 1.5, def: 2, magic_atk: 0 },
+    physBonus: 1.15, magicBonus: 0.80,  // +15% phys, -20% magic
+    skillName: 'Tebasan Besar', skillMulti: 2.0, skillType: 'physical',
+    skillDesc: 'Tebasan kuat dengan bonus armor penetrate 10%'
+  },
+  penyihir: {
+    name: '🔥 Penyihir', damageType: 'magic',
+    base_hp: 35, base_atk: 3, base_def: 2, base_magic_atk: 8,
+    base_crit_rate: 0.10, base_crit_multi: 1.8,
+    growth: { hp: 5, atk: 0.5, def: 1, magic_atk: 2.5 },
+    physBonus: 0.70, magicBonus: 1.25,  // -30% phys, +25% magic
+    skillName: 'Bola Api', skillMulti: 2.5, skillType: 'magic',
+    skillDesc: 'Bola api yang membakar musuh selama 3 turn'
+  },
+  pencuri: {
+    name: '🗡️ Pencuri', damageType: 'physical',
+    base_hp: 40, base_atk: 6, base_def: 3, base_magic_atk: 0,
+    base_crit_rate: 0.15, base_crit_multi: 2.0,
+    growth: { hp: 6, atk: 2, def: 1.5, magic_atk: 0 },
+    physBonus: 1.20, magicBonus: 0.80,  // +20% phys, -20% magic
+    skillName: 'Backstab', skillMulti: 3.0, skillType: 'physical',
+    skillDesc: 'Serangan dari belakang — 100% Crit!'
+  },
 };
 
 function calcStats(className, level) {
   const cls = CLASS_DEFS[className];
   return {
-    max_hp: Math.floor(cls.base_hp + cls.growth.hp * (level - 1)),
-    atk:    Math.floor(cls.base_atk + cls.growth.atk * (level - 1)),
-    def:    Math.floor(cls.base_def + cls.growth.def * (level - 1)),
+    max_hp:    Math.floor(cls.base_hp + cls.growth.hp * (level - 1)),
+    atk:       Math.floor(cls.base_atk + cls.growth.atk * (level - 1)),
+    def:       Math.floor(cls.base_def + cls.growth.def * (level - 1)),
+    magic_atk: Math.floor(cls.base_magic_atk + cls.growth.magic_atk * (level - 1)),
+    crit_rate: cls.base_crit_rate + (level - 1) * (className === 'pencuri' ? 0.015 : className === 'penyihir' ? 0.01 : 0.005),
+    crit_multi: cls.base_crit_multi,
   };
 }
 
@@ -143,9 +199,11 @@ function createUser(userId, className) {
   db.prepare(`
     INSERT OR IGNORE INTO rpg_users
     (telegram_user_id, class_name, level, xp, gold, hp, max_hp, atk, def,
+     magic_atk, crit_rate, crit_multi, phys_resist, magic_resist,
      energy_current, energy_last_update, last_dungeon_at, created_at, updated_at)
-    VALUES (?, ?, 1, 0, 0, ?, ?, ?, ?, 10, ?, NULL, ?, ?)
-  `).run(id, className, stats.max_hp, stats.max_hp, stats.atk, stats.def, now, now, now);
+    VALUES (?, ?, 1, 0, 0, ?, ?, ?, ?, ?, ?, ?, 0, 0, 10, ?, NULL, ?, ?)
+  `).run(id, className, stats.max_hp, stats.max_hp, stats.atk, stats.def,
+         stats.magic_atk, stats.crit_rate, stats.crit_multi, now, now, now);
   return db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(id);
 }
 
@@ -177,28 +235,37 @@ function getCurrentHp(user) {
 }
 
 // ===== EQUIPMENT BONUS =====
-// Ambil bonus terbaik: 1 senjata (max ATK) + 1 armor (max DEF)
-// Tidak perlu sistem equip eksplisit — otomatis ambil terbaik di inventory
+// Ambil bonus dari semua equipment: 1 weapon, 1 staff, 1 armor, 1 accessory
 function getEquipmentBonus(userId) {
   const items = getInventory(userId);
-  let atkBonus = 0;
-  let defBonus = 0;
+  let atkBonus = 0, defBonus = 0, magicAtkBonus = 0, critRate = 0, critMulti = 0;
+  let physResist = 0, magicResist = 0;
+
+  const equipped = { weapon: null, staff: null, armor: null, accessory: null };
   for (const item of items) {
-    if (!item.effect_json || !['weapon', 'armor'].includes(item.category)) continue;
+    if (!item.effect_json || !['weapon', 'staff', 'armor', 'accessory'].includes(item.category)) continue;
+    // Ambil terbaik per slot
+    if (equipped[item.category] && equipped[item.category].rarity > item.rarity) continue;
+    equipped[item.category] = item;
+  }
+
+  for (const [, item] of Object.entries(equipped)) {
+    if (!item || !item.effect_json) continue;
     try {
       const eff = JSON.parse(item.effect_json);
-      const upgradeBonus = (item.upgrade_tier || 0) * 2;
-      if (item.category === 'weapon' && eff.atk_bonus) {
-        atkBonus = Math.max(atkBonus, eff.atk_bonus + upgradeBonus);
-      }
-      if (item.category === 'armor') {
-        if (eff.def_bonus) defBonus = Math.max(defBonus, eff.def_bonus + upgradeBonus);
-        // Mahkota Terkutuk: bonus ATK + DEF dari armor
-        if (eff.atk_bonus) atkBonus = Math.max(atkBonus, eff.atk_bonus + upgradeBonus);
-      }
+      const tier = item.upgrade_tier || 0;
+      const tierBonus = tier * 2;
+      if (eff.atk_bonus) atkBonus = Math.max(atkBonus, eff.atk_bonus + tierBonus);
+      if (eff.def_bonus) defBonus = Math.max(defBonus, eff.def_bonus + tierBonus);
+      if (eff.magic_atk_bonus) magicAtkBonus = Math.max(magicAtkBonus, eff.magic_atk_bonus + tierBonus);
+      if (eff.crit_rate) critRate += eff.crit_rate;
+      if (eff.crit_multi) critMulti += eff.crit_multi;
+      if (eff.phys_resist) physResist += eff.phys_resist;
+      if (eff.magic_resist) magicResist += eff.magic_resist;
     } catch {}
   }
-  return { atkBonus, defBonus };
+
+  return { atkBonus, defBonus, magicAtkBonus, critRate, critMulti, physResist, magicResist };
 }
 
 // ===== DUNGEON COOLDOWN (ganti sistem tiket) =====
@@ -236,8 +303,10 @@ function addXp(userId, amount) {
 
   const stats = calcStats(user.class_name, level);
   const now = Math.floor(Date.now() / 1000);
-  db.prepare('UPDATE rpg_users SET level = ?, xp = ?, max_hp = ?, atk = ?, def = ?, updated_at = ? WHERE telegram_user_id = ?')
-    .run(level, xp, stats.max_hp, stats.atk, stats.def, now, id);
+  db.prepare(`UPDATE rpg_users SET level = ?, xp = ?, max_hp = ?, atk = ?, def = ?,
+    magic_atk = ?, crit_rate = ?, crit_multi = ?, updated_at = ? WHERE telegram_user_id = ?`)
+    .run(level, xp, stats.max_hp, stats.atk, stats.def,
+         stats.magic_atk, stats.crit_rate, stats.crit_multi, now, id);
 
   return { leveled, newLevel: level };
 }
@@ -333,6 +402,73 @@ function getCatalogItem(itemId) {
   return db.prepare('SELECT * FROM items_catalog WHERE item_id = ?').get(itemId);
 }
 
+// ===== STATUS EFFECTS =====
+function addStatusEffect(userId, effectType, duration, power) {
+  db.prepare('INSERT INTO status_effects (user_id, effect_type, duration, power, created_at) VALUES (?, ?, ?, ?, ?)')
+    .run(userId.toString(), effectType, duration, power, Math.floor(Date.now() / 1000));
+}
+
+function getStatusEffects(userId) {
+  return db.prepare('SELECT * FROM status_effects WHERE user_id = ?').all(userId.toString());
+}
+
+function tickStatusEffects(userId) {
+  const effects = getStatusEffects(userId);
+  const logs = [];
+  for (const eff of effects) {
+    if (eff.effect_type === 'burn') {
+      const dmg = Math.floor(eff.power);
+      logs.push(`🔥 ${userId} terbakar! *-${dmg} HP*`);
+    } else if (eff.effect_type === 'bleed') {
+      const dmg = Math.floor(eff.power);
+      logs.push(`🩸 ${userId} berdarah! *-${dmg} HP*`);
+    }
+  }
+  // Kurangi duration
+  db.prepare('UPDATE status_effects SET duration = duration - 1 WHERE user_id = ?').run(userId.toString());
+  // Hapus yang habis
+  db.prepare('DELETE FROM status_effects WHERE user_id = ? AND duration <= 0').run(userId.toString());
+  return logs;
+}
+
+function hasStatusEffect(userId, effectType) {
+  return db.prepare('SELECT 1 FROM status_effects WHERE user_id = ? AND effect_type = ?').get(userId.toString(), effectType);
+}
+
+function clearStatusEffects(userId) {
+  db.prepare('DELETE FROM status_effects WHERE user_id = ?').run(userId.toString());
+}
+
+// ===== DAMAGE CALCULATION =====
+function calcPhysicalDamage(attacker, defender, baseDmg, skillMulti = 1, ignoreDef = 0) {
+  const cls = CLASS_DEFS[attacker.classId || attacker.class_name];
+  const bonus = cls ? cls.physBonus : 1.0;
+  const raw = Math.floor(baseDmg * skillMulti * bonus);
+  const def = Math.max(0, (defender.def || 0) * (1 - ignoreDef));
+  const mitigated = Math.max(1, raw - Math.floor(def / 2));
+  // Apply defender phys resist
+  const resist = defender.phys_resist || 0;
+  return Math.max(1, Math.floor(mitigated * (1 - resist)));
+}
+
+function calcMagicDamage(attacker, defender, baseDmg, skillMulti = 1) {
+  const cls = CLASS_DEFS[attacker.classId || attacker.class_name];
+  const bonus = cls ? cls.magicBonus : 1.0;
+  const raw = Math.floor(baseDmg * skillMulti * bonus);
+  // Magic uses def/3 for mitigation (lower than physical)
+  const def = Math.max(0, (defender.def || 0) / 3);
+  const mitigated = Math.max(1, raw - Math.floor(def));
+  // Apply defender magic resist
+  const resist = defender.magic_resist || 0;
+  return Math.max(1, Math.floor(mitigated * (1 - resist)));
+}
+
+function rollCrit(critRate, critMulti) {
+  const roll = Math.random();
+  const isCrit = roll < critRate;
+  return { isCrit, multiplier: isCrit ? critMulti : 1 };
+}
+
 module.exports = {
   CLASS_DEFS, calcStats, xpToNextLevel,
   getOrCreateUser, createUser,
@@ -344,4 +480,8 @@ module.exports = {
   logTransaction,
   createDungeonRun, finalizeDungeonRun,
   getCatalogItem,
+  // Status effects
+  addStatusEffect, getStatusEffects, tickStatusEffects, hasStatusEffect, clearStatusEffects,
+  // Damage calculation
+  calcPhysicalDamage, calcMagicDamage, rollCrit,
 };

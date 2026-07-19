@@ -25,16 +25,21 @@ function renderProfile(user) {
   const cooldownSecs = getDungeonCooldown(user);
   const hp = getCurrentHp(user);
   const nextEnergyMin = energy < 10 ? (3 - Math.floor(((Date.now() / 1000) - user.energy_last_update) / 60) % 3) : 0;
-  const { atkBonus, defBonus } = getEquipmentBonus(user.telegram_user_id);
-  const effectiveAtk = user.atk + atkBonus;
-  const effectiveDef = user.def + defBonus;
+  const equip = getEquipmentBonus(user.telegram_user_id);
+  const effectiveAtk = user.atk + equip.atkBonus;
+  const effectiveDef = user.def + equip.defBonus;
+  const effectiveMagicAtk = (user.magic_atk || 0) + equip.magicAtkBonus;
+  const totalCritRate = Math.min(0.95, (user.crit_rate || 0.05) + equip.critRate);
+  const totalCritMulti = (user.crit_multi || 1.5) + equip.critMulti;
 
   const dungeonStatus = cooldownSecs > 0
     ? `⏳ Cooldown ${Math.ceil(cooldownSecs / 60)} menit`
     : `✅ Siap raid!`;
 
-  const atkStr = atkBonus > 0 ? `${effectiveAtk} _(+${atkBonus} eq)_` : `${effectiveAtk}`;
-  const defStr = defBonus > 0 ? `${effectiveDef} _(+${defBonus} eq)_` : `${effectiveDef}`;
+  const dmgType = cls.damageType === 'magic' ? '🔮 Magic' : '⚔️ Physical';
+  const atkStr = equip.atkBonus > 0 ? `${effectiveAtk} _(+${equip.atkBonus} eq)_` : `${effectiveAtk}`;
+  const defStr = equip.defBonus > 0 ? `${effectiveDef} _(+${equip.defBonus} eq)_` : `${effectiveDef}`;
+  const magStr = effectiveMagicAtk > 0 ? `${effectiveMagicAtk}` : '-';
 
   return (
     `${cls.name} — *Profil Petualang* 📖\n\n` +
@@ -42,6 +47,9 @@ function renderProfile(user) {
     `✨ XP: ${renderXpBar(user.xp, nextXp)}\n` +
     `❤️ HP: ${renderHpBar(hp, user.max_hp)}\n` +
     `⚔️ ATK: ${atkStr}   🛡️ DEF: ${defStr}\n` +
+    `🔮 Magic ATK: ${magStr}   🎯 Damage: ${dmgType}\n` +
+    `💥 Crit Rate: ${Math.round(totalCritRate * 100)}%   💥 Crit DMG: ${Math.round(totalCritMulti * 100)}%\n` +
+    `🛡️ Phys Res: ${Math.round((user.phys_resist || 0) * 100)}%   🔮 Magic Res: ${Math.round((user.magic_resist || 0) * 100)}%\n` +
     `💰 Gold: ${user.gold}g\n\n` +
     `⚡ Energi: ${energy}/10${energy < 10 ? ` _(+1 dalam ~${nextEnergyMin} mnt)_` : ''}\n` +
     `🏰 Dungeon: ${dungeonStatus}\n`

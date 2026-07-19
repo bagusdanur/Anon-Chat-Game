@@ -4,7 +4,9 @@ const { Markup } = require('telegraf');
 const {
   getOrCreateUser, getDungeonCooldown, setDungeonCooldown,
   addXp, addGold, addItem, updateHp, getCurrentHp,
-  createDungeonRun, finalizeDungeonRun, CLASS_DEFS, getEquipmentBonus
+  createDungeonRun, finalizeDungeonRun, CLASS_DEFS, getEquipmentBonus,
+  calcPhysicalDamage, calcMagicDamage, rollCrit,
+  addStatusEffect, tickStatusEffects, hasStatusEffect, clearStatusEffects
 } = require('./db_rpg');
 const { renderHpBar } = require('./profile');
 
@@ -15,14 +17,12 @@ function getPairKey(a, b) {
   return [a.toString(), b.toString()].sort().join(':');
 }
 
-// ===== BOSS TABLES (rebalanced) =====
-// Formula target: 2 pemain di min level bisa menang dalam 8-12 turn jika bermain optimal
+// ===== BOSS TABLES (rebalanced with resistances) =====
 const BOSS_TIERS = [
-  // Tier 1: 2x Lv1 = total ATK ~8/turn, boss HP seharusnya bisa habis ~10-12 turn
-  { tier: 1, minAvgLv: 1,  maxAvgLv: 15, id: 'kepala_goblin',  name: 'Kepala Goblin',     baseHp: 80,   baseAtk: [5,8],   baseDef: 2,  xpReward: 200,  goldReward: 120, legendaryDrop: 'pedang_goblin'   },
-  { tier: 2, minAvgLv: 16, maxAvgLv: 35, id: 'ratu_laba',      name: 'Ratu Laba-laba',    baseHp: 280,  baseAtk: [10,16], baseDef: 5,  xpReward: 500,  goldReward: 300, legendaryDrop: 'jaring_sutra'    },
-  { tier: 3, minAvgLv: 36, maxAvgLv: 60, id: 'naga_bayangan',  name: 'Naga Bayangan',     baseHp: 550,  baseAtk: [18,26], baseDef: 9,  xpReward: 1200, goldReward: 700, legendaryDrop: 'sisik_naga'      },
-  { tier: 4, minAvgLv: 61, maxAvgLv: 999,id: 'raja_terkutuk',  name: 'Raja Terkutuk',     baseHp: 900,  baseAtk: [26,38], baseDef: 13, xpReward: 2500, goldReward: 1500,legendaryDrop: 'mahkota_terkutuk' },
+  { tier: 1, minAvgLv: 1,  maxAvgLv: 15, id: 'kepala_goblin',  name: 'Kepala Goblin',     baseHp: 80,   baseAtk: [5,8],   baseDef: 2,  physResist: 0.20, magicResist: 0.50, xpReward: 200,  goldReward: 120, legendaryDrop: 'pedang_goblin'   },
+  { tier: 2, minAvgLv: 16, maxAvgLv: 35, id: 'ratu_laba',      name: 'Ratu Laba-laba',    baseHp: 280,  baseAtk: [10,16], baseDef: 5,  physResist: 0.40, magicResist: 0.20, xpReward: 500,  goldReward: 300, legendaryDrop: 'jaring_sutra'    },
+  { tier: 3, minAvgLv: 36, maxAvgLv: 60, id: 'naga_bayangan',  name: 'Naga Bayangan',     baseHp: 550,  baseAtk: [18,26], baseDef: 9,  physResist: 0.30, magicResist: 0.30, xpReward: 1200, goldReward: 700, legendaryDrop: 'sisik_naga'      },
+  { tier: 4, minAvgLv: 61, maxAvgLv: 999,id: 'raja_terkutuk',  name: 'Raja Terkutuk',     baseHp: 900,  baseAtk: [26,38], baseDef: 13, physResist: 0.25, magicResist: 0.25, xpReward: 2500, goldReward: 1500,legendaryDrop: 'mahkota_terkutuk' },
 ];
 
 // Label & emoji per tier untuk tampilan menu
@@ -45,34 +45,103 @@ function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// ===== COMBAT RESOLUTION =====
+// ===== COMBAT RESOLUTION (Physical/Magic/Crit/Status) =====
 function resolveTurn(raid, actions) {
   const logs = [];
   const boss = raid.boss;
+  const bossDefender = { def: boss.def, phys_resist: boss.physResist || 0, magic_resist: boss.magicResist || 0 };
+
+  // Tick status effects untuk semua pemain
+  for (const [uid, player] of Object.entries(raid.players)) {
+    if (!player.alive) continue;
+    const effectLogs = tickStatusEffects(uid);
+    for (const log of effectLogs) {
+      // Extract damage from log
+      const dmgMatch = log.match(/-(\d+) HP/);
+      if (dmgMatch) {
+        const dmg = parseInt(dmgMatch[1]);
+        player.hp = Math.max(0, player.hp - dmg);
+        if (player.hp <= 0) {
+          player.alive = false;
+          logs.push(`${log} → 💀 ${player.className} tumbang!`);
+        } else {
+          logs.push(log);
+        }
+      }
+    }
+    // Stun check — skip turn jika stunned
+    if (hasStatusEffect(uid, 'stun')) {
+      logs.push(`⚡ ${player.className} STUN! Melewatkan turn.`);
+      continue;
+    }
+  }
 
   // Player actions
   for (const [uid, action] of Object.entries(actions)) {
     if (action.type === 'dead') continue;
     const player = raid.players[uid];
     if (!player || !player.alive) continue;
+    const cls = CLASS_DEFS[player.classId];
 
     if (action.type === 'attack') {
-      const dmg = Math.max(1, player.atk - Math.floor(boss.def / 2) + randInt(-2, 3));
+      // Basic attack — tipe damage sesuai kelas
+      const baseDmg = player.atk + (player.atkBonus || 0);
+      let dmg;
+      if (cls.damageType === 'magic') {
+        dmg = calcMagicDamage(player, bossDefender, baseDmg);
+      } else {
+        dmg = calcPhysicalDamage(player, bossDefender, baseDmg);
+      }
+      // Crit roll
+      const { isCrit, multiplier } = rollCrit(player.critRate || 0.05, player.critMulti || 1.5);
+      dmg = Math.floor(dmg * multiplier);
       boss.hp = Math.max(0, boss.hp - dmg);
-      logs.push(`⚔️ ${player.className}: menyerang! *-${dmg} HP* bos`);
+      const critText = isCrit ? ' 💥 CRIT!' : '';
+      const typeIcon = cls.damageType === 'magic' ? '🔮' : '⚔️';
+      logs.push(`${typeIcon} ${player.className}: menyerang! *-${dmg} HP* bos${critText}`);
+
     } else if (action.type === 'skill') {
-      const dmg = Math.max(2, Math.floor(player.atk * 1.8) - Math.floor(boss.def / 2));
+      // Skill — damage type sesuai kelas + status effect
+      const baseDmg = cls.damageType === 'magic' ? (player.magicAtk || player.atk) : (player.atk + (player.atkBonus || 0));
+      let dmg;
+      const skillMulti = cls.skillMulti || 2.0;
+
+      if (cls.damageType === 'magic') {
+        // Penyihir: Bola Api — magic damage + burn
+        dmg = calcMagicDamage(player, bossDefender, baseDmg, skillMulti);
+        addStatusEffect(boss.id, 'burn', 3, Math.floor(dmg * 0.15));
+        logs.push(`🔥 ${player.className}: ${cls.skillName}! *-${dmg} HP* bos + 🔥 Burn 3 turn!`);
+      } else if (player.classId === 'pencuri') {
+        // Pencuri: Backstab — physical + 100% crit
+        dmg = calcPhysicalDamage(player, bossDefender, baseDmg, skillMulti);
+        const critDmg = Math.floor(dmg * (player.critMulti || 2.0));
+        boss.hp = Math.max(0, boss.hp - critDmg);
+        logs.push(`🗡️ ${player.className}: ${cls.skillName}! *-${critDmg} HP* bos 💥 100% CRIT!`);
+        player.skillCooldown = 4;
+        continue; // skip normal damage apply
+      } else {
+        // Ksatria: Tebasan Besar — physical + 10% DEF penetrate
+        dmg = calcPhysicalDamage(player, bossDefender, baseDmg, skillMulti, 0.10);
+        logs.push(`⚔️ ${player.className}: ${cls.skillName}! *-${dmg} HP* bos (DEF -10%)!`);
+      }
+
       boss.hp = Math.max(0, boss.hp - dmg);
       player.skillCooldown = 3;
-      logs.push(`🔮 ${player.className}: pakai skill! *-${dmg} HP* bos`);
+
     } else if (action.type === 'defend') {
       player.defending = true;
-      logs.push(`🛡️ ${player.className}: mengambil posisi bertahan!`);
+      // Ksatria: Shield effect 1 turn
+      addStatusEffect(uid, 'shield', 1, 0);
+      logs.push(`🛡️ ${player.className}: mengambil posisi bertahan! +🛡️ Shield 1 turn`);
+
     } else if (action.type === 'item') {
       const healAmt = Math.floor(player.maxHp * 0.15);
       player.hp = Math.min(player.maxHp, player.hp + healAmt);
-      logs.push(`🧪 ${player.className}: minum ramuan! *+${healAmt} HP*`);
+      // Bersihkan status effect negatif
+      clearStatusEffects(uid);
+      logs.push(`🧪 ${player.className}: minum ramuan! *+${healAmt} HP* + Bersihkan debuff`);
     }
+
     // Cooldown tick
     if (player.skillCooldown > 0 && action.type !== 'skill') player.skillCooldown--;
   }
@@ -95,9 +164,15 @@ function resolveTurn(raid, actions) {
   for (const player of Object.values(raid.players)) {
     if (!player.alive) continue;
     let dmg = Math.max(1, bossAtk - Math.floor(player.def / 2) + randInt(-2, 3));
-    if (player.defending) { dmg = Math.floor(dmg * 0.5); player.defending = false; }
+    // Shield: -50% damage
+    if (hasStatusEffect(player.classId, 'shield') || player.defending) {
+      dmg = Math.floor(dmg * 0.5);
+      player.defending = false;
+    }
     // Ksatria trait: -10% damage
     if (player.classId === 'ksatria') dmg = Math.floor(dmg * 0.9);
+    // Apply player phys resist
+    dmg = Math.max(1, Math.floor(dmg * (1 - (player.physResist || 0))));
     player.hp = Math.max(0, player.hp - dmg);
     if (player.hp <= 0) {
       player.alive = false;
@@ -122,12 +197,16 @@ function sendCombatUI(bot, raid, extraLogs = []) {
   raid.pendingLogs = [];
 
   let msg = `⚔️ **RAID: ${boss.name}** ⚔️\n\n`;
-  msg += `👹 **${boss.name}**: ${renderHpBar(boss.hp, boss.maxHp, 10)}\n\n`;
-  msg += `🛡️ **PARTY STATUS:**\n`;
+  msg += `👹 **${boss.name}**: ${renderHpBar(boss.hp, boss.maxHp, 10)}`;
+  msg += `\n🛡️ Phys Res: ${Math.round((boss.physResist||0)*100)}% | 🔮 Magic Res: ${Math.round((boss.magicResist||0)*100)}%\n\n`;
 
+  msg += `🛡️ **PARTY STATUS:**\n`;
   for (const [uid, p] of Object.entries(players)) {
     if (p.alive) {
-      msg += `${p.icon} ${p.className}: ${renderHpBar(p.hp, p.maxHp, 6)} (CD: ${p.skillCooldown})\n`;
+      const cls = CLASS_DEFS[p.classId];
+      const dmgType = cls.damageType === 'magic' ? '🔮' : '⚔️';
+      const critPct = Math.round((p.critRate || 0.05) * 100);
+      msg += `${p.icon} ${p.className} ${dmgType} ${renderHpBar(p.hp, p.maxHp, 6)} (CD: ${p.skillCooldown} | Crit: ${critPct}%)\n`;
     } else {
       msg += `${p.icon} ${p.className}: 💀 Tumbang\n`;
     }
@@ -400,7 +479,7 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
       runId,
       turnNumber: 1,
       enrageAnnounced: false,
-      lastActivity: Date.now(), // Timeout tracking
+      lastActivity: Date.now(),
       boss: {
         id: bossTier.id,
         name: bossTier.name,
@@ -408,6 +487,8 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
         maxHp: scaledHp,
         atkRange: [...bossTier.baseAtk],
         def: bossTier.baseDef,
+        physResist: bossTier.physResist || 0,
+        magicResist: bossTier.magicResist || 0,
         legendaryDrop: bossTier.legendaryDrop,
         xpReward: bossTier.xpReward,
         goldReward: bossTier.goldReward,
@@ -421,6 +502,12 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
           maxHp: userA.max_hp,
           atk: userA.atk + getEquipmentBonus(invite.inviter).atkBonus,
           def: userA.def + getEquipmentBonus(invite.inviter).defBonus,
+          magicAtk: userA.magic_atk || 0,
+          atkBonus: getEquipmentBonus(invite.inviter).atkBonus,
+          critRate: userA.crit_rate || 0.05,
+          critMulti: userA.crit_multi || 1.5,
+          physResist: userA.phys_resist || 0,
+          magicResist: userA.magic_resist || 0,
           skillCooldown: 0,
           alive: true,
           defending: false,
@@ -433,6 +520,12 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
           maxHp: userB.max_hp,
           atk: userB.atk + getEquipmentBonus(userId).atkBonus,
           def: userB.def + getEquipmentBonus(userId).defBonus,
+          magicAtk: userB.magic_atk || 0,
+          atkBonus: getEquipmentBonus(userId).atkBonus,
+          critRate: userB.crit_rate || 0.05,
+          critMulti: userB.crit_multi || 1.5,
+          physResist: userB.phys_resist || 0,
+          magicResist: userB.magic_resist || 0,
           skillCooldown: 0,
           alive: true,
           defending: false,
