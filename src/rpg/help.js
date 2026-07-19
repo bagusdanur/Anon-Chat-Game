@@ -1,305 +1,280 @@
 // src/rpg/help.js
-// Panduan & tutorial lengkap sistem RPG — Updated dengan Physical/Magic/Crit/Status/Resistance
+// Panduan & tutorial lengkap sistem RPG — Clean Layout
 
 const { Markup } = require('telegraf');
+const { divider, sectionHeader, commandList, bulletList, kvPair } = require('../format');
 
 const HELP_PAGES = [
-  // PAGE 1: Intro & Mulai
+  // PAGE 1: Intro
   {
     id: 'intro',
-    title: '📖 Panduan RPG — Halaman 1/8',
+    title: '📖 Panduan RPG — 1/12',
     text:
-      `<b>⚔️ Selamat Datang di Anonymous RPG! ⚔️</b>\n\n` +
-      `Bot ini punya sistem RPG persisten ala Discord Bot — progressmu tidak akan hilang walau ganti partner!\n\n` +
-      `<b>🚀 Cara Mulai:</b>\n` +
-      `1️⃣ Ketik <code>/profile</code> untuk membuat karakter\n` +
-      `2️⃣ Pilih salah satu dari 3 kelas:\n` +
-      `   • <b>⚔️ Ksatria</b> — Physical fighter, HP & DEF tinggi. Skill: Tebasan Besar\n` +
-      `   • <b>🔥 Penyihir</b> — Magic DPS, ATK magic tinggi. Skill: Bola Api + Burn\n` +
-      `   • <b>🗡️ Pencuri</b> — Physical burst, Crit tinggi. Skill: Backstab (100% Crit!)\n\n` +
-      `3️⃣ Mulai grinding untuk kumpulkan XP, Gold, dan Item!\n\n` +
-      `<i>⚠️ Kelas tidak bisa diganti di versi ini. Pilih dengan bijak!</i>`,
+      `${divider('═', 30)}\n` +
+      `**⚔️ ANONYMOUS RPG**\n` +
+      `${divider('═', 30)}\n\n` +
+      `Selamat datang di Anonymous RPG!\n` +
+      `Progressmu tidak akan hilang walau ganti partner.\n\n` +
+      `${sectionHeader('🚀 Cara Mulai')}` +
+      `1. Ketik \`/profile\` untuk membuat karakter\n` +
+      `2. Pilih salah satu dari 3 kelas:\n` +
+      `   ⚔️ **Ksatria** — Physical fighter\n` +
+      `   🔥 **Penyihir** — Magic DPS\n` +
+      `   🗡️ **Pencuri** — Physical burst\n\n` +
+      `3. Mulai grinding dengan \`/hunt\`, \`/fish\`, \`/mine\`\n\n` +
+      `_Ketik /help untuk lihat semua commands_`,
     nav: [null, 'damage']
   },
 
-  // PAGE 2: Damage System (BARU!)
+  // PAGE 2: Damage System
   {
     id: 'damage',
-    title: '📖 Panduan RPG — Halaman 2/8',
+    title: '📖 Panduan RPG — 2/12',
     text:
-      `<b>⚔️ Sistem Damage: Physical vs Magic</b>\n\n` +
-      `Setiap kelas punya tipe damage yang berbeda!\n\n` +
-      `<b>⚔️ Physical Damage (Ksatria & Pencuri):</b>\n` +
+      `${divider('═', 30)}\n` +
+      `**⚔️ SISTEM DAMAGE**\n` +
+      `${divider('═', 30)}\n\n` +
+      `${sectionHeader('Physical vs Magic')}` +
+      `**⚔️ Physical** (Ksatria & Pencuri)\n` +
       `   • Dipengaruhi stat ATK\n` +
-      `   • Dikurangi Physical Resist musuh\n` +
-      `   • Cocok lawan boss dengan Magic Resist tinggi\n\n` +
-      `<b>🔮 Magic Damage (Penyihir):</b>\n` +
+      `   • Dikurangi Physical Resist\n\n` +
+      `**🔮 Magic** (Penyihir)\n` +
       `   • Dipengaruhi stat Magic ATK\n` +
-      `   • Dikurangi Magic Resist musuh\n` +
-      `   • Cocok lawan boss dengan Physical Resist tinggi\n\n` +
-      `<b>💥 Crit System:</b>\n` +
-      `   • Ksatria: 5% + 0.5%/level, multiplier 1.5x\n` +
-      `   • Penyihir: 10% + 1%/level, multiplier 1.8x\n` +
-      `   • Pencuri: 15% + 1.5%/level, multiplier 2.0x\n\n` +
-      `<b>🛡️ Boss Resistances:</b>\n` +
-      `   🌿 Kepala Goblin: Phys 20%, Magic 50% → Physical lebih efektif\n` +
-      `   🕸️ Ratu Laba-laba: Phys 40%, Magic 20% → Magic lebih efektif\n` +
-      `   🔥 Naga Bayangan: Phys 30%, Magic 30% → Seimbang\n` +
-      `   💀 Raja Terkutuk: Phys 25%, Magic 25% → Seimbang`,
+      `   • Dikurangi Magic Resist\n\n` +
+      `${sectionHeader('Crit System')}` +
+      `   Ksatria: 5% + 0.5%/lvl → 1.5x\n` +
+      `   Penyihir: 10% + 1%/lvl → 1.8x\n` +
+      `   Pencuri: 15% + 1.5%/lvl → 2.0x\n\n` +
+      `${sectionHeader('Boss Resistances')}` +
+      `   🌿 Goblin: Phys 20%, Magic 50%\n` +
+      `   🕸️ Laba-laba: Phys 40%, Magic 20%\n` +
+      `   🔥 Naga: Phys 30%, Magic 30%\n` +
+      `   💀 Raja: Phys 25%, Magic 25%`,
     nav: ['intro', 'classes']
   },
 
-  // PAGE 3: Classes Detail (BARU!)
+  // PAGE 3: Classes
   {
     id: 'classes',
-    title: '📖 Panduan RPG — Halaman 3/8',
+    title: '📖 Panduan RPG — 3/12',
     text:
-      `<b>🎭 Detail 3 Kelas</b>\n\n` +
-      `<b>⚔️ Ksatria — Physical Tank</b>\n` +
-      `   Stats: HP tinggi, DEF tinggi, ATK sedang\n` +
-      `   Bonus: +15% Physical Damage, -20% Magic\n` +
-      `   Skill: <b>Tebasan Besar</b> (2.0x Phys + 10% DEF penetrate)\n` +
-      `   Tips: Cocok untuk pemula, tahan damage boss\n\n` +
-      `<b>🔥 Penyihir — Magic DPS</b>\n` +
-      `   Stats: Magic ATK tinggi, HP rendah, DEF rendah\n` +
-      `   Bonus: +25% Magic Damage, -30% Physical\n` +
-      `   Skill: <b>Bola Api</b> (2.5x Magic + Burn 3 turn)\n` +
-      `   Tips: Damage tinggi tapi rapuh, jaga jarak!\n\n` +
-      `<b>🗡️ Pencuri — Physical Burst</b>\n` +
-      `   Stats: ATK sedang, Crit Rate tinggi\n` +
-      `   Bonus: +20% Physical Damage, 2x Crit Rate\n` +
-      `   Skill: <b>Backstab</b> (3.0x Phys + 100% Crit!)\n` +
-      `   Tips: Burst damage paling tinggi, cocok untuk speedrun`,
+      `${divider('═', 30)}\n` +
+      `**🎭 DETAIL 3 KELAS**\n` +
+      `${divider('═', 30)}\n\n` +
+      `${sectionHeader('⚔️ Ksatria', '')}` +
+      `HP tinggi, DEF tinggi, ATK sedang\n` +
+      `Bonus: +15% Physical, -20% Magic\n` +
+      `Skill: **Tebasan Besar** (2.0x + 10% pen)\n\n` +
+      `${sectionHeader('🔥 Penyihir', '')}` +
+      `Magic ATK tinggi, HP rendah\n` +
+      `Bonus: +25% Magic, -30% Physical\n` +
+      `Skill: **Bola Api** (2.5x + Burn 3 turn)\n\n` +
+      `${sectionHeader('🗡️ Pencuri', '')}` +
+      `ATK sedang, Crit tinggi\n` +
+      `Bonus: +20% Physical, 2x Crit Rate\n` +
+      `Skill: **Backstab** (3.0x + 100% Crit!)`,
     nav: ['damage', 'grinding']
   },
 
   // PAGE 4: Grinding
   {
     id: 'grinding',
-    title: '📖 Panduan RPG — Halaman 4/8',
+    title: '📖 Panduan RPG — 4/12',
     text:
-      `<b>⚡ Sistem Energi & Grinding</b>\n\n` +
-      `Kamu punya <b>10 Energi</b> yang regen +1 setiap 3 menit.\n\n` +
-      `<b>Aktivitas Grinding:</b>\n\n` +
-      `🗡️ <code>/hunt</code> — Berburu monster (2 Energi)\n` +
-      `   • Lawan monster sesuai levelmu\n` +
-      `   • Dapat XP, Gold, dan loot acak\n` +
-      `   • Kalah = HP berkurang, tidak dapat reward\n\n` +
-      `🎣 <code>/fish</code> — Mancing (1 Energi)\n` +
-      `   • Fokus dapat material & Gold\n` +
-      `   • Tidak ada risiko kalah\n\n` +
-      `⛏️ <code>/mine</code> — Menambang (3 Energi)\n` +
-      `   • Dapat ore untuk crafting\n` +
-      `   • Hasil jual & craft paling tinggi\n\n` +
-      `🎁 <code>/daily</code> — Hadiah harian (0 Energi)\n` +
-      `   • Cooldown 20 jam\n` +
-      `   • Dapat: 30 Gold + 10 XP + 1 Ramuan Kecil`,
+      `${divider('═', 30)}\n` +
+      `**⚡ ENERGI & GRINDING**\n` +
+      `${divider('═', 30)}\n\n` +
+      `Kamu punya **10 Energi** (regen +1/3 menit)\n\n` +
+      `${sectionHeader('Commands')}` +
+      `\`/hunt\` — Berburu monster (2 energi)\n` +
+      `\`/fish\` — Mancing (1 energi)\n` +
+      `\`/mine\` — Menambang (3 energi)\n` +
+      `\`/daily\` — Hadiah harian (0 energi)`,
     nav: ['classes', 'leveling']
   },
 
-  // PAGE 5: Leveling & Stats
+  // PAGE 5: Leveling
   {
     id: 'leveling',
-    title: '📖 Panduan RPG — Halaman 5/8',
+    title: '📖 Panduan RPG — 5/12',
     text:
-      `<b>📈 Sistem Leveling & Stats</b>\n\n` +
-      `<b>XP yang dibutuhkan:</b>\n` +
-      `   Lv 1→2: 50 XP\n` +
-      `   Lv 5→6: ~559 XP\n` +
-      `   Lv 10→11: ~1.581 XP\n` +
-      `   Lv 20→21: ~4.472 XP\n\n` +
-      `<b>Stats naik per level:</b>\n` +
-      `   • ⚔️ Ksatria: +8 HP, +1.5 ATK, +2 DEF, +0.5% Crit\n` +
-      `   • 🔥 Penyihir: +5 HP, +2.5 Magic ATK, +1 DEF, +1% Crit\n` +
-      `   • 🗡️ Pencuri: +6 HP, +2 ATK, +1.5 DEF, +1.5% Crit\n\n` +
-      `<b>❤️ Regenerasi HP:</b>\n` +
-      `   +10% MaxHP setiap 10 menit (otomatis)\n` +
-      `   Atau langsung penuh pakai Ramuan dari <code>/inv</code>\n\n` +
-      `<b>📊 Cek progressmu:</b>\n` +
-      `   <code>/profile</code> — Level, XP, HP, ATK, DEF, Magic ATK, Crit, Resist`,
+      `${divider('═', 30)}\n` +
+      `**📈 LEVELING & STATS**\n` +
+      `${divider('═', 30)}\n\n` +
+      `${sectionHeader('XP Required')}` +
+      `Lv 1→2: 50 XP\n` +
+      `Lv 5→6: ~559 XP\n` +
+      `Lv 10→11: ~1,581 XP\n\n` +
+      `${sectionHeader('Stats per Level')}` +
+      `⚔️ Ksatria: +8 HP, +1.5 ATK, +2 DEF\n` +
+      `🔥 Penyihir: +5 HP, +2.5 Magic, +1 DEF\n` +
+      `🗡️ Pencuri: +6 HP, +2 ATK, +1.5 DEF\n\n` +
+      `${sectionHeader('Regen HP')}` +
+      `+10% MaxHP setiap 10 menit (otomatis)\n` +
+      `Atau pakai Ramuan dari \`/inv\``,
     nav: ['grinding', 'equipment']
   },
 
-  // PAGE 6: Equipment (BARU!)
+  // PAGE 6: Equipment
   {
     id: 'equipment',
-    title: '📖 Panduan RPG — Halaman 6/8',
+    title: '📖 Panduan RPG — 6/12',
     text:
-      `<b>🗡️ Sistem Equipment (4 Slot)</b>\n\n` +
-      `Equipment otomatis dipakai dari inventory terbaik per slot!\n\n` +
-      `<b>⚔️ Weapon Slot:</b>\n` +
-      `   Bonus: +ATK, +Crit Rate\n` +
-      `   Contoh: Pedang Karatan (+2 ATK, +5% Crit)\n\n` +
-      `<b>🪄 Staff Slot:</b>\n` +
-      `   Bonus: +Magic ATK, +Crit Rate\n` +
-      `   Contoh: Tongkat Api (+6 Magic ATK, +8% Crit)\n\n` +
-      `<b>🛡️ Armor Slot:</b>\n` +
-      `   Bonus: +DEF, +Magic Resist\n` +
-      `   Contoh: Jubah Terkutuk (+5 DEF, +10% Magic Resist)\n\n` +
-      `<b>💍 Accessory Slot:</b>\n` +
-      `   Bonus: +Crit, +Resist, +ATK/Magic ATK\n` +
-      `   Contoh: Mahkota Terkutuk (+5 ATK, +5 Magic ATK, +10% Crit)\n\n` +
-      `<b>⬆️ Upgrade Equipment:</b>\n` +
-      `   <code>/upgrade nama_item</code> — +2 stat per tier (maks +5)\n` +
-      `   Butuh ore material + Gold`,
+      `${divider('═', 30)}\n` +
+      `**🗡️ EQUIPMENT (4 SLOT)**\n` +
+      `${divider('═', 30)}\n\n` +
+      `Equipment otomatis dipakai dari inventory:\n\n` +
+      `${kvPair('⚔️', 'Weapon', '+ATK, +Crit Rate')}
+` +
+      `${kvPair('🪄', 'Staff', '+Magic ATK')}
+` +
+      `${kvPair('🛡️', 'Armor', '+DEF, +Magic Resist')}
+` +
+      `${kvPair('💍', 'Accessory', '+Crit, +Resist')}
+\n` +
+      `${sectionHeader('Upgrade')}` +
+      `\`/upgrade [item]\` — +2 stat per tier\n` +
+      `Maksimal: +5 tier\n` +
+      `Butuh: ore material + Gold`,
     nav: ['leveling', 'economy']
   },
 
   // PAGE 7: Economy
   {
     id: 'economy',
-    title: '📖 Panduan RPG — Halaman 7/8',
+    title: '📖 Panduan RPG — 7/12',
     text:
-      `<b>💰 Ekonomi & Inventory</b>\n\n` +
-      `<b>🎒 Commands:</b>\n` +
-      `   <code>/inv</code> — Lihat semua item\n` +
-      `   <code>/use ramuan_kecil</code> — Pakai consumable\n` +
-      `   <code>/sell nama_item</code> — Jual item\n` +
-      `   <code>/shop</code> — Lihat toko\n` +
-      `   <code>/buy nama_item</code> — Beli item\n` +
-      `   <code>/give 100</code> — Kirim gold ke partner (pajak 5%)\n\n` +
-      `<b>⚒️ Crafting (BARU!):</b>\n` +
-      `   <code>/craft</code> — Lihat semua resep\n` +
-      `   <code>/craft [nomor]</code> — Craft item (contoh: /craft 1)\n` +
-      `   <code>/craft [nama]</code> — Craft by name (contoh: /craft pedang besi)\n\n` +
-      `<b>🗡️ Contoh Resep:</b>\n` +
-      `   🗡️ Pedang Besi — 5 Besi + 3 Tembaga + 100g\n` +
-      `   🔥 Tongkat Api — 8 Batu Bara + 3 Perak + 150g\n` +
-      `   🛡️ Perisai Besi — 8 Besi + 5 Kulit + 120g\n` +
-      `   🐉 Pedang Naga — 10 Besi + 5 Fragmen Naga + 500g\n\n` +
-      `<b>🟠 Rarity:</b>\n` +
-      `   ⚪ Common → 🟢 Uncommon → 🔵 Rare → 🟣 Epic → 🟠 Legendary\n\n` +
-      `<b>💫 Status Effects (Dungeon):</b>\n` +
-      `   🔥 Burn — 5% HP/t selama 3 turn (dari Penyihir)\n` +
-      `   ⚡ Stun — Skip 1 turn\n` +
-      `   🛡️ Shield — -50% damage 1 turn (dari Bertahan)`,
+      `${divider('═', 30)}\n` +
+      `**💰 EKONOMI & CRAFTING**\n` +
+      `${divider('═', 30)}\n\n` +
+      `${sectionHeader('Commands')}` +
+      `\`/inv\` — Inventaris\n` +
+      `\`/shop\` — Toko\n` +
+      `\`/buy [item]\` — Beli item\n` +
+      `\`/sell [item]\` — Jual item\n` +
+      `\`/use [item]\` — Pakai item\n` +
+      `\`/craft\` — Craft equipment\n` +
+      `\`/give [jumlah]\` — Kirim gold (pajak 5%)\n\n` +
+      `${sectionHeader('Rarity')}` +
+      `⚪ Common → 🟢 Uncommon → 🔵 Rare\n` +
+      `🟣 Epic → 🟠 Legendary`,
     nav: ['equipment', 'dungeon']
   },
 
-  // PAGE 8: Dungeon & Tips
+  // PAGE 8: Dungeon
   {
     id: 'dungeon',
-    title: '📖 Panduan RPG — Halaman 8/10',
+    title: '📖 Panduan RPG — 8/12',
     text:
-      `<b>🏰 Dungeon Raid (Co-op)</b>\n\n` +
-      `<b>Alur:</b>\n` +
-      `1. <code>/dungeon</code> → pilih tier\n` +
+      `${divider('═', 30)}\n` +
+      `**🏰 DUNGEON RAID (Co-op)**\n` +
+      `${divider('═', 30)}\n\n` +
+      `${sectionHeader('Alur')}` +
+      `1. \`/dungeon\` → pilih tier\n` +
       `2. Kirim undangan ke partner\n` +
-      `3. Partner terima → Raid dimulai!\n` +
-      `4. Tiap turn: pilih aksi\n` +
-      `5. Tunggu partner → aksi dieksekusi\n\n` +
-      `<b>Aksi:</b>\n` +
-      `   🗡️ Serang — Damage sesuai tipe kelas\n` +
-      `   🛡️ Bertahan — -50% damage + Shield\n` +
-      `   🔮 Skill — Damage tinggi + efek khusus\n` +
-      `   🧪 Item — Heal 15% HP + bersihkan debuff\n\n` +
-      `<b>⚠️ Boss Mechanics:</b>\n` +
-      `   • Setiap 3 turn: serangan berat → BERTAHAN!\n` +
-      `   • HP &lt; 50%: ENRAGE → ATK +30%!\n` +
-      `   • Cooldown 10 menit setelah raid selesai\n\n` +
-      `<b>🏆 Tips:</b>\n` +
-      `   • Pilih skill berdasarkan boss resistance!\n` +
-      `   • Pencuri bagus lawan Goblin (Phys Resist rendah)\n` +
-      `   • Penyihir bagus lawan Laba-laba (Magic Resist rendah)`,
+      `3. Partner terima → Raid mulai!\n` +
+      `4. Tiap turn: pilih aksi\n\n` +
+      `${sectionHeader('Aksi')}` +
+      `🗡️ Serang — Damage sesuai kelas\n` +
+      `🛡️ Bertahan — -50% damage\n` +
+      `🔮 Skill — Damage tinggi + efek\n` +
+      `🧪 Item — Heal 15% HP\n\n` +
+      `${sectionHeader('Boss')}` +
+      `• Setiap 3 turn: serangan berat!\n` +
+      `• HP < 50%: ENRAGE → ATK +30%!\n` +
+      `• Cooldown: 10 menit`,
     nav: ['economy', 'quest']
   },
 
-  // PAGE 9: Quest System (BARU!)
+  // PAGE 9: Quest
   {
     id: 'quest',
-    title: '📖 Panduan RPG — Halaman 9/10',
+    title: '📖 Panduan RPG — 9/12',
     text:
-      `<b>📋 Quest Harian</b>\n\n` +
-      `Dapatkan reward tambahan dengan menyelesaikan quest harian!\n\n` +
-      `<b>Commands:</b>\n` +
-      `   <code>/quest</code> — Lihat semua quest & progress\n` +
-      `   <code>/quest claim [id]</code> — Klaim reward\n\n` +
-      `<b>10 Quest Harian:</b>\n` +
-      `   🗡️ Pemburu Pemula — Hunt 3x (50xp + 30g)\n` +
-      `   🎣 Pemancing Ulung — Mancing 3x (40xp + 25g)\n` +
-      `   ⛏️ Penambang Rajin — Mine 2x (60xp + 35g)\n` +
-      `   ⚒️ Tukang Crafts — Craft 1x (40xp + 20g)\n` +
-      `   💰 Pedagang Kecil — Jual 3x (30xp + 40g)\n` +
-      `   🏰 Penjelajah Dungeon — Dungeon 1x (100xp + 50g + Ramuan)\n` +
-      `   🤝 Dermawan — Give gold 1x (30xp + 15g)\n` +
-      `   ⬆️ Upgrade Master — Upgrade 1x (50xp + 25g)\n` +
-      `   🧪 Apoteker — Use item 1x (20xp + 10g)\n` +
-      `   💬 Social Butterfly — Chat 10x (30xp + 20g)\n\n` +
-      `<b>⏰ Reset:</b> Jam 00:00 (UTC+7) setiap hari`,
+      `${divider('═', 30)}\n` +
+      `**📋 QUEST HARIAN**\n` +
+      `${divider('═', 30)}\n\n` +
+      `${sectionHeader('Commands')}` +
+      `\`/quest\` — Lihat quest & progress\n` +
+      `\`/quest claim [id]\` — Klaim reward\n\n` +
+      `${sectionHeader('10 Quest')}` +
+      `🗡️ Pemburu Pemula — Hunt 3x\n` +
+      `🎣 Pemancing Ulung — Mancing 3x\n` +
+      `⛏️ Penambang Rajin — Mine 2x\n` +
+      `⚒️ Tukang Crafts — Craft 1x\n` +
+      `💰 Pedagang Kecil — Jual 3x\n` +
+      `🏰 Penjelajah — Dungeon 1x\n` +
+      `🤝 Dermawan — Give gold 1x\n` +
+      `⬆️ Upgrade Master — Upgrade 1x\n` +
+      `🧪 Apoteker — Use item 1x\n` +
+      `💬 Social Butterfly — Chat 10x\n\n` +
+      `_Reset: Jam 00:00 (UTC+7)_`,
     nav: ['dungeon', 'party']
   },
 
-  // PAGE 10: Party Stats (BARU!)
+  // PAGE 10: Party
   {
     id: 'party',
-    title: '📖 Panduan RPG — Halaman 10/10',
+    title: '📖 Panduan RPG — 10/12',
     text:
-      `<b>👥 Party Stats</b>\n\n` +
-      `Lihat stats lengkap kamu dan partner!\n\n` +
-      `<b>Command:</b>\n` +
-      `   <code>/party</code> — Tampilkan stats party\n\n` +
-      `<b>Yang Ditampilkan:</b>\n` +
-      `   • Level, HP, ATK, DEF kedua pemain\n` +
-      `   • Magic ATK, Crit Rate, Gold\n` +
-      `   • Avg Level party\n` +
-      `   • Total ATK & DEF party\n\n` +
-      `<b>💡 Tips:</b>\n` +
-      `   • Gunakan <code>/party</code> sebelum dungeon\n` +
-      `   • Pastikan stats seimbang\n` +
-      `   • Kombinasi Ksatria + Penyihir = Physical + Magic\n` +
-      `   • Kombinasi Pencuri + Penyihir = High Crit + Magic\n\n` +
-      `<i>Selamat bertualang, Petualang! 🎮⚔️</i>`,
+      `${divider('═', 30)}\n` +
+      `**👥 PARTY STATS**\n` +
+      `${divider('═', 30)}\n\n` +
+      `${sectionHeader('Command')}` +
+      `\`/party\` — Lihat stats kamu + partner\n\n` +
+      `${sectionHeader('Yang Ditampilkan')}` +
+      `• Level, HP, ATK, DEF kedua pemain\n` +
+      `• Magic ATK, Crit Rate, Gold\n` +
+      `• Avg Level party\n` +
+      `• Total ATK & DEF party\n\n` +
+      `${sectionHeader('Tips')}` +
+      `• Cek \`/party\` sebelum dungeon\n` +
+      `• Kombinasi Ksatria + Penyihir = balanced\n` +
+      `• Kombinasi Pencuri + Penyihir = high burst`,
     nav: ['quest', 'pvp']
   },
 
-  // PAGE 11: PvP Duel (BARU!)
+  // PAGE 11: PvP
   {
     id: 'pvp',
-    title: '📖 Panduan RPG — Halaman 11/12',
+    title: '📖 Panduan RPG — 11/12',
     text:
-      `<b>⚔️ PvP Duel</b>\n\n` +
-      `Battle 1v1 dengan partner!\n\n` +
-      `<b>Command:</b>\n` +
-      `   <code>/duel</code> — Mulai duel dengan partner\n\n` +
-      `<b>Mekanik:</b>\n` +
-      `   • HP = 50% max HP (duel cepat)\n` +
-      `   • Turn-based: pilih Serang / Bertahan / Skill\n` +
-      `   • Pertama HP = 0 → kalah!\n` +
-      `   • Cooldown 5 menit setelah duel selesai\n\n` +
-      `<b>💰 Reward:</b>\n` +
-      `   • Winner: 50 XP + 25g\n` +
-      `   • Loser: 20 XP + 10g\n` +
-      `   • Draw: 25 XP + 10g (kedua pemain)\n\n` +
-      `<b>🔥 Win Streak:</b>\n` +
-      `   • 3 win berturut = +20% reward bonus!\n` +
-      `   • Streak reset kalau kalah`,
+      `${divider('═', 30)}\n` +
+      `**⚔️ PVP DUEL**\n` +
+      `${divider('═', 30)}\n\n` +
+      `${sectionHeader('Command')}` +
+      `\`/duel\` — Mulai duel dengan partner\n\n` +
+      `${sectionHeader('Mekanik')}` +
+      `• HP = 50% max HP (duel cepat)\n` +
+      `• Turn-based: Serang/Bertahan/Skill\n` +
+      `• Pertama HP = 0 → kalah!\n` +
+      `• Cooldown: 5 menit\n\n` +
+      `${sectionHeader('Reward')}` +
+      `• Winner: 50 XP + 25g\n` +
+      `• Loser: 20 XP + 10g\n` +
+      `• Win Streak 3x = +20% bonus!`,
     nav: ['party', 'shop']
   },
 
-  // PAGE 12: Shop Expanded (BARU!)
+  // PAGE 12: Shop
   {
     id: 'shop',
-    title: '📖 Panduan RPG — Halaman 12/12',
+    title: '📖 Panduan RPG — 12/12',
     text:
-      `<b>🏪 Toko (Expanded)</b>\n\n` +
-      `<b>Commands:</b>\n` +
-      `   <code>/shop</code> — Lihat semua item\n` +
-      `   <code>/buy [nomor]</code> — Beli item\n\n` +
-      `<b>📋 Item Tersedia:</b>\n\n` +
-      `<b>🧪 Consumables:</b>\n` +
-      `   [1] Ramuan Kecil — 15g (Heal 15% HP)\n` +
-      `   [2] Ramuan Besar — 50g (Heal 50% HP)\n` +
-      `   [3] Ramuan Energi — 75g (+3 Energi) 🆕\n\n` +
-      `<b>⛏️ Tools:</b>\n` +
-      `   [4] Kail Pancing+ — 200g\n` +
-      `   [5] Beliung Tambang+ — 300g\n\n` +
-      `<b>⚔️ Equipment:</b>\n` +
-      `   [6] Pedang Karatan — 150g (ATK+2, Crit+5%)\n` +
-      `   [7] Tongkat Ranting — 80g (Magic ATK+3)\n` +
-      `   [8] Jubah Terkutuk — 200g (DEF+5, MagicRes+10%)\n` +
-      `   [9] Cincin Perak — 100g (Crit+5%)\n` +
-      `   [10] Amulet Pertahanan — 150g (DEF+3, Resist+5%) 🆕\n\n` +
-      `<b>💡 Tip:</b> Equipment bisa di-upgrade dengan <code>/upgrade</code>!`,
+      `${divider('═', 30)}\n` +
+      `**🏪 TOKO (EXPANDED)**\n` +
+      `${divider('═', 30)}\n\n` +
+      `${sectionHeader('Consumables')}` +
+      `[1] Ramuan Kecil — 15g (Heal 15%)\n` +
+      `[2] Ramuan Besar — 50g (Heal 50%)\n` +
+      `[3] Ramuan Energi — 75g (+3 energi)\n\n` +
+      `${sectionHeader('Equipment')}` +
+      `[4] Pedang Karatan — 150g\n` +
+      `[5] Tongkat Ranting — 80g\n` +
+      `[6] Jubah Terkutuk — 200g\n` +
+      `[7] Cincin Perak — 100g\n` +
+      `[8] Amulet Defence — 150g\n\n` +
+      `_Gunakan: \`/buy [nomor]\`_`,
     nav: ['pvp', null]
   },
 ];
@@ -317,56 +292,56 @@ function buildPageMessage(page) {
 
   return {
     text: `${page.title}\n\n${page.text}`,
-    options: { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
+    options: { parse_mode: 'Markdown', ...Markup.inlineKeyboard(buttons) }
   };
 }
 
 function buildIndexMessage() {
   const text =
-    `<b>📖 Panduan RPG — Daftar Isi</b>\n\n` +
+    `${divider('═', 30)}\n` +
+    `**📖 PANDUAN RPG — DAFTAR ISI**\n` +
+    `${divider('═', 30)}\n\n` +
     `Pilih topik yang ingin kamu baca:\n\n` +
     `1️⃣ Intro & Cara Mulai\n` +
-    `2️⃣ Sistem Damage (Physical vs Magic)\n` +
+    `2️⃣ Sistem Damage\n` +
     `3️⃣ Detail 3 Kelas\n` +
     `4️⃣ Energi & Grinding\n` +
     `5️⃣ Leveling & Stats\n` +
     `6️⃣ Equipment (4 Slot)\n` +
-    `7️⃣ Ekonomi, Crafting & Status Effects\n` +
-    `8️⃣ Dungeon Raid & Tips\n` +
+    `7️⃣ Ekonomi & Crafting\n` +
+    `8️⃣ Dungeon Raid\n` +
     `9️⃣ Quest Harian\n` +
     `🔟 Party Stats\n` +
     `1️⃣1️⃣ PvP Duel\n` +
-    `1️⃣2️⃣ Toko (Expanded)`;
+    `1️⃣2️⃣ Toko`;
 
   const buttons = [
-    [Markup.button.callback('1️⃣ Intro & Cara Mulai',           'help:page:intro')],
-    [Markup.button.callback('2️⃣ Sistem Damage',               'help:page:damage')],
-    [Markup.button.callback('3️⃣ Detail 3 Kelas',              'help:page:classes')],
-    [Markup.button.callback('4️⃣ Energi & Grinding',            'help:page:grinding')],
-    [Markup.button.callback('5️⃣ Leveling & Stats',             'help:page:leveling')],
-    [Markup.button.callback('6️⃣ Equipment (4 Slot)',           'help:page:equipment')],
-    [Markup.button.callback('7️⃣ Ekonomi & Crafting',          'help:page:economy')],
-    [Markup.button.callback('8️⃣ Dungeon Raid & Tips',         'help:page:dungeon')],
-    [Markup.button.callback('9️⃣ Quest Harian',                'help:page:quest')],
-    [Markup.button.callback('🔟 Party Stats',                  'help:page:party')],
-    [Markup.button.callback('1️⃣1️⃣ PvP Duel',                  'help:page:pvp')],
-    [Markup.button.callback('1️⃣2️⃣ Toko (Expanded)',           'help:page:shop')],
+    [Markup.button.callback('1️⃣ Intro', 'help:page:intro')],
+    [Markup.button.callback('2️⃣ Damage', 'help:page:damage')],
+    [Markup.button.callback('3️⃣ Kelas', 'help:page:classes')],
+    [Markup.button.callback('4️⃣ Grinding', 'help:page:grinding')],
+    [Markup.button.callback('5️⃣ Leveling', 'help:page:leveling')],
+    [Markup.button.callback('6️⃣ Equipment', 'help:page:equipment')],
+    [Markup.button.callback('7️⃣ Economy', 'help:page:economy')],
+    [Markup.button.callback('8️⃣ Dungeon', 'help:page:dungeon')],
+    [Markup.button.callback('9️⃣ Quest', 'help:page:quest')],
+    [Markup.button.callback('🔟 Party', 'help:page:party')],
+    [Markup.button.callback('1️⃣1️⃣ PvP', 'help:page:pvp')],
+    [Markup.button.callback('1️⃣2️⃣ Toko', 'help:page:shop')],
   ];
 
   return {
     text,
-    options: { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
+    options: { parse_mode: 'Markdown', ...Markup.inlineKeyboard(buttons) }
   };
 }
 
 function setupHelp(bot, { rateLimitCommand }) {
-  // Command entry point
   bot.command(['helprpg', 'rpghelp', 'bantuanrpg'], rateLimitCommand, (ctx) => {
     const { text, options } = buildIndexMessage();
     ctx.reply(text, options);
   });
 
-  // Navigation: halaman spesifik
   bot.action(/^help:page:(\w+)$/, rateLimitCommand, (ctx) => {
     const pageId = ctx.match[1];
     const page = PAGE_MAP[pageId];
@@ -376,7 +351,6 @@ function setupHelp(bot, { rateLimitCommand }) {
     ctx.editMessageText(text, options).catch(() => {});
   });
 
-  // Kembali ke daftar isi
   bot.action('help:index', rateLimitCommand, (ctx) => {
     ctx.answerCbQuery();
     const { text, options } = buildIndexMessage();

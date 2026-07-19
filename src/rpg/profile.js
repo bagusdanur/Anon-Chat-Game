@@ -5,17 +5,16 @@ const {
   CLASS_DEFS, xpToNextLevel, calcStats,
   getOrCreateUser, createUser, getCurrentEnergy, getDungeonCooldown, getCurrentHp, getEquipmentBonus
 } = require('./db_rpg');
+const { progressBar, hpBar, statLine, divider, sectionHeader, kvPair } = require('../format');
 
 const RARITY_EMOJI = { common: '⚪', uncommon: '🟢', rare: '🔵', epic: '🟣', legendary: '🟠' };
 
 function renderXpBar(xp, nextXp, len = 10) {
-  const filled = Math.min(len, Math.round((xp / nextXp) * len));
-  return '🟦'.repeat(filled) + '⬛'.repeat(len - filled) + ` ${xp}/${nextXp}`;
+  return progressBar(xp, nextXp, len) + ` ${xp}/${nextXp}`;
 }
 
 function renderHpBar(hp, maxHp, len = 8) {
-  const filled = Math.min(len, Math.round((Math.max(0, hp) / maxHp) * len));
-  return '🟩'.repeat(filled) + '⬛'.repeat(len - filled) + ` ${Math.max(0, hp)}/${maxHp}`;
+  return progressBar(hp, maxHp, len) + ` ${Math.max(0, hp)}/${maxHp}`;
 }
 
 function renderProfile(user) {
@@ -37,71 +36,101 @@ function renderProfile(user) {
     : `✅ Siap raid!`;
 
   const dmgType = cls.damageType === 'magic' ? '🔮 Magic' : '⚔️ Physical';
-  const atkStr = equip.atkBonus > 0 ? `${effectiveAtk} _(+${equip.atkBonus} eq)_` : `${effectiveAtk}`;
-  const defStr = equip.defBonus > 0 ? `${effectiveDef} _(+${equip.defBonus} eq)_` : `${effectiveDef}`;
-  const magStr = effectiveMagicAtk > 0 ? `${effectiveMagicAtk}` : '-';
+  const streak = user.win_streak || 0;
 
-  return (
-    `${cls.name} — *Profil Petualang* 📖\n\n` +
-    `🏆 Level: *${user.level}*\n` +
-    `✨ XP: ${renderXpBar(user.xp, nextXp)}\n` +
-    `❤️ HP: ${renderHpBar(hp, user.max_hp)}\n` +
-    `⚔️ ATK: ${atkStr}   🛡️ DEF: ${defStr}\n` +
-    `🔮 Magic ATK: ${magStr}   🎯 Damage: ${dmgType}\n` +
-    `💥 Crit Rate: ${Math.round(totalCritRate * 100)}%   💥 Crit DMG: ${Math.round(totalCritMulti * 100)}%\n` +
-    `🛡️ Phys Res: ${Math.round((user.phys_resist || 0) * 100)}%   🔮 Magic Res: ${Math.round((user.magic_resist || 0) * 100)}%\n` +
-    `💰 Gold: ${user.gold}g\n\n` +
-    `⚡ Energi: ${energy}/10${energy < 10 ? ` _(+1 dalam ~${nextEnergyMin} mnt)_` : ''}\n` +
-    `🏰 Dungeon: ${dungeonStatus}\n`
-  );
+  // Build clean profile card
+  let msg = `${cls.name} — *Profil Petualang*\n`;
+  msg += `${divider('═', 30)}\n\n`;
+
+  // Progress bars
+  msg += `${hpBar('❤️', 'HP', hp, user.max_hp, 8)}\n`;
+  msg += `${hpBar('✨', 'XP', user.xp, nextXp, 8)}\n`;
+  msg += `${hpBar('⚡', 'Energi', energy, 10, 8)}\n\n`;
+
+  // Stats
+  msg += `${divider('─', 30)}\n`;
+  msg += `**Stats:**\n`;
+  msg += `${statLine('⚔️', 'ATK', effectiveAtk, equip.atkBonus > 0 ? `+${equipBonus} eq` : '')}\n`;
+  msg += `${statLine('🛡️', 'DEF', effectiveDef, equip.defBonus > 0 ? `+${equip.defBonus} eq` : '')}\n`;
+  msg += `${statLine('🔮', 'Magic', effectiveMagicAtk > 0 ? effectiveMagicAtk : '-')}\n`;
+  msg += `${statLine('🎯', 'Damage', dmgType)}\n`;
+  msg += `${statLine('💥', 'Crit', `${Math.round(totalCritRate * 100)}% / ${Math.round(totalCritMulti * 100)}%`)}\n`;
+  msg += `${statLine('🛡️', 'Resist', `Phys ${Math.round((user.phys_resist || 0) * 100)}% | Magic ${Math.round((user.magic_resist || 0) * 100)}%`)}\n\n`;
+
+  // Info
+  msg += `${divider('─', 30)}\n`;
+  msg += `💰 Gold: *${user.gold}g*\n`;
+  msg += `🏆 Level: *${user.level}*\n`;
+  if (streak > 0) msg += `🔥 Win Streak: *${streak}x*\n`;
+  msg += `🏰 Dungeon: ${dungeonStatus}\n`;
+
+  if (energy < 10) {
+    msg += `${footer(`+1 energi dalam ~${nextEnergyMin} menit`)}`;
+  }
+
+  return msg;
 }
 
 function setupProfile(bot, { rateLimitCommand }) {
-  // Pending character creation map (in-memory per user)
-  const pendingClass = new Map();
-
   bot.command('profile', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
-    const user = getOrCreateUser(userId);
+    let user = getOrCreateUser(userId);
 
     if (!user) {
-      // Belum punya karakter — mulai pembuatan karakter
-      const msg =
-        `⚔️ *Selamat Datang, Petualang!* ⚔️\n\n` +
-        `Kamu belum punya karakter. Pilih kelasmu untuk memulai petualangan:\n\n` +
-        `*⚔️ Ksatria* — HP tinggi, DEF kuat. _Trait: -10% damage di dungeon._\n` +
-        `*🔥 Penyihir* — ATK tinggi, HP rendah. _Trait: +15% XP dari /hunt._\n` +
-        `*🗡️ Pencuri* — Seimbang. _Trait: +gold bonus seiring naik level._`;
-      return ctx.reply(msg, {
-        parse_mode: 'Markdown',
-        ...Markup.inlineKeyboard([
-          [Markup.button.callback('⚔️ Ksatria', 'rpg:create:ksatria')],
-          [Markup.button.callback('🔥 Penyihir', 'rpg:create:penyihir')],
-          [Markup.button.callback('🗡️ Pencuri', 'rpg:create:pencuri')],
-        ])
-      });
+      // Belum punya karakter — tampilkan pilihan kelas
+      const msg = `${divider('═', 30)}\n` +
+        `**⚔️ PILIH KELASMU**\n` +
+        `${divider('═', 30)}\n\n` +
+        `Pilih kelas untuk memulai petualangan:\n\n` +
+        `${kvPair('⚔️', 'Ksatria', 'Physical fighter, HP & DEF tinggi')}\n` +
+        `${kvPair('🔥', 'Penyihir', 'Magic DPS, ATK magic tinggi')}\n` +
+        `${kvPair('🗡️', 'Pencuri', 'Physical burst, Crit tinggi')}\n\n` +
+        `${divider('─', 30)}\n` +
+        `_Pilih kelasmu:_`;
+
+      const buttons = [
+        [Markup.button.callback('⚔️ Ksatria', 'create_ksatria')],
+        [Markup.button.callback('🔥 Penyihir', 'create_penyihir')],
+        [Markup.button.callback('🗡️ Pencuri', 'create_pencuri')],
+      ];
+
+      return ctx.reply(msg, { parse_mode: 'Markdown', ...Markup.inlineKeyboard(buttons) });
     }
 
-    ctx.reply(renderProfile(user), { parse_mode: 'Markdown' });
+    // Sudah punya karakter — tampilkan profile
+    const profileMsg = renderProfile(user);
+    ctx.reply(profileMsg, { parse_mode: 'Markdown' });
   });
 
-  bot.action(/^rpg:create:(ksatria|penyihir|pencuri)$/, rateLimitCommand, (ctx) => {
-    const userId = ctx.chat.id;
-    const className = ctx.match[1];
+  // Create character handlers
+  ['ksatria', 'penyihir', 'pencuri'].forEach(className => {
+    bot.action(`create_${className}`, async (ctx) => {
+      const userId = ctx.chat.id;
+      const existing = getOrCreateUser(userId);
+      if (existing) {
+        return ctx.answerCbQuery('Kamu sudah punya karakter!', { show_alert: true });
+      }
 
-    if (getOrCreateUser(userId)) {
-      return ctx.answerCbQuery('Kamu sudah punya karakter!', { show_alert: true });
-    }
-
-    const user = createUser(userId, className);
-    const cls = CLASS_DEFS[className];
-    ctx.answerCbQuery(`${cls.name} dipilih!`);
-    ctx.editMessageText(
-      `✅ Karakter berhasil dibuat!\n\n${renderProfile(user)}\n\n` +
-      `_Gunakan /hunt, /fish, /mine untuk grinding. /daily untuk reward harian. /dungeon saat bersama partner!_`,
-      { parse_mode: 'Markdown' }
-    );
+      createUser(userId, className);
+      const cls = CLASS_DEFS[className];
+      ctx.answerCbQuery(`${cls.name} dipilih!`);
+      ctx.editMessageText(
+        `${divider('═', 30)}\n` +
+        `**${cls.name} — Karakter Dibuat!**\n` +
+        `${divider('═', 30)}\n\n` +
+        `Selamat datang, Petualang! 🎉\n\n` +
+        `Kamu sekarang adalah **${cls.name}**.\n\n` +
+        `${divider('─', 30)}\n` +
+        `**Langkah selanjutnya:**\n` +
+        `${kvPair('1', '/profile', 'Lihat stats karakter')}\n` +
+        `${kvPair('2', '/hunt', 'Berburu monster (2 energi)')}\n` +
+        `${kvPair('3', '/shop', 'Beli item')}\n` +
+        `${kvPair('4', '/helprpg', 'Panduan lengkap')}\n\n` +
+        `${footer('Selamat bertualang! 🎮⚔️')}`,
+        { parse_mode: 'Markdown' }
+      );
+    });
   });
 }
 
-module.exports = { setupProfile, renderProfile, renderHpBar, renderXpBar, RARITY_EMOJI };
+module.exports = { setupProfile, renderHpBar, RARITY_EMOJI };
