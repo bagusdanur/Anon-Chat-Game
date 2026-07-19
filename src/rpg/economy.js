@@ -536,7 +536,7 @@ module.exports = { setupEconomy, SHOP_ITEMS };
 
 module.exports = { setupEconomy, SHOP_ITEMS };
 
-  // ===== /equip — Lihat Equipment Aktif =====
+// ===== /equip — Lihat Equipment Aktif =====
   bot.command('equip', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
     const user = getOrCreateUser(userId);
@@ -602,3 +602,4 @@ module.exports = { setupEconomy, SHOP_ITEMS };
     ctx.reply(msg);
   });
 
+module.exports = { setupEconomy, SHOP_ITEMS };
