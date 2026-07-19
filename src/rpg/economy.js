@@ -529,75 +529,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     ctx.reply(`✅ Berhasil mengirim *${received}g* ke partner (pajak 5% = ${tax}g).`, { parse_mode: 'Markdown' });
     incrementQuestProgress(userId, 'give');
     bot.telegram.sendMessage(partnerId, `💰 Kamu menerima *${received}g* dari partner!`, { parse_mode: 'Markdown' }).catch(() => {});
-  // ===== /equip — Lihat Equipment Aktif =====
-  bot.command('equip', rateLimitCommand, (ctx) => {
-    const userId = ctx.chat.id;
-    const user = getOrCreateUser(userId);
-    if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
-
-    const items = getInventory(userId);
-    const equipped = { weapon: null, staff: null, armor: null, accessory: null };
-    
-    for (const item of items) {
-      if (!item.effect_json || !['weapon', 'staff', 'armor', 'accessory'].includes(item.category)) continue;
-      if (equipped[item.category] && equipped[item.category].rarity > item.rarity) continue;
-      equipped[item.category] = item;
-    }
-
-    const equip = getEquipmentBonus(userId);
-    const cls = CLASS_DEFS[user.class_name];
-
-    const renderSlot = (item) => {
-      if (item) {
-        const tier = item.upgrade_tier > 0 ? ` +${item.upgrade_tier}` : '';
-        const rarity = RARITY_EMOJI[item.rarity] || '';
-        return `${rarity} ${item.display_name}${tier}`;
-      }
-      return '(Kosong)';
-    };
-
-    let msg = `╔═══════════════════════════════╗\n`;
-    msg += `║  🗡️ EQUIPMENT — ${cls.name}  ║\n`;
-    msg += `╚═══════════════════════════════╝\n\n`;
-
-    msg += `┌─────────────────┬─────────────────┐\n`;
-    msg += `│ ⚔️ Weapon       │ 🪄 Staff        │\n`;
-    msg += `│ ${renderSlot(equipped.weapon).padEnd(15)} │ ${renderSlot(equipped.staff).padEnd(15)} │\n`;
-    msg += `├─────────────────┼─────────────────┤\n`;
-    msg += `│ 🛡️ Armor        │ 💍 Accessory    │\n`;
-    msg += `│ ${renderSlot(equipped.armor).padEnd(15)} │ ${renderSlot(equipped.accessory).padEnd(15)} │\n`;
-    msg += `└─────────────────┴─────────────────┘\n\n`;
-
-    msg += `📊 Active Effects:\n`;
-    msg += `───────────────────────────\n`;
-    
-    for (const [slot, item] of Object.entries(equipped)) {
-      if (!item) continue;
-      try {
-        const eff = JSON.parse(item.effect_json);
-        const effects = [];
-        if (eff.atk_bonus) effects.push(`ATK +${eff.atk_bonus}`);
-        if (eff.def_bonus) effects.push(`DEF +${eff.def_bonus}`);
-        if (eff.magic_atk_bonus) effects.push(`Magic +${eff.magic_atk_bonus}`);
-        if (eff.crit_rate) effects.push(`Crit +${Math.round(eff.crit_rate * 100)}%`);
-        if (eff.phys_resist) effects.push(`PhysRes +${Math.round(eff.phys_resist * 100)}%`);
-        if (eff.magic_resist) effects.push(`MagicRes +${Math.round(eff.magic_resist * 100)}%`);
-        if (effects.length) msg += `${item.display_name}: ${effects.join(', ')}\n`;
-      } catch {}
-    }
-
-    msg += `\n───────────────────────────\n`;
-    msg += `📈 Total Bonus:\n`;
-    msg += `⚔️ ATK +${equip.atkBonus} | 🛡️ DEF +${equip.defBonus}\n`;
-    if (equip.magicAtkBonus > 0) msg += `🔮 Magic +${equip.magicAtkBonus}\n`;
-    if (equip.critRate > 0) msg += `💥 Crit +${Math.round(equip.critRate * 100)}%\n`;
-
-    ctx.reply(msg);
   });
-
-});
 }
-
-
 
 module.exports = { setupEconomy, SHOP_ITEMS };
