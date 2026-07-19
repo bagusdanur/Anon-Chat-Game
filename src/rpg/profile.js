@@ -3,7 +3,7 @@
 const { Markup } = require('telegraf');
 const {
   CLASS_DEFS, xpToNextLevel, calcStats,
-  getOrCreateUser, createUser, getCurrentEnergy, getDungeonCooldown, getCurrentHp, getEquipmentBonus, getInventory
+  getOrCreateUser, createUser, getCurrentEnergy, getDungeonCooldown, getCurrentHp, getEquipmentBonus, getInventory, getEquippedBonus
 } = require('./db_rpg');
 const { progressBar, hpBar, statLine, divider, sectionHeader, kvPair } = require('../format');
 
@@ -24,7 +24,7 @@ function renderProfile(user) {
   const cooldownSecs = getDungeonCooldown(user);
   const hp = getCurrentHp(user);
   const nextEnergyMin = energy < 10 ? (3 - Math.floor(((Date.now() / 1000) - user.energy_last_update) / 60) % 3) : 0;
-  const equip = getInventory(user.telegram_user_id);
+  const equip = getEquippedBonus(user.telegram_user_id);
   const effectiveAtk = user.atk + equip.atkBonus;
   const effectiveDef = user.def + equip.defBonus;
   const effectiveMagicAtk = (user.magic_atk || 0) + equip.magicAtkBonus;
@@ -50,7 +50,7 @@ function renderProfile(user) {
   // Stats
   msg += `${divider('─', 30)}\n`;
   msg += `**Stats:**\n`;
-  msg += `${statLine('⚔️', 'ATK', effectiveAtk, equip.atkBonus > 0 ? `+${equipBonus} eq` : '')}\n`;
+  msg += `${statLine('⚔️', 'ATK', effectiveAtk, equip.atkBonus > 0 ? `+${equip.atkBonus} eq` : '')}\n`;
   msg += `${statLine('🛡️', 'DEF', effectiveDef, equip.defBonus > 0 ? `+${equip.defBonus} eq` : '')}\n`;
   msg += `${statLine('🔮', 'Magic', effectiveMagicAtk > 0 ? effectiveMagicAtk : '-')}\n`;
   msg += `${statLine('🎯', 'Damage', dmgType)}\n`;

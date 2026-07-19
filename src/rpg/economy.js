@@ -523,6 +523,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     if (!transferSuccess) {
       return ctx.reply(`❌ Gold tidak cukup! Butuh ${amount}g. Saldo: ${user.gold}g.`);
 
+
   // ===== /equip — Pasang Equipment =====
   bot.command('equip', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
@@ -532,28 +533,39 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const user = getOrCreateUser(userId);
     if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
 
+    const cls = CLASS_DEFS[user.class_name];
+    const equip = getEquippedBonus(userId);
+    const equipped = getEquipped(userId);
+
     if (!input) {
-      // Show equipped items
-      const equipped = getEquipped(userId);
-      let msg = '🗡️ <b>Equipment yang Dipasang</b>\n\n';
-      const slots = [
-        { key: 'weapon', icon: '⚔️', label: 'Weapon' },
-        { key: 'staff', icon: '🪄', label: 'Staff' },
-        { key: 'armor', icon: '🛡️', label: 'Armor' },
-        { key: 'accessory', icon: '💍', label: 'Accessory' },
-      ];
-      for (const slot of slots) {
-        const item = equipped[slot.key];
+      // Show equipped items in same format as /profile
+      const renderSlot = (item) => {
         if (item) {
           const tier = item.upgrade_tier > 0 ? ` +${item.upgrade_tier}` : '';
           const rarity = RARITY_EMOJI[item.rarity] || '';
-          msg += `${slot.icon} <b>${slot.label}:</b> ${rarity} ${item.display_name}${tier}\n`;
-        } else {
-          msg += `${slot.icon} <b>${slot.label}:</b> <i>Kosong</i>\n`;
+          return `${rarity} ${item.display_name}${tier}`;
         }
-      }
-      msg += '\n💡 Gunakan: <code>/equip [nama_item]</code>';
-      return ctx.reply(msg, { parse_mode: 'HTML' });
+        return '(Kosong)';
+      };
+
+      let msg = `🗡️ **Equipment — ${cls.name}**\n`;
+      msg += `══════════════════════════════\n\n`;
+      msg += `┌─────────────────┬─────────────────┐\n`;
+      msg += `│ ⚔️ Weapon       │ 🪄 Staff        │\n`;
+      msg += `│ ${renderSlot(equipped.weapon).padEnd(15)} │ ${renderSlot(equipped.staff).padEnd(15)} │\n`;
+      msg += `├─────────────────┼─────────────────┤\n`;
+      msg += `│ 🛡️ Armor        │ 💍 Accessory    │\n`;
+      msg += `│ ${renderSlot(equipped.armor).padEnd(15)} │ ${renderSlot(equipped.accessory).padEnd(15)} │\n`;
+      msg += `└─────────────────┴─────────────────┘\n\n`;
+
+      msg += `──────────────────────────────\n`;
+      msg += `📈 **Total Bonus:**\n`;
+      msg += `⚔️ ATK +${equip.atkBonus} | 🛡️ DEF +${equip.defBonus}\n`;
+      if (equip.magicAtkBonus > 0) msg += `🔮 Magic +${equip.magicAtkBonus}\n`;
+      if (equip.critRate > 0) msg += `💥 Crit +${Math.round(equip.critRate * 100)}%\n`;
+      msg += `\n💡 Gunakan: \`/equip [nama_item]\``;
+
+      return ctx.reply(msg, { parse_mode: 'Markdown' });
     }
 
     // Find item in inventory
@@ -563,7 +575,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const result = equipItem(userId, invItem.item_id);
     if (!result.success) return ctx.reply(`❌ ${result.reason}`);
 
-    ctx.reply(`✅ <b>${result.item}</b> terpasang di slot <b>${result.slot}</b>!`, { parse_mode: 'HTML' });
+    ctx.reply(`✅ **${result.item}** terpasang di slot **${result.slot}**!`, { parse_mode: 'Markdown' });
   });
 
   // ===== /unequip — Lepas Equipment =====
@@ -595,6 +607,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     bot.telegram.sendMessage(partnerId, `💰 Kamu menerima *${received}g* dari partner!`, { parse_mode: 'Markdown' }).catch(() => {});
   });
 
+
   // ===== /equip — Pasang Equipment =====
   bot.command('equip', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
@@ -604,28 +617,39 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const user = getOrCreateUser(userId);
     if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
 
+    const cls = CLASS_DEFS[user.class_name];
+    const equip = getEquippedBonus(userId);
+    const equipped = getEquipped(userId);
+
     if (!input) {
-      // Show equipped items
-      const equipped = getEquipped(userId);
-      let msg = '🗡️ <b>Equipment yang Dipasang</b>\n\n';
-      const slots = [
-        { key: 'weapon', icon: '⚔️', label: 'Weapon' },
-        { key: 'staff', icon: '🪄', label: 'Staff' },
-        { key: 'armor', icon: '🛡️', label: 'Armor' },
-        { key: 'accessory', icon: '💍', label: 'Accessory' },
-      ];
-      for (const slot of slots) {
-        const item = equipped[slot.key];
+      // Show equipped items in same format as /profile
+      const renderSlot = (item) => {
         if (item) {
           const tier = item.upgrade_tier > 0 ? ` +${item.upgrade_tier}` : '';
           const rarity = RARITY_EMOJI[item.rarity] || '';
-          msg += `${slot.icon} <b>${slot.label}:</b> ${rarity} ${item.display_name}${tier}\n`;
-        } else {
-          msg += `${slot.icon} <b>${slot.label}:</b> <i>Kosong</i>\n`;
+          return `${rarity} ${item.display_name}${tier}`;
         }
-      }
-      msg += '\n💡 Gunakan: <code>/equip [nama_item]</code>';
-      return ctx.reply(msg, { parse_mode: 'HTML' });
+        return '(Kosong)';
+      };
+
+      let msg = `🗡️ **Equipment — ${cls.name}**\n`;
+      msg += `══════════════════════════════\n\n`;
+      msg += `┌─────────────────┬─────────────────┐\n`;
+      msg += `│ ⚔️ Weapon       │ 🪄 Staff        │\n`;
+      msg += `│ ${renderSlot(equipped.weapon).padEnd(15)} │ ${renderSlot(equipped.staff).padEnd(15)} │\n`;
+      msg += `├─────────────────┼─────────────────┤\n`;
+      msg += `│ 🛡️ Armor        │ 💍 Accessory    │\n`;
+      msg += `│ ${renderSlot(equipped.armor).padEnd(15)} │ ${renderSlot(equipped.accessory).padEnd(15)} │\n`;
+      msg += `└─────────────────┴─────────────────┘\n\n`;
+
+      msg += `──────────────────────────────\n`;
+      msg += `📈 **Total Bonus:**\n`;
+      msg += `⚔️ ATK +${equip.atkBonus} | 🛡️ DEF +${equip.defBonus}\n`;
+      if (equip.magicAtkBonus > 0) msg += `🔮 Magic +${equip.magicAtkBonus}\n`;
+      if (equip.critRate > 0) msg += `💥 Crit +${Math.round(equip.critRate * 100)}%\n`;
+      msg += `\n💡 Gunakan: \`/equip [nama_item]\``;
+
+      return ctx.reply(msg, { parse_mode: 'Markdown' });
     }
 
     // Find item in inventory
@@ -635,7 +659,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const result = equipItem(userId, invItem.item_id);
     if (!result.success) return ctx.reply(`❌ ${result.reason}`);
 
-    ctx.reply(`✅ <b>${result.item}</b> terpasang di slot <b>${result.slot}</b>!`, { parse_mode: 'HTML' });
+    ctx.reply(`✅ **${result.item}** terpasang di slot **${result.slot}**!`, { parse_mode: 'Markdown' });
   });
 
   // ===== /unequip — Lepas Equipment =====
