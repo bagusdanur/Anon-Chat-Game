@@ -33,6 +33,7 @@ db.exec(`
     item_id          TEXT NOT NULL,
     quantity         INTEGER NOT NULL DEFAULT 1,
     upgrade_tier     INTEGER DEFAULT 0,
+    equipped         BOOLEAN NOT NULL DEFAULT 0,
     UNIQUE(telegram_user_id, item_id)
   );
 
@@ -126,6 +127,7 @@ try { db.exec('ALTER TABLE rpg_users ADD COLUMN crit_multi REAL DEFAULT 1.5'); }
 try { db.exec('ALTER TABLE rpg_users ADD COLUMN phys_resist REAL DEFAULT 0'); } catch(e) {}
 try { db.exec('ALTER TABLE rpg_users ADD COLUMN magic_resist REAL DEFAULT 0'); } catch(e) {}
 try { db.exec('ALTER TABLE rpg_users ADD COLUMN win_streak INTEGER DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE rpg_inventory ADD COLUMN equipped BOOLEAN DEFAULT 0'); } catch(e) {}
 
 // ===== SEED ITEMS CATALOG =====
 const SEED_ITEMS = [
@@ -652,6 +654,78 @@ function getWinStreak(userId) {
   return user ? user.win_streak || 0 : 0;
 }
 
+
+// ===== EQUIP/UNEQUIP SYSTEM =====
+const EQUIP_CATEGORIES = ['weapon', 'staff', 'armor', 'accessory'];
+
+function equipItem(userId, itemId) {
+  const uid = userId.toString();
+  // Check item exists in inventory
+  const inv = db.prepare('SELECT i.*, c.category, c.display_name FROM rpg_inventory i JOIN items_catalog c ON i.item_id = c.item_id WHERE i.telegram_user_id = ? AND i.item_id = ?').get(uid, itemId);
+  if (!inv) return { success: false, reason: 'Item tidak ada di inventory' };
+  if (!EQUIP_CATEGORIES.includes(inv.category)) return { success: false, reason: `${inv.display_name} bukan equipment` };
+  
+  // Unequip current item in same slot
+  db.prepare('UPDATE rpg_inventory SET equipped = 0 WHERE telegram_user_id = ? AND equipped = 1 AND item_id IN (SELECT item_id FROM items_catalog WHERE category = ?)').run(uid, inv.category);
+  
+  // Equip new item
+  db.prepare('UPDATE rpg_inventory SET equipped = 1 WHERE telegram_user_id = ? AND item_id = ?').run(uid, itemId);
+  
+  return { success: true, item: inv.display_name, slot: inv.category };
+}
+
+function unequipSlot(userId, slot) {
+  const uid = userId.toString();
+  if (!EQUIP_CATEGORIES.includes(slot)) return { success: false, reason: 'Slot tidak valid' };
+  
+  const equipped = db.prepare('SELECT i.item_id, c.display_name FROM rpg_inventory i JOIN items_catalog c ON i.item_id = c.item_id WHERE i.telegram_user_id = ? AND i.equipped = 1 AND c.category = ?').get(uid, slot);
+  if (!equipped) return { success: false, reason: `Tidak ada equipment di slot ${slot}` };
+  
+  db.prepare('UPDATE rpg_inventory SET equipped = 0 WHERE telegram_user_id = ? AND item_id = ?').run(uid, equipped.item_id);
+  return { success: true, item: equipped.display_name, slot };
+}
+
+function getEquipped(userId) {
+  const uid = userId.toString();
+  const items = db.prepare(`
+    SELECT i.*, c.display_name, c.category, c.rarity, c.sell_price, c.effect_json
+    FROM rpg_inventory i
+    JOIN items_catalog c ON i.item_id = c.item_id
+    WHERE i.telegram_user_id = ? AND i.equipped = 1
+  `).all(uid);
+  
+  const equipped = { weapon: null, staff: null, armor: null, accessory: null };
+  for (const item of items) {
+    if (equipped[item.category] !== undefined) {
+      equipped[item.category] = item;
+    }
+  }
+  return equipped;
+}
+
+function getEquippedBonus(userId) {
+  const equipped = getEquipped(userId);
+  let atkBonus = 0, defBonus = 0, magicAtkBonus = 0, critRate = 0, critMulti = 0;
+  let physResist = 0, magicResist = 0;
+
+  for (const [, item] of Object.entries(equipped)) {
+    if (!item || !item.effect_json) continue;
+    try {
+      const eff = JSON.parse(item.effect_json);
+      const tier = item.upgrade_tier || 0;
+      const tierBonus = tier * 2;
+      if (eff.atk_bonus) atkBonus += eff.atk_bonus + tierBonus;
+      if (eff.def_bonus) defBonus += eff.def_bonus + tierBonus;
+      if (eff.magic_atk_bonus) magicAtkBonus += eff.magic_atk_bonus + tierBonus;
+      if (eff.crit_rate) critRate += eff.crit_rate;
+      if (eff.crit_multi) critMulti += eff.crit_multi;
+      if (eff.phys_resist) physResist += eff.phys_resist;
+      if (eff.magic_resist) magicResist += eff.magic_resist;
+    } catch {}
+  }
+  return { atkBonus, defBonus, magicAtkBonus, critRate, critMulti, physResist, magicResist };
+}
+
 module.exports = {
   CLASS_DEFS, calcStats, xpToNextLevel,
   getOrCreateUser, createUser,
@@ -672,4 +746,6 @@ module.exports = {
   // PvP Duel
   getDuelCooldown, setDuelCooldown, createDuelRun, finalizeDuelRun,
   incrementWinStreak, resetWinStreak, getWinStreak,
+  // Equip system
+  equipItem, unequipSlot, getEquipped, getEquippedBonus,
 };

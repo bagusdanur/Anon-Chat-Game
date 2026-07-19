@@ -440,8 +440,13 @@ bot.command('help', (ctx) => {
     '💰 *Economy:*',
     '   /inv — Inventaris',
     '   /shop — Toko',
+    '   /craft — Craft equipment',
+    '   /equip — Pasang equipment',
+    '   /unequip — Lepas equipment',
+    '   /upgrade — Upgrade equipment',
     '   /sell — Jual item',
     '   /use — Pakai item',
+    '   /daily — Hadiah harian',
     '   /give — Kirim gold ke partner',
   ].join('\n'), { parse_mode: 'Markdown' });
 });
@@ -522,6 +527,10 @@ const botCommands = [
   // === ECONOMY ===
   { command: 'inv',      description: '🎒 Inventaris' },
   { command: 'shop',     description: '🏪 Toko' },
+  { command: 'craft',    description: '⚒️ Craft equipment' },
+  { command: 'equip',    description: '🗡️ Pasang equipment' },
+  { command: 'unequip',  description: '📤 Lepas equipment' },
+  { command: 'upgrade',  description: '⬆️ Upgrade equipment' },
   { command: 'sell',     description: '💰 Jual item' },
   { command: 'use',      description: '🧪 Pakai item' },
   { command: 'daily',    description: '🎁 Hadiah harian' },
