@@ -450,10 +450,12 @@ bot.command('help', (ctx) => {
     '   /shop — Toko',
     '   /craft — Craft equipment',
     '   /upgrade — Upgrade equipment',
+    '   /equip — Lihat equipment aktif',
     '   /sell — Jual item',
     '   /use — Pakai item',
     '   /give — Kirim gold ke partner',
   ].join('\n'), { parse_mode: 'Markdown' });
+});
 
 bot.command('equip', rateLimitCommand, (ctx) => {
   const userId = ctx.chat.id;
@@ -533,7 +535,6 @@ bot.command('equip', rateLimitCommand, (ctx) => {
 });
 
 
-});
 
 
 // ===== RELAY PESAN =====
