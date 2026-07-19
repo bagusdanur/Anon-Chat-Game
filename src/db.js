@@ -44,11 +44,49 @@ try {
   db.exec('ALTER TABLE users ADD COLUMN match_gender TEXT DEFAULT "any"');
 } catch (e) {}
 
+// ===== PRECOMPILED SQL STATEMENTS (OPTIMASI KECEPATAN) =====
+const stmtGetUser = db.prepare('SELECT * FROM users WHERE chat_id = ?');
+const stmtInsertUser = db.prepare('INSERT INTO users (chat_id) VALUES (?)');
+const stmtPairUsers = db.prepare('UPDATE users SET status = ?, partner_id = ? WHERE chat_id = ?');
+const stmtUnpairUser = db.prepare('UPDATE users SET status = ?, partner_id = NULL WHERE chat_id = ?');
+const stmtEnqueueUser = db.prepare('UPDATE users SET status = ?, partner_id = NULL WHERE chat_id = ?');
+const stmtDequeueUser = db.prepare('UPDATE users SET status = ?, partner_id = NULL WHERE chat_id = ?');
+const stmtFirstMatchLang = db.prepare(`
+  SELECT chat_id FROM users 
+  WHERE status = 'queued' 
+    AND chat_id != ? 
+    AND is_banned = 0 
+    AND (lang = ? OR lang = 'any' OR ? = 'any')
+    AND (gender = ? OR ? = 'any')
+    AND (match_gender = ? OR match_gender = 'any')
+  ORDER BY created_at ASC LIMIT 1
+`);
+const stmtFirstMatchAny = db.prepare(`
+  SELECT chat_id FROM users 
+  WHERE status = 'queued' 
+    AND chat_id != ? 
+    AND is_banned = 0 
+    AND (gender = ? OR ? = 'any')
+    AND (match_gender = ? OR match_gender = 'any')
+  ORDER BY created_at ASC LIMIT 1
+`);
+const stmtSetLang = db.prepare('UPDATE users SET lang = ? WHERE chat_id = ?');
+const stmtSetGender = db.prepare('UPDATE users SET gender = ? WHERE chat_id = ?');
+const stmtSetMatchGender = db.prepare('UPDATE users SET match_gender = ? WHERE chat_id = ?');
+const stmtGetAllUserIds = db.prepare('SELECT chat_id FROM users');
+const stmtInsertReport = db.prepare('INSERT INTO reports (reporter_id, reported_id, reason) VALUES (?, ?, ?)');
+const stmtBanUser = db.prepare('UPDATE users SET is_banned = 1 WHERE chat_id = ?');
+const stmtUnbanUser = db.prepare('UPDATE users SET is_banned = 0 WHERE chat_id = ?');
+
+// ===== IN-MEMORY RAM CACHE =====
+// Menyimpan ID partner di RAM supaya relay pesan 0ms tanpa hit database
+const partnerCache = new Map();
+
 function getUser(chatId) {
-  let user = db.prepare('SELECT * FROM users WHERE chat_id = ?').get(chatId);
+  let user = stmtGetUser.get(chatId);
   if (!user) {
-    db.prepare('INSERT INTO users (chat_id) VALUES (?)').run(chatId);
-    user = db.prepare('SELECT * FROM users WHERE chat_id = ?').get(chatId);
+    stmtInsertUser.run(chatId);
+    user = stmtGetUser.get(chatId);
   }
   return user;
 }
@@ -62,37 +100,51 @@ function isQueued(chatId) {
 }
 
 function getPartnerId(chatId) {
-  return getUser(chatId).partner_id;
+  const cached = partnerCache.get(chatId.toString());
+  if (cached !== undefined) return cached;
+  const user = getUser(chatId);
+  if (user && user.status === 'chatting' && user.partner_id) {
+    partnerCache.set(chatId.toString(), user.partner_id);
+    return user.partner_id;
+  }
+  partnerCache.set(chatId.toString(), null);
+  return null;
 }
 
 function pairUsers(chatIdA, chatIdB) {
-  const stmt = db.prepare('UPDATE users SET status = ?, partner_id = ? WHERE chat_id = ?');
   const transaction = db.transaction(() => {
-    stmt.run('chatting', chatIdB, chatIdA);
-    stmt.run('chatting', chatIdA, chatIdB);
+    stmtPairUsers.run('chatting', chatIdB, chatIdA);
+    stmtPairUsers.run('chatting', chatIdA, chatIdB);
   });
   transaction();
+  partnerCache.set(chatIdA.toString(), chatIdB);
+  partnerCache.set(chatIdB.toString(), chatIdA);
 }
 
 function unpairUser(chatId) {
   const partnerId = getPartnerId(chatId);
   if (partnerId) {
-    const stmt = db.prepare('UPDATE users SET status = ?, partner_id = NULL WHERE chat_id = ?');
     const transaction = db.transaction(() => {
-      stmt.run('idle', chatId);
-      stmt.run('idle', partnerId);
+      stmtUnpairUser.run('idle', chatId);
+      stmtUnpairUser.run('idle', partnerId);
     });
     transaction();
+    partnerCache.delete(chatId.toString());
+    partnerCache.delete(partnerId.toString());
+  } else {
+    partnerCache.delete(chatId.toString());
   }
   return partnerId;
 }
 
 function enqueueUser(chatId) {
-  db.prepare('UPDATE users SET status = ?, partner_id = NULL WHERE chat_id = ?').run('queued', chatId);
+  stmtEnqueueUser.run('queued', chatId);
+  partnerCache.delete(chatId.toString());
 }
 
 function dequeueUser(chatId) {
-  db.prepare('UPDATE users SET status = ?, partner_id = NULL WHERE chat_id = ?').run('idle', chatId);
+  stmtDequeueUser.run('idle', chatId);
+  partnerCache.delete(chatId.toString());
 }
 
 function getFirstQueuedExcluding(chatId) {
@@ -101,62 +153,44 @@ function getFirstQueuedExcluding(chatId) {
   const userGender = user.gender || 'any';
   const userMatchGender = user.match_gender || 'any';
   
-  let match = db.prepare(`
-    SELECT chat_id FROM users 
-    WHERE status = 'queued' 
-      AND chat_id != ? 
-      AND is_banned = 0 
-      AND (lang = ? OR lang = 'any' OR ? = 'any')
-      AND (gender = ? OR ? = 'any')
-      AND (match_gender = ? OR match_gender = 'any')
-    ORDER BY created_at ASC LIMIT 1
-  `).get(chatId, userLang, userLang, userMatchGender, userMatchGender, userGender);
-  
+  let match = stmtFirstMatchLang.get(chatId, userLang, userLang, userMatchGender, userMatchGender, userGender);
   if (!match) {
-    match = db.prepare(`
-      SELECT chat_id FROM users 
-      WHERE status = 'queued' 
-        AND chat_id != ? 
-        AND is_banned = 0 
-        AND (gender = ? OR ? = 'any')
-        AND (match_gender = ? OR match_gender = 'any')
-      ORDER BY created_at ASC LIMIT 1
-    `).get(chatId, userMatchGender, userMatchGender, userGender);
+    match = stmtFirstMatchAny.get(chatId, userMatchGender, userMatchGender, userGender);
   }
-  
   return match ? match.chat_id : null;
 }
 
 function setLang(chatId, lang) {
-  db.prepare('UPDATE users SET lang = ? WHERE chat_id = ?').run(lang, chatId);
+  stmtSetLang.run(lang, chatId);
 }
 
 function setGender(chatId, gender) {
-  db.prepare('UPDATE users SET gender = ? WHERE chat_id = ?').run(gender, chatId);
+  stmtSetGender.run(gender, chatId);
 }
 
 function setMatchGender(chatId, matchGender) {
-  db.prepare('UPDATE users SET match_gender = ? WHERE chat_id = ?').run(matchGender, chatId);
+  stmtSetMatchGender.run(matchGender, chatId);
 }
 
 function getAllUserIds() {
-  const users = db.prepare('SELECT chat_id FROM users').all();
+  const users = stmtGetAllUserIds.all();
   return users.map(u => u.chat_id);
 }
 
 function reportUser(reporterId, reason = '') {
   const reportedId = getPartnerId(reporterId);
   if (!reportedId) return false;
-  db.prepare('INSERT INTO reports (reporter_id, reported_id, reason) VALUES (?, ?, ?)').run(reporterId, reportedId, reason);
+  stmtInsertReport.run(reporterId, reportedId, reason);
   return true;
 }
 
 function banUser(chatId) {
-  db.prepare('UPDATE users SET is_banned = 1 WHERE chat_id = ?').run(chatId);
+  stmtBanUser.run(chatId);
+  partnerCache.delete(chatId.toString());
 }
 
 function unbanUser(chatId) {
-  db.prepare('UPDATE users SET is_banned = 0 WHERE chat_id = ?').run(chatId);
+  stmtUnbanUser.run(chatId);
 }
 
 function isBanned(chatId) {

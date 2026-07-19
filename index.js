@@ -343,19 +343,25 @@ bot.on('message', rateLimitMessage, async (ctx) => {
   }
 });
 
-// Webhook atau Polling
+// Webhook atau Polling dengan optimasi kecepatan dan drop antrian lama
+const launchOptions = {
+  dropPendingUpdates: true,
+  allowedUpdates: ['message', 'callback_query']
+};
+
 if (process.env.WEBHOOK_DOMAIN) {
   bot.launch({
+    ...launchOptions,
     webhook: {
       domain: process.env.WEBHOOK_DOMAIN,
       port: process.env.PORT || 3000
     }
   })
-  .then(() => logger.info('Bot berjalan dalam mode Webhook...'))
+  .then(() => logger.info('Bot berjalan dalam mode Webhook (Optimized)...'))
   .catch((err) => logger.error('Gagal menjalankan bot (Webhook): ' + err.message));
 } else {
-  bot.launch()
-  .then(() => logger.info('Bot berjalan dalam mode Polling...'))
+  bot.launch(launchOptions)
+  .then(() => logger.info('Bot berjalan dalam mode Polling (Optimized)...'))
   .catch((err) => logger.error('Gagal menjalankan bot (Polling): ' + err.message));
 }
 
