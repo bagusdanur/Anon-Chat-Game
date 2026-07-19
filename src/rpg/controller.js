@@ -1,0 +1,28 @@
+// src/rpg/controller.js
+// Main RPG entry point — menghubungkan semua modul
+// Sistem lama (Aldenmoor v2 / branching story) sudah DIGANTIKAN sepenuhnya.
+
+const { setupProfile } = require('./profile');
+const { setupGrind } = require('./grind');
+const { setupEconomy } = require('./economy');
+const { setupCoop, clearRaidSession } = require('./coop');
+const { setupHelp } = require('./help');
+
+function setupRpg(bot, { getPartnerId, rateLimitCommand }) {
+  // Fase 1: Profile & Character Creation
+  setupProfile(bot, { rateLimitCommand });
+
+  // Fase 2: Grinding core (/hunt, /fish, /mine)
+  setupGrind(bot, { rateLimitCommand });
+
+  // Fase 3 & 4: Economy (/inv, /shop, /buy, /sell, /use, /daily, /upgrade, /give)
+  setupEconomy(bot, { getPartnerId, rateLimitCommand });
+
+  // Fase 5: Co-op Dungeon Raid (/dungeon)
+  setupCoop(bot, { getPartnerId, rateLimitCommand });
+
+  // Help: /helprpg panduan lengkap
+  setupHelp(bot, { rateLimitCommand });
+}
+
+module.exports = { setupRpg, clearRaidSession };

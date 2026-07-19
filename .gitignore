@@ -1,0 +1,26 @@
+# Dependency directory
+node_modules/
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+
+# Database & runtime data
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS & Editor generated files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
