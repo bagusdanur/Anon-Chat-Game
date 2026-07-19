@@ -480,6 +480,7 @@ const botCommands = [
   { command: 'inv',      description: '🎒 Lihat inventaris' },
   { command: 'shop',     description: '🏪 Toko item' },
   { command: 'quest',    description: '📋 Quest harian & reward' },
+  { command: 'duel',    description: '⚔️ PvP Duel vs partner' },
   { command: 'party',    description: '👥 Lihat stats party' },
   { command: 'craft',    description: '⚒️ Craft equipment dari material' },
   { command: 'upgrade',  description: '⬆️ Upgrade equipment' },

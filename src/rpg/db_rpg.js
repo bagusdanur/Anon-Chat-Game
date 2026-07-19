@@ -103,6 +103,20 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_quest_progress_user ON quest_progress(user_id);
+
+  CREATE TABLE IF NOT EXISTS duel_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    player_a_id TEXT NOT NULL,
+    player_b_id TEXT NOT NULL,
+    winner_id TEXT,
+    result TEXT NOT NULL CHECK (result IN ('win','lose','draw')),
+    xp_reward INTEGER DEFAULT 50,
+    gold_reward INTEGER DEFAULT 25,
+    started_at INTEGER NOT NULL,
+    ended_at INTEGER
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_duel_players ON duel_history(player_a_id, player_b_id);
 `);
 
 // ===== MIGRATE: tambah kolom baru jika belum ada =====
@@ -111,6 +125,7 @@ try { db.exec('ALTER TABLE rpg_users ADD COLUMN crit_rate REAL DEFAULT 0.05'); }
 try { db.exec('ALTER TABLE rpg_users ADD COLUMN crit_multi REAL DEFAULT 1.5'); } catch(e) {}
 try { db.exec('ALTER TABLE rpg_users ADD COLUMN phys_resist REAL DEFAULT 0'); } catch(e) {}
 try { db.exec('ALTER TABLE rpg_users ADD COLUMN magic_resist REAL DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE rpg_users ADD COLUMN win_streak INTEGER DEFAULT 0'); } catch(e) {}
 
 // ===== SEED ITEMS CATALOG =====
 const SEED_ITEMS = [
@@ -164,6 +179,9 @@ const SEED_ITEMS = [
   // craftable accessories
   { item_id: 'cincin_keberuntungan', display_name: '💍 Cincin Keberuntungan', category: 'accessory', rarity: 'rare', sell_price: 100, effect_json: JSON.stringify({ crit_rate: 0.08, atk_bonus: 2 }) },
   { item_id: 'kalung_naga',     display_name: '🐉 Kalung Naga',     category: 'accessory', rarity: 'legendary', sell_price: 0, effect_json: JSON.stringify({ atk_bonus: 4, magic_atk_bonus: 4, crit_rate: 0.10, phys_resist: 0.05 }) },
+  // shop exclusives (bisa dibeli langsung)
+  { item_id: 'ramuan_energi',    display_name: '⚡ Ramuan Energi',    category: 'consumable', rarity: 'uncommon', sell_price: 15, effect_json: JSON.stringify({ energy_restore: 3 }) },
+  { item_id: 'amulet_pertahanan',display_name:'🛡️ Amulet Pertahanan',category: 'accessory', rarity: 'rare',    sell_price: 80, effect_json: JSON.stringify({ def_bonus: 3, phys_resist: 0.05, magic_resist: 0.05 }) },
 ];
 
 const insertItem = db.prepare(`
@@ -591,6 +609,49 @@ function rollCrit(critRate, critMulti) {
   return { isCrit, multiplier: isCrit ? critMulti : 1 };
 }
 
+// ===== PVP DUEL SYSTEM =====
+function getDuelCooldown(userId) {
+  const user = db.prepare('SELECT last_duel_at FROM rpg_users WHERE telegram_user_id = ?').get(userId.toString());
+  if (!user || !user.last_duel_at) return 0;
+  const now = Math.floor(Date.now() / 1000);
+  const remaining = 5 * 60 - (now - user.last_duel_at); // 5 menit cooldown
+  return Math.max(0, remaining);
+}
+
+function setDuelCooldown(userId) {
+  const now = Math.floor(Date.now() / 1000);
+  db.prepare('UPDATE rpg_users SET last_duel_at = ?, updated_at = ? WHERE telegram_user_id = ?')
+    .run(now, now, userId.toString());
+}
+
+function createDuelRun(playerAId, playerBId) {
+  const info = db.prepare(`
+    INSERT INTO duel_history (player_a_id, player_b_id, result, started_at)
+    VALUES (?, ?, 'draw', ?)
+  `).run(playerAId.toString(), playerBId.toString(), Math.floor(Date.now() / 1000));
+  return info.lastInsertRowid;
+}
+
+function finalizeDuelRun(runId, winnerId, xpReward, goldReward) {
+  const now = Math.floor(Date.now() / 1000);
+  const result = winnerId ? 'win' : 'draw';
+  db.prepare('UPDATE duel_history SET winner_id = ?, result = ?, xp_reward = ?, gold_reward = ?, ended_at = ? WHERE id = ?')
+    .run(winnerId ? winnerId.toString() : null, result, xpReward, goldReward, now, runId);
+}
+
+function incrementWinStreak(userId) {
+  db.prepare('UPDATE rpg_users SET win_streak = win_streak + 1 WHERE telegram_user_id = ?').run(userId.toString());
+}
+
+function resetWinStreak(userId) {
+  db.prepare('UPDATE rpg_users SET win_streak = 0 WHERE telegram_user_id = ?').run(userId.toString());
+}
+
+function getWinStreak(userId) {
+  const user = db.prepare('SELECT win_streak FROM rpg_users WHERE telegram_user_id = ?').get(userId.toString());
+  return user ? user.win_streak || 0 : 0;
+}
+
 module.exports = {
   CLASS_DEFS, calcStats, xpToNextLevel,
   getOrCreateUser, createUser,
@@ -608,4 +669,7 @@ module.exports = {
   calcPhysicalDamage, calcMagicDamage, rollCrit,
   // Quest system
   incrementQuestProgress, claimQuest, getAllDailyQuests,
+  // PvP Duel
+  getDuelCooldown, setDuelCooldown, createDuelRun, finalizeDuelRun,
+  incrementWinStreak, resetWinStreak, getWinStreak,
 };

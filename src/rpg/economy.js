@@ -14,8 +14,14 @@ const { RARITY_EMOJI } = require('./profile');
 const SHOP_ITEMS = [
   { id: 1, item_id: 'ramuan_kecil',  buy_price: 15  },
   { id: 2, item_id: 'ramuan_besar',  buy_price: 50  },
-  { id: 3, item_id: 'kail_plus',     buy_price: 200 },
-  { id: 4, item_id: 'beliung_plus',  buy_price: 300 },
+  { id: 3, item_id: 'ramuan_energi', buy_price: 75  },
+  { id: 4, item_id: 'kail_plus',     buy_price: 200 },
+  { id: 5, item_id: 'beliung_plus',  buy_price: 300 },
+  { id: 6, item_id: 'pedang_karatan',buy_price: 150 },
+  { id: 7, item_id: 'tongkat_ranting',buy_price: 80 },
+  { id: 8, item_id: 'jubah_terkutuk',buy_price: 200 },
+  { id: 9, item_id: 'cincin_perak',  buy_price: 100 },
+  { id: 10, item_id: 'amulet_pertahanan', buy_price: 150 },
 ];
 
 // ===== CRAFTING RECIPES =====
@@ -311,6 +317,14 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
       const newHp = Math.min(user.max_hp, currentHp + healAmount);
       updateHp(userId, newHp);
       msg += `❤️ HP dipulihkan +${healAmount} (${newHp}/${user.max_hp})`;
+    } else if (effect.energy_restore) {
+      const currentEnergy = getCurrentEnergy(user);
+      const newEnergy = Math.min(10, currentEnergy + effect.energy_restore);
+      // Update energy directly
+      const now = Math.floor(Date.now() / 1000);
+      db.prepare('UPDATE rpg_users SET energy_current = ?, energy_last_update = ?, updated_at = ? WHERE telegram_user_id = ?')
+        .run(newEnergy, now, now, userId.toString());
+      msg += `⚡ Energi dipulihkan +${effect.energy_restore} (${newEnergy}/10)`;
     } else {
       msg += `Efek tidak diketahui.`;
     }

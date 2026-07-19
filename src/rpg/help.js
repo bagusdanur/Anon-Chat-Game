@@ -249,7 +249,58 @@ const HELP_PAGES = [
       `   • Kombinasi Ksatria + Penyihir = Physical + Magic\n` +
       `   • Kombinasi Pencuri + Penyihir = High Crit + Magic\n\n` +
       `<i>Selamat bertualang, Petualang! 🎮⚔️</i>`,
-    nav: ['quest', null]
+    nav: ['quest', 'pvp']
+  },
+
+  // PAGE 11: PvP Duel (BARU!)
+  {
+    id: 'pvp',
+    title: '📖 Panduan RPG — Halaman 11/12',
+    text:
+      `<b>⚔️ PvP Duel</b>\n\n` +
+      `Battle 1v1 dengan partner!\n\n` +
+      `<b>Command:</b>\n` +
+      `   <code>/duel</code> — Mulai duel dengan partner\n\n` +
+      `<b>Mekanik:</b>\n` +
+      `   • HP = 50% max HP (duel cepat)\n` +
+      `   • Turn-based: pilih Serang / Bertahan / Skill\n` +
+      `   • Pertama HP = 0 → kalah!\n` +
+      `   • Cooldown 5 menit setelah duel selesai\n\n` +
+      `<b>💰 Reward:</b>\n` +
+      `   • Winner: 50 XP + 25g\n` +
+      `   • Loser: 20 XP + 10g\n` +
+      `   • Draw: 25 XP + 10g (kedua pemain)\n\n` +
+      `<b>🔥 Win Streak:</b>\n` +
+      `   • 3 win berturut = +20% reward bonus!\n` +
+      `   • Streak reset kalau kalah`,
+    nav: ['party', 'shop']
+  },
+
+  // PAGE 12: Shop Expanded (BARU!)
+  {
+    id: 'shop',
+    title: '📖 Panduan RPG — Halaman 12/12',
+    text:
+      `<b>🏪 Toko (Expanded)</b>\n\n` +
+      `<b>Commands:</b>\n` +
+      `   <code>/shop</code> — Lihat semua item\n` +
+      `   <code>/buy [nomor]</code> — Beli item\n\n` +
+      `<b>📋 Item Tersedia:</b>\n\n` +
+      `<b>🧪 Consumables:</b>\n` +
+      `   [1] Ramuan Kecil — 15g (Heal 15% HP)\n` +
+      `   [2] Ramuan Besar — 50g (Heal 50% HP)\n` +
+      `   [3] Ramuan Energi — 75g (+3 Energi) 🆕\n\n` +
+      `<b>⛏️ Tools:</b>\n` +
+      `   [4] Kail Pancing+ — 200g\n` +
+      `   [5] Beliung Tambang+ — 300g\n\n` +
+      `<b>⚔️ Equipment:</b>\n` +
+      `   [6] Pedang Karatan — 150g (ATK+2, Crit+5%)\n` +
+      `   [7] Tongkat Ranting — 80g (Magic ATK+3)\n` +
+      `   [8] Jubah Terkutuk — 200g (DEF+5, MagicRes+10%)\n` +
+      `   [9] Cincin Perak — 100g (Crit+5%)\n` +
+      `   [10] Amulet Pertahanan — 150g (DEF+3, Resist+5%) 🆕\n\n` +
+      `<b>💡 Tip:</b> Equipment bisa di-upgrade dengan <code>/upgrade</code>!`,
+    nav: ['pvp', null]
   },
 ];
 
@@ -283,7 +334,9 @@ function buildIndexMessage() {
     `7️⃣ Ekonomi, Crafting & Status Effects\n` +
     `8️⃣ Dungeon Raid & Tips\n` +
     `9️⃣ Quest Harian\n` +
-    `🔟 Party Stats`;
+    `🔟 Party Stats\n` +
+    `1️⃣1️⃣ PvP Duel\n` +
+    `1️⃣2️⃣ Toko (Expanded)`;
 
   const buttons = [
     [Markup.button.callback('1️⃣ Intro & Cara Mulai',           'help:page:intro')],
@@ -296,6 +349,8 @@ function buildIndexMessage() {
     [Markup.button.callback('8️⃣ Dungeon Raid & Tips',         'help:page:dungeon')],
     [Markup.button.callback('9️⃣ Quest Harian',                'help:page:quest')],
     [Markup.button.callback('🔟 Party Stats',                  'help:page:party')],
+    [Markup.button.callback('1️⃣1️⃣ PvP Duel',                  'help:page:pvp')],
+    [Markup.button.callback('1️⃣2️⃣ Toko (Expanded)',           'help:page:shop')],
   ];
 
   return {
