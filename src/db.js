@@ -10,6 +10,10 @@ if (!fs.existsSync(dataDir)) {
 const dbPath = process.env.DATABASE_PATH || path.join(dataDir, 'bot.db');
 const db = new Database(dbPath);
 
+// Aktifkan mode WAL & sinkronisasi optimal untuk performa dan keamanan data tinggi di VPS
+db.pragma('journal_mode = WAL');
+db.pragma('synchronous = NORMAL');
+
 // Create tables
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
