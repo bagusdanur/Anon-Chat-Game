@@ -146,7 +146,7 @@ bot.command('next', rateLimitCommand, (ctx) => {
 
   if (isPaired(chatId)) {
     const partnerId = unpairUser(chatId);
-    clearRpgSession(chatId, partnerId);
+    clearRaidSession(chatId, partnerId);
     bot.telegram.sendMessage(partnerId, '🛑 Partner meninggalkan chat. Ketik /search untuk mencari partner baru.');
   } else if (isQueued(chatId)) {
     dequeueUser(chatId);
@@ -167,7 +167,7 @@ bot.action('cmd_next', rateLimitCommand, (ctx) => {
   const chatId = ctx.chat.id;
   if (isPaired(chatId)) {
     const partnerId = unpairUser(chatId);
-    clearRpgSession(chatId, partnerId);
+    clearRaidSession(chatId, partnerId);
     bot.telegram.sendMessage(partnerId, '🛑 Partner meninggalkan chat. Ketik /search untuk mencari partner baru.');
   } else if (isQueued(chatId)) {
     dequeueUser(chatId);
