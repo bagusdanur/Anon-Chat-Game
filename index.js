@@ -91,8 +91,8 @@ function handleStop(ctx) {
   if (isPaired(chatId)) {
     const partnerId = unpairUser(chatId);
     clearRaidSession(chatId, partnerId);
-    ctx.reply('🛑 Chat diakhiri. Tap 🔍 Cari Partner untuk cari yang baru.', { ...idleKeyboard });
-    bot.telegram.sendMessage(partnerId, '🛑 Partner mengakhiri chat. Tap 🔍 Cari Partner untuk cari yang baru.', { ...idleKeyboard });
+    ctx.reply('🛑 Chat diakhiri. Ketik /search untuk mencari partner baru.');
+    bot.telegram.sendMessage(partnerId, '🛑 Partner mengakhiri chat. Ketik /search untuk mencari partner baru.');
   } else if (isQueued(chatId)) {
     dequeueUser(chatId);
     ctx.reply('🛑 Pencarian dibatalkan.');
@@ -188,7 +188,7 @@ bot.action('cmd_next', rateLimitSearch, (ctx) => {
   if (isPaired(chatId)) {
     const partnerId = unpairUser(chatId);
     clearRaidSession(chatId, partnerId);
-    bot.telegram.sendMessage(partnerId, '🛑 Partner meninggalkan chat.', { ...idleKeyboard });
+    bot.telegram.sendMessage(partnerId, '🛑 Partner meninggalkan chat. Ketik /search untuk mencari partner baru.');
   } else if (isQueued(chatId)) {
     dequeueUser(chatId);
   }
@@ -561,24 +561,7 @@ bot.command('unequip', rateLimitCommand, (ctx) => {
 
 // ===== RELAY PESAN =====
 // Nge-forward semua jenis pesan (teks, foto, stiker, voice, dll) tanpa nunjukin identitas asli
-// ===== REPLY KEYBOARD BUTTON HANDLERS =====
-bot.hears('🔍 Cari Partner', rateLimitSearch, (ctx) => {
-  handleSearch(ctx);
-  // Keyboard akan diupdate otomatis saat partner ditemukan
-});
-bot.hears('🔄 Next', rateLimitSearch, (ctx) => {
-  const chatId = ctx.chat.id;
-  if (isPaired(chatId)) {
-    const partnerId = unpairUser(chatId);
-    clearRaidSession(chatId, partnerId);
-    bot.telegram.sendMessage(partnerId, '🛑 Partner meninggalkan chat.', { ...idleKeyboard });
-  } else if (isQueued(chatId)) {
-    dequeueUser(chatId);
-  }
-  handleSearch(ctx);
-});
-bot.hears('🛑 Stop', handleStop);
-bot.hears('⚙️ Setting', showSettingMenu);
+
 
 bot.on('message', rateLimitMessage, async (ctx) => {
   const chatId = ctx.chat.id;
@@ -586,9 +569,7 @@ bot.on('message', rateLimitMessage, async (ctx) => {
   // Abaikan command yang udah dihandle di atas
   if (ctx.message.text && ctx.message.text.startsWith('/')) return;
 
-  // Abaikan reply keyboard buttons (sudah dihandle di atas)
-  const keyboardButtons = ['🔍 Cari Partner', '🔄 Next', '🛑 Stop', '⚙️ Setting', '---'];
-  if (ctx.message.text && keyboardButtons.includes(ctx.message.text)) return;
+
 
   const partnerId = getPartnerId(chatId);
   if (!partnerId) {
