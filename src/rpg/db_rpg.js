@@ -221,7 +221,7 @@ const CLASS_DEFS = {
     base_crit_rate: 0.15, base_crit_multi: 1.8,
     growth: { hp: 6, atk: 2, def: 1.5, magic_atk: 0 },
     physBonus: 1.20, magicBonus: 0.80,  // +20% phys, -20% magic
-    skillName: 'Backstab', skillMulti: 2.2, skillType: 'physical',
+    skillName: 'Backstab', skillMulti: 1.8, skillType: 'physical',
     skillDesc: 'Serangan dari belakang — 100% Crit!'
   },
 };
@@ -295,29 +295,29 @@ function getCurrentHp(user) {
 }
 
 // ===== EQUIPMENT BONUS =====
-// Ambil bonus dari semua equipment: 1 weapon, 1 staff, 1 armor, 1 accessory
+// Rarity comparison — harus pakai angka, bukan string (alfabetis salah)
+const RARITY_ORDER = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4 };
+
+// Ambil bonus dari equipment yang di-equip saja (konsisten dengan getEquippedBonus)
 function getEquipmentBonus(userId) {
-  const items = getInventory(userId);
+  const items = db.prepare(`
+    SELECT i.item_id, i.quantity, i.upgrade_tier, c.display_name, c.category, c.rarity, c.sell_price, c.effect_json
+    FROM rpg_inventory i
+    JOIN items_catalog c ON i.item_id = c.item_id
+    WHERE i.telegram_user_id = ? AND i.equipped = 1
+  `).all(userId.toString());
   let atkBonus = 0, defBonus = 0, magicAtkBonus = 0, critRate = 0, critMulti = 0;
   let physResist = 0, magicResist = 0;
 
-  const equipped = { weapon: null, staff: null, armor: null, accessory: null };
   for (const item of items) {
     if (!item.effect_json || !['weapon', 'staff', 'armor', 'accessory'].includes(item.category)) continue;
-    // Ambil terbaik per slot
-    if (equipped[item.category] && equipped[item.category].rarity > item.rarity) continue;
-    equipped[item.category] = item;
-  }
-
-  for (const [, item] of Object.entries(equipped)) {
-    if (!item || !item.effect_json) continue;
     try {
       const eff = JSON.parse(item.effect_json);
       const tier = item.upgrade_tier || 0;
       const tierBonus = tier * 2;
-      if (eff.atk_bonus) atkBonus = Math.max(atkBonus, eff.atk_bonus + tierBonus);
-      if (eff.def_bonus) defBonus = Math.max(defBonus, eff.def_bonus + tierBonus);
-      if (eff.magic_atk_bonus) magicAtkBonus = Math.max(magicAtkBonus, eff.magic_atk_bonus + tierBonus);
+      if (eff.atk_bonus) atkBonus += eff.atk_bonus + tierBonus;
+      if (eff.def_bonus) defBonus += eff.def_bonus + tierBonus;
+      if (eff.magic_atk_bonus) magicAtkBonus += eff.magic_atk_bonus + tierBonus;
       if (eff.crit_rate) critRate += eff.crit_rate;
       if (eff.crit_multi) critMulti += eff.crit_multi;
       if (eff.phys_resist) physResist += eff.phys_resist;

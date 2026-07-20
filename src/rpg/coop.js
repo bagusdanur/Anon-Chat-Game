@@ -346,10 +346,12 @@ function clearRaidSession(chatId, partnerId) {
   if (raid) {
     finalizeDungeonRun(raid.runId, 'abandoned', null);
     raidSessions.delete(key);
+    // Cooldown 3 menit saat abandon (mencegah spam dungeon)
+    setDungeonCooldown(raid.chatIdA);
+    setDungeonCooldown(raid.chatIdB);
     // Notifikasi ke partner yang masih aktif
     const remainingId = chatId === raid.chatIdA ? raid.chatIdB : raid.chatIdA;
-    const leaverId = chatId === raid.chatIdA ? raid.chatIdA : raid.chatIdB;
-    bot.telegram.sendMessage(remainingId, '⏰ <b>Raid dibatalkan!</b>\n\nPartner meninggalkan chat sebelum raid selesai.\nCooldown dungeon tidak aktif (dibatalkan).', { parse_mode: 'HTML' }).catch(() => {});
+    bot.telegram.sendMessage(remainingId, '⏰ <b>Raid dibatalkan!</b>\n\nPartner meninggalkan chat sebelum raid selesai.\nCooldown 3 menit aktif.', { parse_mode: 'HTML' }).catch(() => {});
   }
 }
 
@@ -496,6 +498,10 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
     // Gunakan tier yang dipilih inviter, bukan auto-detect dari avgLv
     const bossTier = getBossTierById(invite.tierId) || getBossTier(avgLv);
     const scaledHp = Math.floor(bossTier.baseHp * (1 + (avgLv - bossTier.minAvgLv) * 0.03));
+    // ATK scaling — boss makin kuat di level tinggi
+    const atkScale = 1 + (avgLv - bossTier.minAvgLv) * 0.02;
+    const scaledAtkMin = Math.floor(bossTier.baseAtk[0] * atkScale);
+    const scaledAtkMax = Math.floor(bossTier.baseAtk[1] * atkScale);
 
     const runId = createDungeonRun(invite.inviter, userId, bossTier.id);
 
@@ -515,7 +521,7 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
         name: bossTier.name,
         hp: scaledHp,
         maxHp: scaledHp,
-        atkRange: [...bossTier.baseAtk],
+        atkRange: [scaledAtkMin, scaledAtkMax],
         def: bossTier.baseDef,
         physResist: bossTier.physResist || 0,
         magicResist: bossTier.magicResist || 0,

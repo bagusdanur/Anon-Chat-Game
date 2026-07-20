@@ -7,6 +7,7 @@ const { setupGrind } = require('./grind');
 const { setupEconomy } = require('./economy');
 const { setupCoop, clearRaidSession } = require('./coop');
 const { setupHelp } = require('./help');
+const { setupDuel } = require('./duel');
 
 function setupRpg(bot, { getPartnerId, rateLimitCommand }) {
   // Fase 1: Profile & Character Creation
@@ -20,6 +21,9 @@ function setupRpg(bot, { getPartnerId, rateLimitCommand }) {
 
   // Fase 5: Co-op Dungeon Raid (/dungeon)
   setupCoop(bot, { getPartnerId, rateLimitCommand });
+
+  // Fase 6: PvP Duel (/duel)
+  setupDuel(bot, { getPartnerId, rateLimitCommand });
 
   // Help: /helprpg panduan lengkap
   setupHelp(bot, { rateLimitCommand });

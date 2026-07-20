@@ -411,8 +411,8 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     ctx.reply(
       `<b>🎁 HADIAH HARIAN!</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `💰 +<b>30</b> Gold\n` +
-      `✨ +<b>10</b> XP\n` +
+      `💰 +<b>80</b> Gold\n` +
+      `✨ +<b>25</b> XP\n` +
       `🧪 +<b>1</b> Ramuan Kecil\n\n` +
       `<i>Kembali lagi dalam 20 jam!</i>`,
       { parse_mode: 'HTML' }

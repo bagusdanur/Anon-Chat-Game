@@ -90,9 +90,9 @@ const HELP_PAGES = [
       `<b>📈 LEVELING &amp; STATS</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `<b>📊 XP yang dibutuhkan:</b>\n` +
-      `  Lv 1→2  : 50 XP\n` +
-      `  Lv 5→6  : ~559 XP\n` +
-      `  Lv 10→11: ~1,581 XP\n\n` +
+      `  Lv 1→2  : 40 XP\n` +
+      `  Lv 5→6  : ~276 XP\n` +
+      `  Lv 10→11: ~634 XP\n\n` +
       `<b>⬆️ Stats per Level:</b>\n` +
       `  ⚔️ Ksatria : +8 HP · +1.5 ATK · +2 DEF\n` +
       `  🔥 Penyihir: +5 HP · +2.5 Magic · +1 DEF\n` +
