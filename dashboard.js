@@ -50,6 +50,21 @@ app.get('/api/stats', auth, (req, res) => {
   res.json({ totalUsers, onlineUsers, pairedUsers, queuedUsers, bannedUsers, reports24h, rpgUsers, totalReports, totalDungeonRuns, totalDuels, totalTransactions });
 });
 
+// ===== USER SEARCH =====
+app.get('/api/users/search', auth, (req, res) => {
+  const { q, status, banned, lang, gender } = req.query;
+  let sql = 'SELECT * FROM users WHERE 1=1';
+  const params = [];
+  if (q) { sql += ' AND (chat_id LIKE ? OR lang LIKE ? OR gender LIKE ?)'; params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+  if (status) { sql += ' AND status = ?'; params.push(status); }
+  if (banned !== undefined) { sql += ' AND is_banned = ?'; params.push(banned === 'true' ? 1 : 0); }
+  if (lang) { sql += ' AND lang = ?'; params.push(lang); }
+  if (gender) { sql += ' AND gender = ?'; params.push(gender); }
+  sql += ' ORDER BY created_at DESC LIMIT 50';
+  const users = db.prepare(sql).all(...params);
+  res.json(users);
+});
+
 // ===== USERS =====
 app.get('/api/users', auth, (req, res) => {
   const users = db.prepare('SELECT * FROM users ORDER BY created_at DESC LIMIT 100').all();
@@ -268,6 +283,37 @@ app.post('/api/send', auth, (req, res) => {
   })();
 
   res.json({ success: true });
+});
+
+
+// ===== MAINTENANCE MODE =====
+const MAINTENANCE_FILE = path.join(__dirname, 'data/maintenance.json');
+
+function getMaintenance() {
+  try {
+    if (fs.existsSync(MAINTENANCE_FILE)) {
+      return JSON.parse(fs.readFileSync(MAINTENANCE_FILE, 'utf8'));
+    }
+  } catch (e) {}
+  return { enabled: false, message: 'Bot sedang dalam maintenance. Silakan coba lagi nanti.' };
+}
+
+app.get('/api/maintenance', auth, (req, res) => {
+  res.json(getMaintenance());
+});
+
+app.post('/api/maintenance', auth, (req, res) => {
+  const { enabled, message } = req.body;
+  const data = { enabled: !!enabled, message: message || 'Bot sedang dalam maintenance.' };
+  fs.writeFileSync(MAINTENANCE_FILE, JSON.stringify(data, null, 2));
+  res.json({ success: true, maintenance: data });
+});
+
+// ===== BACKUP DATABASE =====
+app.get('/api/backup', auth, (req, res) => {
+  const dbPath = path.join(__dirname, 'data/bot.db');
+  if (!fs.existsSync(dbPath)) return res.status(404).json({ error: 'Database not found' });
+  res.download(dbPath, `bot-backup-${new Date().toISOString().slice(0,10)}.db`);
 });
 
 // Fallback

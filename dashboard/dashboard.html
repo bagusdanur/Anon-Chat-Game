@@ -194,6 +194,9 @@
       <div class="nav-item" onclick="sw('wordfilter',this)"><i data-lucide="shield-ban"></i> Word Filter</div>
       <div class="nav-item" onclick="sw('icebreakers',this)"><i data-lucide="message-circle"></i> Icebreakers</div>
       <div class="nav-item" onclick="sw('logs',this)"><i data-lucide="file-text"></i> Bot Logs</div>
+      <div class="nav-label">System</div>
+      <div class="nav-item" onclick="sw('maintenance',this)"><i data-lucide="wrench"></i> Maintenance</div>
+      <div class="nav-item" onclick="doBackup()"><i data-lucide="download"></i> Backup DB</div>
     </aside>
 
     <main class="main" id="main"></main>
@@ -225,7 +228,7 @@
 
     const M=document.getElementById('main');
     function rp(p){
-      const fn={home:rHome,users:rUsers,rpg:rRPG,items:rItems,quests:rQuests,reports:rReports,duels:rDuels,dungeons:rDungeons,transactions:rTransactions,wordfilter:rWF,icebreakers:rIce,logs:rLogs};
+      const fn={home:rHome,users:rUsers,rpg:rRPG,items:rItems,quests:rQuests,reports:rReports,duels:rDuels,dungeons:rDungeons,transactions:rTransactions,wordfilter:rWF,icebreakers:rIce,logs:rLogs,maintenance:rMaintenance};
       if(fn[p])fn[p]();
     }
 
@@ -248,9 +251,23 @@
     // ===== USERS =====
     async function rUsers(){
       const r=await fetch('/api/users',{headers:H});const u=await r.json();
+      window._allUsers=u;
       let rows=u.map(x=>{const sb=x.status==='chatting'?'badge-green':x.status==='queued'?'badge-yellow':'badge-gray';const si=x.status==='chatting'?'heart':x.status==='queued'?'clock':'user';
       return`<tr style="cursor:pointer" onclick="userDetail('${x.chat_id}')"><td><code style="color:var(--accent)">${x.chat_id}</code></td><td><span class="badge ${sb}"><i data-lucide="${si}"></i>${x.status}</span></td><td>${x.lang||'any'}</td><td>${x.gender||'-'}</td><td>${x.is_banned?'<span class="badge badge-red">BANNED</span>':'<span class="badge badge-gray">OK</span>'}</td><td>${x.created_at||'-'}</td><td onclick="event.stopPropagation()">${x.is_banned?`<button class="btn btn-success btn-sm" onclick="unban('${x.chat_id}')"><i data-lucide="check"></i></button>`:`<button class="btn btn-danger btn-sm" onclick="banU('${x.chat_id}')"><i data-lucide="ban"></i></button>`} <button class="btn btn-outline btn-sm" onclick="sendMsg('${x.chat_id}')"><i data-lucide="send"></i></button></td></tr>`}).join('');
-      M.innerHTML=`<div class="card"><div class="card-header"><div class="card-title"><i data-lucide="users"></i> Users (${u.length})</div><button class="btn btn-outline" onclick="rUsers()"><i data-lucide="refresh-cw"></i></button></div><div class="table-wrap"><table><thead><tr><th>Chat ID</th><th>Status</th><th>Lang</th><th>Gender</th><th>Ban</th><th>Joined</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+      M.innerHTML=`<div class="card"><div class="card-header"><div class="card-title"><i data-lucide="users"></i> Users (${u.length})</div><button class="btn btn-outline" onclick="rUsers()"><i data-lucide="refresh-cw"></i></button></div><div class="form-row"><input class="form-input" id="userSearch" placeholder="Search by ID, lang, gender..." oninput="filterUsers()" style="flex:1"><select class="form-input" id="userStatusFilter" onchange="filterUsers()" style="width:140px"><option value="">All Status</option><option value="idle">Idle</option><option value="queued">Queued</option><option value="chatting">Chatting</option></select><select class="form-input" id="userBanFilter" onchange="filterUsers()" style="width:120px"><option value="">All</option><option value="false">Active</option><option value="true">Banned</option></select></div><div class="table-wrap"><table><thead><tr><th>Chat ID</th><th>Status</th><th>Lang</th><th>Gender</th><th>Ban</th><th>Joined</th><th>Action</th></tr></thead><tbody id="usersTableBody">${rows}</tbody></table></div></div>`;
+      lucide.createIcons();
+    }
+    function filterUsers(){
+      const q=(document.getElementById('userSearch')?.value||'').toLowerCase();
+      const st=document.getElementById('userStatusFilter')?.value||'';
+      const bn=document.getElementById('userBanFilter')?.value;
+      let filtered=window._allUsers||[];
+      if(q)filtered=filtered.filter(u=>(u.chat_id+'').includes(q)||(u.lang||'').includes(q)||(u.gender||'').includes(q));
+      if(st)filtered=filtered.filter(u=>u.status===st);
+      if(bn!=='')filtered=filtered.filter(u=>bn==='true'?u.is_banned:!u.is_banned);
+      const tb=document.getElementById('usersTableBody');if(!tb)return;
+      tb.innerHTML=filtered.map(x=>{const sb=x.status==='chatting'?'badge-green':x.status==='queued'?'badge-yellow':'badge-gray';const si=x.status==='chatting'?'heart':x.status==='queued'?'clock':'user';
+      return`<tr style="cursor:pointer" onclick="userDetail('${x.chat_id}')"><td><code style="color:var(--accent)">${x.chat_id}</code></td><td><span class="badge ${sb}"><i data-lucide="${si}"></i>${x.status}</span></td><td>${x.lang||'any'}</td><td>${x.gender||'-'}</td><td>${x.is_banned?'<span class="badge badge-red">BANNED</span>':'<span class="badge badge-gray">OK</span>'}</td><td>${x.created_at||'-'}</td><td onclick="event.stopPropagation()">${x.is_banned?`<button class="btn btn-success btn-sm" onclick="unban('${x.chat_id}')"><i data-lucide="check"></i></button>`:`<button class="btn btn-danger btn-sm" onclick="banU('${x.chat_id}')"><i data-lucide="ban"></i></button>`} <button class="btn btn-outline btn-sm" onclick="sendMsg('${x.chat_id}')"><i data-lucide="send"></i></button></td></tr>`}).join('');
       lucide.createIcons();
     }
     async function banU(id){await fetch(`/api/users/${id}/ban`,{method:'POST',headers:H});showToast('User banned');loadAll();rUsers()}
@@ -384,6 +401,39 @@
       openModal('📢 Broadcast to All Users',`<div class="form-row"><textarea class="form-input" id="broadcastMsg" placeholder="Pesan broadcast..."></textarea></div>`,`<button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-yellow" onclick="doBroadcast()"><i data-lucide="megaphone"></i> Send Broadcast</button>`);
     }
     async function doBroadcast(){const msg=document.getElementById('broadcastMsg').value;if(!msg)return;await fetch('/api/broadcast',{method:'POST',headers:H,body:JSON.stringify({message:msg})});showToast('Broadcast sending...');closeModal()}
+
+    // ===== MAINTENANCE =====
+    async function rMaintenance(){
+      const r=await fetch('/api/maintenance',{headers:H});const d=await r.json();
+      M.innerHTML=`
+      <div class="card"><div class="card-header"><div class="card-title"><i data-lucide="wrench"></i> Maintenance Mode</div></div>
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+          <div style="font-size:14px;font-weight:700">Status:</div>
+          <span class="badge ${d.enabled?'badge-red':'badge-green'}">${d.enabled?'🔴 MAINTENANCE ON':'🟢 ACTIVE'}</span>
+          <button class="btn ${d.enabled?'btn-success':'btn-danger'}" onclick="toggleMaintenance(${!d.enabled})">
+            <i data-lucide="${d.enabled?'play':'power'"></i> ${d.enabled?'Disable':'Enable'}
+          </button>
+        </div>
+        <div class="form-row" style="border:0;padding:0">
+          <textarea class="form-input" id="maintMsg" placeholder="Maintenance message...">${d.message||''}</textarea>
+        </div>
+        <div style="margin-top:12px"><button class="btn btn-accent" onclick="saveMaintenance()"><i data-lucide="save"></i> Save Message</button></div>
+      </div></div>`;
+      lucide.createIcons();
+    }
+    async function toggleMaintenance(enabled){
+      const msg=document.getElementById('maintMsg')?.value||'Bot sedang dalam maintenance.';
+      await fetch('/api/maintenance',{method:'POST',headers:H,body:JSON.stringify({enabled,message:msg})});
+      showToast(enabled?'Maintenance ON':'Maintenance OFF');rMaintenance();
+    }
+    async function saveMaintenance(){
+      const msg=document.getElementById('maintMsg').value;
+      const r=await fetch('/api/maintenance',{headers:H});const d=await r.json();
+      await fetch('/api/maintenance',{method:'POST',headers:H,body:JSON.stringify({enabled:d.enabled,message:msg})});
+      showToast('Message saved');
+    }
+    function doBackup(){window.open('/api/backup','_blank');showToast('Downloading backup...')}
 
     function logout(){sessionStorage.removeItem('auth');window.location.href='/'}
     loadAll().then(()=>rHome());

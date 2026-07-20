@@ -57,9 +57,38 @@ bot.catch((err, ctx) => {
   logger.error({ event: 'bot_error', desc, update: ctx?.update }, 'Unhandled bot error');
 });
 
+// ===== MAINTENANCE MODE =====
+const fs = require('fs');
+const path = require('path');
+const MAINTENANCE_FILE = path.join(__dirname, 'data/maintenance.json');
+
+function isMaintenance() {
+  try {
+    if (fs.existsSync(MAINTENANCE_FILE)) {
+      const data = JSON.parse(fs.readFileSync(MAINTENANCE_FILE, 'utf8'));
+      return data.enabled;
+    }
+  } catch (e) {}
+  return false;
+}
+
+function getMaintenanceMsg() {
+  try {
+    if (fs.existsSync(MAINTENANCE_FILE)) {
+      const data = JSON.parse(fs.readFileSync(MAINTENANCE_FILE, 'utf8'));
+      return data.message || 'Bot sedang dalam maintenance.';
+    }
+  } catch (e) {}
+  return 'Bot sedang dalam maintenance.';
+}
+
 // ===== HANDLERS =====
 function handleSearch(ctx) {
   const chatId = ctx.chat.id;
+
+  if (isMaintenance()) {
+    return ctx.reply('🔧 ' + getMaintenanceMsg());
+  }
 
   if (isBanned(chatId)) {
     return ctx.reply('Akses ditolak. Anda telah diblokir dari menggunakan layanan ini karena pelanggaran aturan.');
