@@ -87,7 +87,7 @@ function handleSearch(ctx) {
   const chatId = ctx.chat.id;
 
   if (isMaintenance()) {
-    return ctx.reply('🔧 ' + getMaintenanceMsg());
+    return ctx.reply('🔧 *Bot sedang dalam maintenance.*\n\n' + getMaintenanceMsg() + '\n\n_Pesan tidak akan diteruskan ke partner._', { parse_mode: 'Markdown' });
   }
 
   if (isBanned(chatId)) {
@@ -132,6 +132,9 @@ function handleStop(ctx) {
 
 // ===== COMMANDS =====
 bot.start((ctx) => {
+  if (isMaintenance()) {
+    return ctx.reply('🔧 Bot sedang dalam maintenance.\n\n' + getMaintenanceMsg() + '\n\nSilakan coba lagi nanti.', { parse_mode: 'Markdown' });
+  }
   ctx.reply(
     '👋 *Selamat datang di Anonymous Chat Bot!*\n\n' +
     'Ngobrol anonim tanpa perlu bongkar identitas asli kamu. 🎭\n\n' +
