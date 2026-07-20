@@ -405,27 +405,38 @@
     // ===== MAINTENANCE =====
     async function rMaintenance(){
       const r=await fetch('/api/maintenance',{headers:H});const d=await r.json();
+      const isOn=d.enabled;
       M.innerHTML=`
-      <div class="card"><div class="card-header"><div class="card-title"><i data-lucide="wrench"></i> Maintenance Mode</div></div>
-      <div class="card-body">
-        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
-          <div style="font-size:14px;font-weight:700">Status:</div>
-          <span class="badge ${d.enabled?'badge-red':'badge-green'}">${d.enabled?'🔴 MAINTENANCE ON':'🟢 ACTIVE'}</span>
-          <button class="btn ${d.enabled?'btn-success':'btn-danger'}" onclick="toggleMaintenance(${!d.enabled})">
-            <i data-lucide="${d.enabled?'play':'power'}"></i> ${d.enabled?'Disable':'Enable'}
-          </button>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i data-lucide="wrench"></i> Maintenance Mode</div>
+          <span class="badge ${isOn?'badge-red':'badge-green'}" style="font-size:14px;padding:6px 16px">
+            ${isOn?'🔴 MAINTENANCE ON':'🟢 BOT ACTIVE'}
+          </span>
         </div>
-        <div class="form-row" style="border:0;padding:0">
-          <textarea class="form-input" id="maintMsg" placeholder="Maintenance message...">${d.message||''}</textarea>
+        <div class="card-body">
+          <div style="background:${isOn?'rgba(239,68,68,0.1)':'rgba(74,222,128,0.1)'};border:3px solid ${isOn?'var(--red)':'var(--green)'};padding:20px;margin-bottom:20px;text-align:center">
+            <div style="font-size:48px;margin-bottom:8px">${isOn?'🔴':'🟢'}</div>
+            <div style="font-size:20px;font-weight:700;margin-bottom:4px">${isOn?'MAINTENANCE MODE ON':'BOT AKTIF'}</div>
+            <div style="font-size:14px;color:var(--muted)">${isOn?'User tidak bisa menggunakan bot. Admin tetap bisa akses.':'Semua fitur bot berjalan normal.'}</div>
+          </div>
+          <div style="display:flex;gap:12px;margin-bottom:20px">
+            <button class="btn ${isOn?'btn-success':'btn-danger'}" onclick="toggleMaintenance(${!isOn})" style="flex:1;padding:14px;font-size:16px">
+              <i data-lucide="${isOn?'play':'power'}"></i> ${isOn?'🟢 DISABLE MAINTENANCE':'🔴 ENABLE MAINTENANCE'}
+            </button>
+          </div>
+          <div style="margin-bottom:12px;font-weight:700;font-size:14px">Maintenance Message:</div>
+          <textarea class="form-input" id="maintMsg" placeholder="Pesan yang dilihat user saat maintenance..." style="width:100%;min-height:100px">${d.message||''}</textarea>
+          <div style="margin-top:12px"><button class="btn btn-accent" onclick="saveMaintenance()"><i data-lucide="save"></i> Save Message</button></div>
         </div>
-        <div style="margin-top:12px"><button class="btn btn-accent" onclick="saveMaintenance()"><i data-lucide="save"></i> Save Message</button></div>
-      </div></div>`;
+      </div>`;
       lucide.createIcons();
     }
     async function toggleMaintenance(enabled){
-      const msg=document.getElementById('maintMsg')?.value||'Bot sedang dalam maintenance.';
+      const msg=document.getElementById('maintMsg')?.value||'🔧 Bot sedang dalam maintenance. Silakan coba lagi nanti.';
       await fetch('/api/maintenance',{method:'POST',headers:H,body:JSON.stringify({enabled,message:msg})});
-      showToast(enabled?'Maintenance ON':'Maintenance OFF');rMaintenance();
+      showToast(enabled?'🔴 Maintenance ON — Bot dinonaktifkan!':'🟢 Maintenance OFF — Bot aktif kembali!');
+      rMaintenance();
     }
     async function saveMaintenance(){
       const msg=document.getElementById('maintMsg').value;
