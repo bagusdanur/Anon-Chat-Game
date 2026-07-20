@@ -8,656 +8,385 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{--bg:#1a1a2e;--surface:#16213e;--border:#e2e8f0;--text:#f1f5f9;--muted:#94a3b8;--accent:#a78bfa;--accent-dark:#7c3aed;--yellow:#facc15;--green:#4ade80;--red:#f87171;--blue:#60a5fa;--pink:#f472b6;--cyan:#22d3ee;--orange:#fb923c;--shadow:4px 4px 0 #000;--shadow-sm:2px 2px 0 #000}
+    body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;border:3px solid var(--border)}
 
-    :root {
-      --bg: #1a1a2e;
-      --surface: #16213e;
-      --border: #e2e8f0;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
-      --accent: #a78bfa;
-      --accent-dark: #7c3aed;
-      --yellow: #facc15;
-      --green: #4ade80;
-      --red: #f87171;
-      --blue: #60a5fa;
-      --pink: #f472b6;
-      --cyan: #22d3ee;
-      --orange: #fb923c;
-      --shadow: 4px 4px 0px #000;
-      --shadow-sm: 2px 2px 0px #000;
-      --shadow-lg: 6px 6px 0px #000;
-    }
+    /* HEADER */
+    .header{background:var(--surface);border-bottom:3px solid var(--border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:fixed;top:0;left:0;right:0;z-index:50}
+    .header-left{display:flex;align-items:center;gap:12px}
+    .hamburger{display:none;width:40px;height:40px;border:3px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;align-items:center;justify-content:center;box-shadow:var(--shadow-sm)}
+    .hamburger i{width:20px;height:20px}
+    .header-brand{display:flex;align-items:center;gap:10px}
+    .header-icon{width:36px;height:36px;background:var(--yellow);border:3px solid var(--border);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm)}
+    .header-icon i{width:18px;height:18px;color:#000}
+    .header h1{font-size:16px;font-weight:700}
+    .header-btn{padding:8px 14px;border:3px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif;box-shadow:var(--shadow-sm);display:flex;align-items:center;gap:6px;transition:all .1s}
+    .header-btn:hover{transform:translate(2px,2px);box-shadow:none}
+    .header-btn i{width:16px;height:16px}
+    .header-btn.danger{background:var(--red);color:#000}
 
-    body {
-      font-family: 'Space Grotesk', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      border: 3px solid var(--border);
-    }
+    /* LAYOUT */
+    .layout{display:flex;min-height:100vh;padding-top:55px}
 
-    /* ===== HEADER ===== */
-    .header {
-      background: var(--surface);
-      border-bottom: 3px solid var(--border);
-      padding: 14px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 50;
-    }
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .hamburger {
-      display: none;
-      width: 40px;
-      height: 40px;
-      border: 3px solid var(--border);
-      background: var(--surface);
-      color: var(--text);
-      cursor: pointer;
-      align-items: center;
-      justify-content: center;
-      box-shadow: var(--shadow-sm);
-    }
-    .hamburger i { width: 20px; height: 20px; }
-    .header-brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .header-icon {
-      width: 36px;
-      height: 36px;
-      background: var(--yellow);
-      border: 3px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: var(--shadow-sm);
-    }
-    .header-icon i { width: 18px; height: 18px; color: #000; }
-    .header h1 { font-size: 16px; font-weight: 700; }
-    .header-btn {
-      padding: 8px 14px;
-      border: 3px solid var(--border);
-      background: var(--surface);
-      color: var(--text);
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 700;
-      font-family: 'Space Grotesk', sans-serif;
-      box-shadow: var(--shadow-sm);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.1s;
-    }
-    .header-btn:hover {
-      transform: translate(2px, 2px);
-      box-shadow: none;
-    }
-    .header-btn i { width: 16px; height: 16px; }
-    .header-btn.danger { background: var(--red); color: #000; }
+    /* SIDEBAR */
+    .sidebar{width:220px;background:var(--surface);border-right:3px solid var(--border);padding:16px 0;flex-shrink:0;position:fixed;top:55px;bottom:0;left:0;z-index:100;overflow-y:auto}
+    .nav-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:0 16px;margin:16px 0 8px}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;font-size:14px;font-weight:500;color:var(--muted);transition:all .1s;border-left:3px solid transparent}
+    .nav-item:hover{background:rgba(255,255,255,.05);color:var(--text)}
+    .nav-item.active{background:rgba(167,139,250,.1);color:var(--accent);border-left-color:var(--accent)}
+    .nav-item i{width:18px;height:18px;flex-shrink:0}
+    .nav-badge{margin-left:auto;background:var(--red);color:#000;font-size:11px;font-weight:700;padding:2px 8px;border:2px solid var(--border)}
 
-    /* ===== LAYOUT ===== */
-    .layout {
-      display: flex;
-      min-height: calc(100vh - 57px);
-    }
+    /* MAIN */
+    .main{flex:1;margin-left:220px;padding:16px;overflow-x:hidden}
 
-    /* ===== SIDEBAR ===== */
-    .sidebar {
-      width: 220px;
-      background: var(--surface);
-      border-right: 3px solid var(--border);
-      padding: 16px 0;
-      flex-shrink: 0;
-    }
-    .nav-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      padding: 0 16px;
-      margin: 16px 0 8px;
-    }
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 16px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--muted);
-      transition: all 0.1s;
-      border-left: 3px solid transparent;
-    }
-    .nav-item:hover {
-      background: rgba(255,255,255,0.05);
-      color: var(--text);
-    }
-    .nav-item.active {
-      background: rgba(167, 139, 250, 0.1);
-      color: var(--accent);
-      border-left-color: var(--accent);
-    }
-    .nav-item i { width: 18px; height: 18px; flex-shrink: 0; }
-    .nav-badge {
-      margin-left: auto;
-      background: var(--red);
-      color: #000;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border: 2px solid var(--border);
-    }
+    /* STATS */
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+    .stat-card{background:var(--surface);border:3px solid var(--border);padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:all .1s}
+    .stat-card:hover{transform:translate(2px,2px);box-shadow:var(--shadow-sm)}
+    .stat-card .accent-bar{position:absolute;top:0;left:0;right:0;height:4px}
+    .stat-card .stat-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+    .stat-card .stat-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+    .stat-card .stat-icon{width:32px;height:32px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center}
+    .stat-card .stat-icon i{width:16px;height:16px}
+    .stat-card .stat-value{font-size:28px;font-weight:700}
 
-    /* ===== MAIN ===== */
-    .main {
-      flex: 1;
-      padding: 16px;
-      overflow-x: hidden;
-    }
+    /* CARD */
+    .card{background:var(--surface);border:3px solid var(--border);box-shadow:var(--shadow);margin-bottom:16px}
+    .card-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:3px solid var(--border);flex-wrap:wrap;gap:8px}
+    .card-title{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700}
+    .card-title i{width:18px;height:18px;color:var(--accent)}
+    .card-body{padding:16px}
 
-    /* ===== STATS GRID ===== */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    .stat-card {
-      background: var(--surface);
-      border: 3px solid var(--border);
-      padding: 16px;
-      box-shadow: var(--shadow);
-      transition: all 0.1s;
-      position: relative;
-      overflow: hidden;
-    }
-    .stat-card:hover {
-      transform: translate(2px, 2px);
-      box-shadow: var(--shadow-sm);
-    }
-    .stat-card .accent-bar {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-    }
-    .stat-card .stat-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 10px;
-    }
-    .stat-card .stat-label {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .stat-card .stat-icon {
-      width: 32px;
-      height: 32px;
-      border: 2px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .stat-card .stat-icon i { width: 16px; height: 16px; }
-    .stat-card .stat-value {
-      font-size: 28px;
-      font-weight: 700;
-    }
+    /* TABS */
+    .tab-bar{display:flex;gap:4px;padding:6px;background:var(--bg);border:3px solid var(--border);margin-bottom:16px;overflow-x:auto}
+    .tab-btn{padding:10px 14px;border:2px solid transparent;background:0 0;color:var(--muted);cursor:pointer;font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif;display:flex;align-items:center;gap:6px;white-space:nowrap;transition:all .1s}
+    .tab-btn:hover{color:var(--text);background:rgba(255,255,255,.05)}
+    .tab-btn.active{background:var(--accent-dark);color:#fff;border-color:var(--border);box-shadow:var(--shadow-sm)}
+    .tab-btn i{width:16px;height:16px}
 
-    /* ===== CONTENT CARD ===== */
-    .card {
-      background: var(--surface);
-      border: 3px solid var(--border);
-      box-shadow: var(--shadow);
-      margin-bottom: 16px;
-    }
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 16px;
-      border-bottom: 3px solid var(--border);
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .card-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 15px;
-      font-weight: 700;
-    }
-    .card-title i { width: 18px; height: 18px; color: var(--accent); }
+    /* TABLE */
+    .table-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;min-width:600px}
+    th{padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;background:var(--bg);border-bottom:3px solid var(--border)}
+    td{padding:12px 14px;font-size:13px;border-bottom:2px solid var(--border)}
+    tr:last-child td{border-bottom:0}
+    tr:hover td{background:rgba(255,255,255,.02)}
 
-    /* ===== TABS ===== */
-    .tab-bar {
-      display: flex;
-      gap: 4px;
-      padding: 6px;
-      background: var(--bg);
-      border: 3px solid var(--border);
-      margin-bottom: 16px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    .tab-btn {
-      padding: 10px 14px;
-      border: 2px solid transparent;
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 700;
-      font-family: 'Space Grotesk', sans-serif;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-      transition: all 0.1s;
-    }
-    .tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.05); }
-    .tab-btn.active {
-      background: var(--accent-dark);
-      color: #fff;
-      border-color: var(--border);
-      box-shadow: var(--shadow-sm);
-    }
-    .tab-btn i { width: 16px; height: 16px; }
+    /* BADGES */
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;font-size:12px;font-weight:700;border:2px solid var(--border);box-shadow:var(--shadow-sm)}
+    .badge i{width:12px;height:12px}
+    .badge-green{background:var(--green);color:#000}
+    .badge-red{background:var(--red);color:#000}
+    .badge-blue{background:var(--blue);color:#000}
+    .badge-yellow{background:var(--yellow);color:#000}
+    .badge-accent{background:var(--accent);color:#000}
+    .badge-gray{background:#475569;color:#fff}
+    .badge-pink{background:var(--pink);color:#000}
+    .badge-cyan{background:var(--cyan);color:#000}
+    .badge-orange{background:var(--orange);color:#000}
 
-    /* ===== TABLE ===== */
-    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    table { width: 100%; border-collapse: collapse; min-width: 600px; }
-    th {
-      padding: 10px 14px;
-      text-align: left;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      background: var(--bg);
-      border-bottom: 3px solid var(--border);
-    }
-    td {
-      padding: 12px 14px;
-      font-size: 13px;
-      border-bottom: 2px solid var(--border);
-    }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: rgba(255,255,255,0.02); }
+    /* BUTTONS */
+    .btn{padding:6px 12px;border:2px solid var(--border);cursor:pointer;font-size:12px;font-weight:700;font-family:'Space Grotesk',sans-serif;display:inline-flex;align-items:center;gap:4px;box-shadow:var(--shadow-sm);transition:all .1s}
+    .btn:hover{transform:translate(1px,1px);box-shadow:none}
+    .btn i{width:14px;height:14px}
+    .btn-danger{background:var(--red);color:#000}
+    .btn-success{background:var(--green);color:#000}
+    .btn-accent{background:var(--accent);color:#000}
+    .btn-blue{background:var(--blue);color:#000}
+    .btn-yellow{background:var(--yellow);color:#000}
+    .btn-outline{background:var(--surface);color:var(--text)}
+    .btn-sm{padding:4px 8px;font-size:11px}
 
-    /* ===== BADGES ===== */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 3px 10px;
-      font-size: 12px;
-      font-weight: 700;
-      border: 2px solid var(--border);
-      box-shadow: var(--shadow-sm);
-    }
-    .badge i { width: 12px; height: 12px; }
-    .badge-green { background: var(--green); color: #000; }
-    .badge-red { background: var(--red); color: #000; }
-    .badge-blue { background: var(--blue); color: #000; }
-    .badge-yellow { background: var(--yellow); color: #000; }
-    .badge-accent { background: var(--accent); color: #000; }
-    .badge-gray { background: #475569; color: #fff; }
+    /* FORM */
+    .form-row{display:flex;gap:8px;padding:14px 16px;border-bottom:3px solid var(--border);flex-wrap:wrap}
+    .form-input{flex:1;min-width:120px;padding:10px 14px;border:3px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-family:'Space Grotesk',sans-serif;font-weight:500;box-shadow:var(--shadow-sm)}
+    .form-input:focus{outline:0;border-color:var(--accent);transform:translate(2px,2px);box-shadow:none}
+    .form-input::placeholder{color:#475569}
+    select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+    textarea.form-input{resize:vertical;min-height:80px}
 
-    /* ===== BUTTONS ===== */
-    .btn {
-      padding: 6px 12px;
-      border: 2px solid var(--border);
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 700;
-      font-family: 'Space Grotesk', sans-serif;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      box-shadow: var(--shadow-sm);
-      transition: all 0.1s;
-    }
-    .btn:hover {
-      transform: translate(1px, 1px);
-      box-shadow: none;
-    }
-    .btn i { width: 14px; height: 14px; }
-    .btn-danger { background: var(--red); color: #000; }
-    .btn-success { background: var(--green); color: #000; }
-    .btn-accent { background: var(--accent); color: #000; }
-    .btn-outline { background: var(--surface); color: var(--text); }
+    /* MODAL */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;padding:16px}
+    .modal-overlay.show{display:flex}
+    .modal{background:var(--surface);border:3px solid var(--border);box-shadow:var(--shadow-lg,8px 8px 0 #000);width:100%;max-width:600px;max-height:80vh;overflow-y:auto}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:3px solid var(--border)}
+    .modal-header h3{font-size:16px;font-weight:700}
+    .modal-close{width:32px;height:32px;border:2px solid var(--border);background:var(--red);color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;box-shadow:var(--shadow-sm)}
+    .modal-close:hover{transform:translate(1px,1px);box-shadow:none}
+    .modal-body{padding:16px}
+    .modal-footer{padding:12px 16px;border-top:3px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
 
-    /* ===== WORD FILTER ===== */
-    .filter-row {
-      display: flex;
-      gap: 8px;
-      padding: 14px 16px;
-      border-bottom: 3px solid var(--border);
-    }
-    .filter-input {
-      flex: 1;
-      padding: 10px 14px;
-      border: 3px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-      font-size: 14px;
-      font-family: 'Space Grotesk', sans-serif;
-      font-weight: 500;
-      box-shadow: var(--shadow-sm);
-    }
-    .filter-input:focus {
-      outline: none;
-      border-color: var(--accent);
-      transform: translate(2px, 2px);
-      box-shadow: none;
-    }
-    .filter-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      padding: 14px 16px;
-    }
-    .filter-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      background: var(--bg);
-      border: 2px solid var(--border);
-      font-size: 13px;
-      font-weight: 700;
-      box-shadow: var(--shadow-sm);
-    }
-    .filter-tag-remove {
-      cursor: pointer;
-      color: var(--red);
-      font-weight: 700;
-    }
+    /* FILTER TAGS */
+    .filter-row{display:flex;gap:8px;padding:14px 16px;border-bottom:3px solid var(--border)}
+    .filter-tags{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px}
+    .filter-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg);border:2px solid var(--border);font-size:13px;font-weight:700;box-shadow:var(--shadow-sm)}
+    .filter-tag-remove{cursor:pointer;color:var(--red);font-weight:700;font-size:16px}
 
-    /* ===== EMPTY STATE ===== */
-    .empty {
-      padding: 40px 20px;
-      text-align: center;
-      color: var(--muted);
-    }
-    .empty i { width: 40px; height: 40px; margin-bottom: 8px; opacity: 0.3; }
-    .empty p { font-size: 14px; font-weight: 500; }
+    /* EMPTY */
+    .empty{padding:40px 20px;text-align:center;color:var(--muted)}
+    .empty i{width:40px;height:40px;margin-bottom:8px;opacity:.3}
+    .empty p{font-size:14px;font-weight:500}
 
-    /* ===== MOBILE SIDEBAR OVERLAY ===== */
-    .sidebar-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      z-index: 40;
-    }
-    .sidebar-overlay.show { display: block; }
+    /* TOAST */
+    .toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;background:var(--green);color:#000;border:3px solid var(--border);box-shadow:var(--shadow);font-weight:700;font-size:14px;z-index:300;display:none;animation:slideUp .3s}
+    .toast.show{display:block}
+    .toast.error{background:var(--red);color:#fff}
+    @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 
-    /* ===== MOBILE ===== */
-    @media (max-width: 768px) {
-      .sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        z-index: 45;
-        transform: translateX(-100%);
-        transition: transform 0.2s;
-        width: 240px;
-        border-right: 3px solid var(--border);
-      }
-      .sidebar.open { transform: translateX(0); }
-      .hamburger { display: flex; }
-      .main { padding: 12px; }
-      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-      .stat-card { padding: 12px; }
-      .stat-card .stat-value { font-size: 22px; }
-      .header h1 { font-size: 14px; }
-      .header-btn span { display: none; }
-      table { min-width: 500px; }
-    }
+    /* OVERLAY */
+    .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99}
+    .sidebar-overlay.show{display:block}
 
-    @media (max-width: 400px) {
-      .stats-grid { grid-template-columns: 1fr 1fr; }
-      .stat-card { padding: 10px; }
-      .stat-card .stat-value { font-size: 20px; }
-      .tab-btn { padding: 8px 10px; font-size: 12px; }
-      .card-header { padding: 12px; }
+    /* MOBILE */
+    @media(max-width:768px){
+      .sidebar{position:fixed;top:0;left:0;bottom:0;z-index:150;transform:translateX(-100%);transition:transform .2s;width:240px}
+      .sidebar.open{transform:translateX(0)}
+      .hamburger{display:flex}
+      .main{margin-left:0;padding:12px}
+      .stats-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+      .stat-card{padding:12px}
+      .stat-card .stat-value{font-size:22px}
+      .header h1{font-size:14px}
+      .header-btn span{display:none}
+      table{min-width:500px}
+    }
+    @media(max-width:400px){
+      .stats-grid{grid-template-columns:1fr 1fr}
+      .tab-btn{padding:8px 10px;font-size:12px}
     }
   </style>
 </head>
 <body>
   <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
 
-  <!-- Header -->
   <header class="header">
     <div class="header-left">
-      <button class="hamburger" onclick="toggleSidebar()">
-        <i data-lucide="menu"></i>
-      </button>
+      <button class="hamburger" onclick="toggleSidebar()"><i data-lucide="menu"></i></button>
       <div class="header-brand">
         <div class="header-icon"><i data-lucide="shield"></i></div>
         <h1>Anon Chat Bot</h1>
       </div>
     </div>
-    <div style="display:flex;gap:8px;">
-      <button class="header-btn" onclick="loadAll()"><i data-lucide="refresh-cw"></i><span>Refresh</span></button>
-      <button class="header-btn danger" onclick="logout()"><i data-lucide="log-out"></i><span>Logout</span></button>
+    <div style="display:flex;gap:8px">
+      <button class="header-btn" onclick="openBroadcast()"><i data-lucide="megaphone"></i><span>Broadcast</span></button>
+      <button class="header-btn" onclick="loadAll()"><i data-lucide="refresh-cw"></i></button>
+      <button class="header-btn danger" onclick="logout()"><i data-lucide="log-out"></i></button>
     </div>
   </header>
 
   <div class="layout">
-    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="nav-label">Overview</div>
-      <div class="nav-item active" onclick="switchPage('home', this)">
-        <i data-lucide="layout-dashboard"></i> Dashboard
-      </div>
-
+      <div class="nav-item active" onclick="sw('home',this)"><i data-lucide="layout-dashboard"></i> Dashboard</div>
       <div class="nav-label">Management</div>
-      <div class="nav-item" onclick="switchPage('users', this)">
-        <i data-lucide="users"></i> Users
-        <span class="nav-badge" id="nav-count">-</span>
-      </div>
-      <div class="nav-item" onclick="switchPage('rpg', this)">
-        <i data-lucide="swords"></i> RPG Players
-      </div>
-      <div class="nav-item" onclick="switchPage('reports', this)">
-        <i data-lucide="flag"></i> Reports
-      </div>
-
-      <div class="nav-label">Moderation</div>
-      <div class="nav-item" onclick="switchPage('wordfilter', this)">
-        <i data-lucide="shield-ban"></i> Word Filter
-      </div>
+      <div class="nav-item" onclick="sw('users',this)"><i data-lucide="users"></i> Users <span class="nav-badge" id="nav-count">-</span></div>
+      <div class="nav-item" onclick="sw('rpg',this)"><i data-lucide="swords"></i> RPG Players</div>
+      <div class="nav-item" onclick="sw('items',this)"><i data-lucide="package"></i> Items</div>
+      <div class="nav-item" onclick="sw('quests',this)"><i data-lucide="scroll-text"></i> Quests</div>
+      <div class="nav-label">Activity</div>
+      <div class="nav-item" onclick="sw('reports',this)"><i data-lucide="flag"></i> Reports</div>
+      <div class="nav-item" onclick="sw('duels',this)"><i data-lucide="swords"></i> Duel History</div>
+      <div class="nav-item" onclick="sw('dungeons',this)"><i data-lucide="castle"></i> Dungeon Runs</div>
+      <div class="nav-item" onclick="sw('transactions',this)"><i data-lucide="coins"></i> Transactions</div>
+      <div class="nav-label">Content</div>
+      <div class="nav-item" onclick="sw('wordfilter',this)"><i data-lucide="shield-ban"></i> Word Filter</div>
+      <div class="nav-item" onclick="sw('icebreakers',this)"><i data-lucide="message-circle"></i> Icebreakers</div>
+      <div class="nav-item" onclick="sw('logs',this)"><i data-lucide="file-text"></i> Bot Logs</div>
     </aside>
 
-    <!-- Main -->
-    <main class="main" id="main-content"></main>
+    <main class="main" id="main"></main>
   </div>
 
+  <!-- MODALS -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header"><h3 id="modal-title">Modal</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
   <script>
-    const auth = sessionStorage.getItem('auth');
-    if (!auth) window.location.href = '/';
-    const H = { 'Authorization': 'Basic ' + auth, 'Content-Type': 'application/json' };
+    const auth=sessionStorage.getItem('auth');if(!auth)window.location.href='/';
+    const H={'Authorization':'Basic '+auth,'Content-Type':'application/json'};
+    let S={};
 
-    let S = {};
+    function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show')}
+    function showToast(msg,err){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(err?' error':'');setTimeout(()=>t.className='toast',3000)}
+    function openModal(title,body,footer){document.getElementById('modal-title').textContent=title;document.getElementById('modal-body').innerHTML=body;document.getElementById('modal-footer').innerHTML=footer||'';document.getElementById('modal-overlay').classList.add('show')}
+    function closeModal(){document.getElementById('modal-overlay').classList.remove('show')}
 
-    function toggleSidebar() {
-      document.getElementById('sidebar').classList.toggle('open');
-      document.getElementById('overlay').classList.toggle('show');
-    }
+    async function loadAll(){const r=await fetch('/api/stats',{headers:H});S=await r.json();document.getElementById('nav-count').textContent=S.totalUsers}
+    function sw(p,el){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));if(el)el.classList.add('active');document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show');rp(p)}
 
-    async function loadAll() {
-      const r = await fetch('/api/stats', { headers: H });
-      S = await r.json();
-      document.getElementById('nav-count').textContent = S.totalUsers;
-      const active = document.querySelector('.nav-item.active');
-      const page = active?.textContent?.trim().toLowerCase().replace(/\s/g, '') || 'home';
-      renderPage(page === 'dashboard' ? 'home' : page);
-    }
-
-    function switchPage(p, el) {
-      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      if (el) el.classList.add('active');
-      document.getElementById('sidebar').classList.remove('open');
-      document.getElementById('overlay').classList.remove('show');
-      renderPage(p);
-    }
-
-    function renderPage(p) {
-      const titles = { home: 'Dashboard', users: 'Users', rpg: 'RPG Players', reports: 'Reports', wordfilter: 'Word Filter' };
-      if (p === 'home') renderHome();
-      else if (p === 'users') renderUsers();
-      else if (p === 'rpg') renderRPG();
-      else if (p === 'reports') renderReports();
-      else if (p === 'wordfilter') renderWordFilter();
+    const M=document.getElementById('main');
+    function rp(p){
+      const fn={home:rHome,users:rUsers,rpg:rRPG,items:rItems,quests:rQuests,reports:rReports,duels:rDuels,dungeons:rDungeons,transactions:rTransactions,wordfilter:rWF,icebreakers:rIce,logs:rLogs};
+      if(fn[p])fn[p]();
     }
 
     // ===== HOME =====
-    function renderHome() {
-      document.getElementById('main-content').innerHTML = `
-        <div class="stats-grid">
-          <div class="stat-card"><div class="accent-bar" style="background:var(--blue)"></div><div class="stat-top"><div class="stat-label">Total Users</div><div class="stat-icon" style="background:var(--blue);color:#000"><i data-lucide="users"></i></div></div><div class="stat-value">${S.totalUsers}</div></div>
-          <div class="stat-card"><div class="accent-bar" style="background:var(--green)"></div><div class="stat-top"><div class="stat-label">Online</div><div class="stat-icon" style="background:var(--green);color:#000"><i data-lucide="wifi"></i></div></div><div class="stat-value">${S.onlineUsers}</div></div>
-          <div class="stat-card"><div class="accent-bar" style="background:var(--yellow)"></div><div class="stat-top"><div class="stat-label">Paired</div><div class="stat-icon" style="background:var(--yellow);color:#000"><i data-lucide="heart"></i></div></div><div class="stat-value">${S.pairedUsers}</div></div>
-          <div class="stat-card"><div class="accent-bar" style="background:var(--cyan)"></div><div class="stat-top"><div class="stat-label">In Queue</div><div class="stat-icon" style="background:var(--cyan);color:#000"><i data-lucide="clock"></i></div></div><div class="stat-value">${S.queuedUsers}</div></div>
-          <div class="stat-card"><div class="accent-bar" style="background:var(--red)"></div><div class="stat-top"><div class="stat-label">Banned</div><div class="stat-icon" style="background:var(--red);color:#000"><i data-lucide="ban"></i></div></div><div class="stat-value">${S.bannedUsers}</div></div>
-          <div class="stat-card"><div class="accent-bar" style="background:var(--pink)"></div><div class="stat-top"><div class="stat-label">Reports 24h</div><div class="stat-icon" style="background:var(--pink);color:#000"><i data-lucide="flag"></i></div></div><div class="stat-value">${S.reports24h}</div></div>
-          <div class="stat-card"><div class="accent-bar" style="background:var(--accent)"></div><div class="stat-top"><div class="stat-label">RPG Players</div><div class="stat-icon" style="background:var(--accent);color:#000"><i data-lucide="swords"></i></div></div><div class="stat-value">${S.rpgUsers}</div></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><div class="card-title"><i data-lucide="zap"></i> Quick Actions</div></div>
-          <div style="padding:16px;display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-outline" onclick="switchPage('users',document.querySelectorAll('.nav-item')[1])"><i data-lucide="users"></i> Users</button>
-            <button class="btn btn-outline" onclick="switchPage('reports',document.querySelectorAll('.nav-item')[3])"><i data-lucide="flag"></i> Reports</button>
-            <button class="btn btn-outline" onclick="switchPage('wordfilter',document.querySelectorAll('.nav-item')[4])"><i data-lucide="shield-ban"></i> Word Filter</button>
-          </div>
-        </div>`;
+    function rHome(){
+      M.innerHTML=`
+      <div class="stats-grid">
+        <div class="stat-card"><div class="accent-bar" style="background:var(--blue)"></div><div class="stat-top"><div class="stat-label">Total Users</div><div class="stat-icon" style="background:var(--blue);color:#000"><i data-lucide="users"></i></div></div><div class="stat-value">${S.totalUsers}</div></div>
+        <div class="stat-card"><div class="accent-bar" style="background:var(--green)"></div><div class="stat-top"><div class="stat-label">Online</div><div class="stat-icon" style="background:var(--green);color:#000"><i data-lucide="wifi"></i></div></div><div class="stat-value">${S.onlineUsers}</div></div>
+        <div class="stat-card"><div class="accent-bar" style="background:var(--yellow)"></div><div class="stat-top"><div class="stat-label">Paired</div><div class="stat-icon" style="background:var(--yellow);color:#000"><i data-lucide="heart"></i></div></div><div class="stat-value">${S.pairedUsers}</div></div>
+        <div class="stat-card"><div class="accent-bar" style="background:var(--cyan)"></div><div class="stat-top"><div class="stat-label">Queue</div><div class="stat-icon" style="background:var(--cyan);color:#000"><i data-lucide="clock"></i></div></div><div class="stat-value">${S.queuedUsers}</div></div>
+        <div class="stat-card"><div class="accent-bar" style="background:var(--red)"></div><div class="stat-top"><div class="stat-label">Banned</div><div class="stat-icon" style="background:var(--red);color:#000"><i data-lucide="ban"></i></div></div><div class="stat-value">${S.bannedUsers}</div></div>
+        <div class="stat-card"><div class="accent-bar" style="background:var(--pink)"></div><div class="stat-top"><div class="stat-label">Reports</div><div class="stat-icon" style="background:var(--pink);color:#000"><i data-lucide="flag"></i></div></div><div class="stat-value">${S.totalReports}</div></div>
+        <div class="stat-card"><div class="accent-bar" style="background:var(--accent)"></div><div class="stat-top"><div class="stat-label">RPG Players</div><div class="stat-icon" style="background:var(--accent);color:#000"><i data-lucide="swords"></i></div></div><div class="stat-value">${S.rpgUsers}</div></div>
+        <div class="stat-card"><div class="accent-bar" style="background:var(--orange)"></div><div class="stat-top"><div class="stat-label">Dungeons</div><div class="stat-icon" style="background:var(--orange);color:#000"><i data-lucide="castle"></i></div></div><div class="stat-value">${S.totalDungeonRuns}</div></div>
+      </div>`;
       lucide.createIcons();
     }
 
     // ===== USERS =====
-    async function renderUsers() {
-      const r = await fetch('/api/users', { headers: H });
-      const users = await r.json();
-      let rows = users.map(u => {
-        const sb = u.status === 'chatting' ? 'badge-green' : u.status === 'queued' ? 'badge-yellow' : 'badge-gray';
-        const si = u.status === 'chatting' ? 'heart' : u.status === 'queued' ? 'clock' : 'user';
-        return `<tr>
-          <td><code style="color:var(--accent)">${u.chat_id}</code></td>
-          <td><span class="badge ${sb}"><i data-lucide="${si}"></i> ${u.status}</span></td>
-          <td>${u.lang||'any'}</td>
-          <td>${u.gender||'-'}</td>
-          <td>${u.is_banned?'<span class="badge badge-red"><i data-lucide="ban"></i> Banned</span>':'<span class="badge badge-gray">OK</span>'}</td>
-          <td>${u.created_at||'-'}</td>
-          <td>${u.is_banned?`<button class="btn btn-success" onclick="unban('${u.chat_id}')"><i data-lucide="check"></i> Unban</button>`:`<button class="btn btn-danger" onclick="banU('${u.chat_id}')"><i data-lucide="ban"></i> Ban</button>`}</td>
-        </tr>`;
-      }).join('');
-      document.getElementById('main-content').innerHTML = `
-        <div class="card">
-          <div class="card-header"><div class="card-title"><i data-lucide="users"></i> Users (${users.length})</div><button class="btn btn-outline" onclick="renderUsers()"><i data-lucide="refresh-cw"></i> Refresh</button></div>
-          <div class="table-wrap"><table><thead><tr><th>Chat ID</th><th>Status</th><th>Lang</th><th>Gender</th><th>Ban</th><th>Joined</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>
-        </div>`;
+    async function rUsers(){
+      const r=await fetch('/api/users',{headers:H});const u=await r.json();
+      let rows=u.map(x=>{const sb=x.status==='chatting'?'badge-green':x.status==='queued'?'badge-yellow':'badge-gray';const si=x.status==='chatting'?'heart':x.status==='queued'?'clock':'user';
+      return`<tr style="cursor:pointer" onclick="userDetail('${x.chat_id}')"><td><code style="color:var(--accent)">${x.chat_id}</code></td><td><span class="badge ${sb}"><i data-lucide="${si}"></i>${x.status}</span></td><td>${x.lang||'any'}</td><td>${x.gender||'-'}</td><td>${x.is_banned?'<span class="badge badge-red">BANNED</span>':'<span class="badge badge-gray">OK</span>'}</td><td>${x.created_at||'-'}</td><td onclick="event.stopPropagation()">${x.is_banned?`<button class="btn btn-success btn-sm" onclick="unban('${x.chat_id}')"><i data-lucide="check"></i></button>`:`<button class="btn btn-danger btn-sm" onclick="banU('${x.chat_id}')"><i data-lucide="ban"></i></button>`} <button class="btn btn-outline btn-sm" onclick="sendMsg('${x.chat_id}')"><i data-lucide="send"></i></button></td></tr>`}).join('');
+      M.innerHTML=`<div class="card"><div class="card-header"><div class="card-title"><i data-lucide="users"></i> Users (${u.length})</div><button class="btn btn-outline" onclick="rUsers()"><i data-lucide="refresh-cw"></i></button></div><div class="table-wrap"><table><thead><tr><th>Chat ID</th><th>Status</th><th>Lang</th><th>Gender</th><th>Ban</th><th>Joined</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
       lucide.createIcons();
     }
+    async function banU(id){await fetch(`/api/users/${id}/ban`,{method:'POST',headers:H});showToast('User banned');loadAll();rUsers()}
+    async function unban(id){await fetch(`/api/users/${id}/unban`,{method:'POST',headers:H});showToast('User unbanned');loadAll();rUsers()}
 
-    async function banU(id) { await fetch(`/api/users/${id}/ban`,{method:'POST',headers:H}); loadAll(); renderUsers(); }
-    async function unban(id) { await fetch(`/api/users/${id}/unban`,{method:'POST',headers:H}); loadAll(); renderUsers(); }
+    async function userDetail(id){
+      const r=await fetch(`/api/users/${id}`,{headers:H});const d=await r.json();
+      const u=d.user;const rpg=d.rpg;
+      let rpgInfo=rpg?`<p><b>Class:</b> ${rpg.class_name} | <b>Lv:</b> ${rpg.level} | <b>Gold:</b> ${rpg.gold}g</p>`:'<p style="color:var(--muted)">No RPG character</p>';
+      let html=`<div style="display:flex;flex-direction:column;gap:12px"><div class="card"><div class="card-body"><p><b>Chat ID:</b> <code>${u.chat_id}</code></p><p><b>Status:</b> ${u.status}</p><p><b>Lang:</b> ${u.lang||'any'} | <b>Gender:</b> ${u.gender||'any'}</p><p><b>Banned:</b> ${u.is_banned?'YES':'NO'}</p><p><b>Joined:</b> ${u.created_at||'-'}</p></div></div><div class="card"><div class="card-header"><div class="card-title"><i data-lucide="swords"></i> RPG</div></div><div class="card-body">${rpgInfo}</div></div></div>`;
+      let footer=`<button class="btn btn-outline" onclick="closeModal()">Close</button><button class="btn btn-yellow" onclick="resetUser('${id}')"><i data-lucide="rotate-ccw"></i> Reset Status</button>`;
+      if(rpg)footer+=`<button class="btn btn-danger" onclick="resetRPG('${id}')"><i data-lucide="trash-2"></i> Delete RPG</button>`;
+      openModal(`User: ${id}`,html,footer);lucide.createIcons();
+    }
+    async function resetUser(id){await fetch(`/api/users/${id}/reset`,{method:'POST',headers:H});showToast('Status reset');closeModal();rUsers()}
+    async function resetRPG(id){await fetch(`/api/rpg-users/${id}/reset`,{method:'POST',headers:H});showToast('RPG deleted');closeModal();rUsers()}
+
+    function sendMsg(id){
+      openModal(`Send to ${id}`,`<div class="form-row"><textarea class="form-input" id="sendMsg" placeholder="Pesan..."></textarea></div>`,`<button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-accent" onclick="doSend('${id}')"><i data-lucide="send"></i> Send</button>`);
+    }
+    async function doSend(id){const msg=document.getElementById('sendMsg').value;if(!msg)return;await fetch('/api/send',{method:'POST',headers:H,body:JSON.stringify({chat_id:id,message:msg})});showToast('Message sent!');closeModal()}
 
     // ===== RPG =====
-    async function renderRPG() {
-      const r = await fetch('/api/rpg-users', { headers: H });
-      const users = await r.json();
-      const ci = c => c==='ksatria'?'⚔️':c==='penyihir'?'🔥':'🗡️';
-      const cb = c => c==='ksatria'?'badge-blue':c==='penyihir'?'badge-accent':'badge-yellow';
-      let rows = users.map(u => `<tr>
-        <td><code style="color:var(--accent)">${u.telegram_user_id}</code></td>
-        <td><span class="badge ${cb(u.class_name)}">${ci(u.class_name)} ${u.class_name}</span></td>
-        <td><strong>Lv.${u.level}</strong></td><td>${u.xp}</td><td>💰${u.gold}g</td><td>❤️${u.hp}/${u.max_hp}</td>
-      </tr>`).join('');
-      document.getElementById('main-content').innerHTML = `
-        <div class="card">
-          <div class="card-header"><div class="card-title"><i data-lucide="swords"></i> RPG Players (${users.length})</div><button class="btn btn-outline" onclick="renderRPG()"><i data-lucide="refresh-cw"></i> Refresh</button></div>
-          <div class="table-wrap"><table><thead><tr><th>User ID</th><th>Class</th><th>Level</th><th>XP</th><th>Gold</th><th>HP</th></tr></thead><tbody>${rows}</tbody></table></div>
-        </div>`;
+    async function rRPG(){
+      const r=await fetch('/api/rpg-users',{headers:H});const u=await r.json();
+      const ci=c=>c==='ksatria'?'⚔️':c==='penyihir'?'🔥':'🗡️';
+      const cb=c=>c==='ksatria'?'badge-blue':c==='penyihir'?'badge-accent':'badge-yellow';
+      let rows=u.map(x=>`<tr style="cursor:pointer" onclick="rpgDetail('${x.telegram_user_id}')"><td><code style="color:var(--accent)">${x.telegram_user_id}</code></td><td><span class="badge ${cb(x.class_name)}">${ci(x.class_name)} ${x.class_name}</span></td><td><b>Lv.${x.level}</b></td><td>${x.xp}</td><td>💰${x.gold}g</td><td>❤️${x.hp}/${x.max_hp}</td><td>⚔️${x.atk} 🛡️${x.def}</td></tr>`).join('');
+      M.innerHTML=`<div class="card"><div class="card-header"><div class="card-title"><i data-lucide="swords"></i> RPG Players (${u.length})</div><button class="btn btn-outline" onclick="rRPG()"><i data-lucide="refresh-cw"></i></button></div><div class="table-wrap"><table><thead><tr><th>ID</th><th>Class</th><th>Level</th><th>XP</th><th>Gold</th><th>HP</th><th>Stats</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+      lucide.createIcons();
+    }
+    async function rpgDetail(id){
+      const r=await fetch(`/api/rpg-users/${id}`,{headers:H});const d=await r.json();const u=d.user;
+      let inv=d.inventory.map(i=>`<span class="badge badge-${i.rarity==='legendary'?'orange':i.rarity==='epic'?'accent':i.rarity==='rare'?'blue':i.rarity==='uncommon'?'green':'gray'}">${i.display_name}${i.equipped?' ⚡':''} x${i.quantity}</span>`).join(' ');
+      let html=`<div style="display:flex;flex-direction:column;gap:12px"><div class="card"><div class="card-body"><p><b>${u.class_name}</b> Lv.${u.level}</p><p>XP: ${u.xp} | Gold: ${u.gold}g</p><p>HP: ${u.hp}/${u.max_hp} | ATK: ${u.atk} | DEF: ${u.def}</p><p>Magic: ${u.magic_atk} | Crit: ${(u.crit_rate*100).toFixed(0)}%</p></div></div><div class="card"><div class="card-header"><div class="card-title"><i data-lucide="package"></i> Inventory (${d.inventory.length})</div></div><div class="card-body">${inv||'<span style="color:var(--muted)">Empty</span>'}</div></div></div>`;
+      let footer=`<button class="btn btn-outline" onclick="closeModal()">Close</button><button class="btn btn-yellow" onclick="setLevel('${id}')"><i data-lucide="edit"></i> Set Level</button><button class="btn btn-yellow" onclick="setGold('${id}')"><i data-lucide="coins"></i> Set Gold</button>`;
+      openModal(`${u.class_name} Lv.${u.level}`,html,footer);lucide.createIcons();
+    }
+    function setLevel(id){openModal('Set Level',`<div class="form-row"><input class="form-input" type="number" id="newLevel" min="1" max="999" placeholder="Level"></div>`,`<button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-accent" onclick="doSetLevel('${id}')">Save</button>`)}
+    async function doSetLevel(id){const lv=document.getElementById('newLevel').value;if(!lv)return;await fetch(`/api/rpg-users/${id}/set-level`,{method:'POST',headers:H,body:JSON.stringify({level:parseInt(lv)})});showToast('Level updated');closeModal();rpgDetail(id)}
+    function setGold(id){openModal('Set Gold',`<div class="form-row"><input class="form-input" type="number" id="newGold" min="0" placeholder="Gold"></div>`,`<button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-accent" onclick="doSetGold('${id}')">Save</button>`)}
+    async function doSetGold(id){const g=document.getElementById('newGold').value;if(!g&&g!==0)return;await fetch(`/api/rpg-users/${id}/set-gold`,{method:'POST',headers:H,body:JSON.stringify({gold:parseInt(g)})});showToast('Gold updated');closeModal();rpgDetail(id)}
+
+    // ===== ITEMS =====
+    async function rItems(){
+      const r=await fetch('/api/items',{headers:H});const items=await r.json();
+      const rb=r=>r==='legendary'?'badge-orange':r==='epic'?'badge-accent':r==='rare'?'badge-blue':r==='uncommon'?'badge-green':'badge-gray';
+      let rows=items.map(i=>`<tr><td><code style="color:var(--accent)">${i.item_id}</code></td><td>${i.display_name}</td><td><span class="badge badge-${i.category==='weapon'?'red':i.category==='armor'?'blue':i.category==='staff'?'accent':'gray'}">${i.category}</span></td><td><span class="badge ${rb(i.rarity)}">${i.rarity}</span></td><td>${i.sell_price}g</td><td><button class="btn btn-danger btn-sm" onclick="delItem('${i.item_id}')"><i data-lucide="trash-2"></i></button></td></tr>`).join('');
+      M.innerHTML=`<div class="card"><div class="card-header"><div class="card-title"><i data-lucide="package"></i> Items (${items.length})</div><div style="display:flex;gap:8px"><button class="btn btn-accent" onclick="addItem()"><i data-lucide="plus"></i> Add</button><button class="btn btn-outline" onclick="rItems()"><i data-lucide="refresh-cw"></i></button></div></div><div class="table-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Rarity</th><th>Sell</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+      lucide.createIcons();
+    }
+    function addItem(){openModal('Add Item',`<div style="display:flex;flex-direction:column;gap:8px"><input class="form-input" id="itemId" placeholder="item_id"><input class="form-input" id="itemName" placeholder="Display Name"><select class="form-input" id="itemCat"><option value="consumable">Consumable</option><option value="material">Material</option><option value="weapon">Weapon</option><option value="staff">Staff</option><option value="armor">Armor</option><option value="accessory">Accessory</option></select><select class="form-input" id="itemRarity"><option value="common">Common</option><option value="uncommon">Uncommon</option><option value="rare">Rare</option><option value="epic">Epic</option><option value="legendary">Legendary</option></select><input class="form-input" type="number" id="itemPrice" placeholder="Sell price" value="0"></div>`,`<button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-accent" onclick="doAddItem()">Add</button>`)}
+    async function doAddItem(){const d={item_id:document.getElementById('itemId').value,display_name:document.getElementById('itemName').value,category:document.getElementById('itemCat').value,rarity:document.getElementById('itemRarity').value,sell_price:parseInt(document.getElementById('itemPrice').value)};if(!d.item_id||!d.display_name)return;await fetch('/api/items',{method:'POST',headers:H,body:JSON.stringify(d)});showToast('Item added');closeModal();rItems()}
+    async function delItem(id){if(!confirm('Delete item?'))return;await fetch(`/api/items/${id}`,{method:'DELETE',headers:H});showToast('Item deleted');rItems()}
+
+    // ===== QUESTS =====
+    async function rQuests(){
+      const r=await fetch('/api/quests',{headers:H});const q=await r.json();
+      let rows=q.map(x=>`<tr><td><code>${x.quest_id}</code></td><td>${x.name}</td><td>${x.description}</td><td><span class="badge badge-blue">${x.type}</span></td><td>${x.action_type}</td><td>${x.target_count}</td><td>✨${x.xp_reward} 💰${x.gold_reward}</td></tr>`).join('');
+      M.innerHTML=`<div class="card"><div class="card-header"><div class="card-title"><i data-lucide="scroll-text"></i> Quests (${q.length})</div></div><div class="table-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Desc</th><th>Type</th><th>Action</th><th>Target</th><th>Reward</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
       lucide.createIcons();
     }
 
     // ===== REPORTS =====
-    async function renderReports() {
-      const r = await fetch('/api/reports', { headers: H });
-      const reports = await r.json();
-      const content = reports.length === 0
-        ? `<div class="empty"><i data-lucide="check-circle"></i><p>No reports. All good! 🎉</p></div>`
-        : `<div class="table-wrap"><table><thead><tr><th>Reporter</th><th>Reported</th><th>Reason</th><th>Date</th></tr></thead><tbody>${reports.map(r=>`<tr><td><code style="color:var(--accent)">${r.reporter_id}</code></td><td><code style="color:var(--red)">${r.reported_id}</code></td><td>${r.reason||'-'}</td><td>${r.created_at}</td></tr>`).join('')}</tbody></table></div>`;
-      document.getElementById('main-content').innerHTML = `
-        <div class="card">
-          <div class="card-header"><div class="card-title"><i data-lucide="flag"></i> Reports (${reports.length})</div><button class="btn btn-outline" onclick="renderReports()"><i data-lucide="refresh-cw"></i> Refresh</button></div>
-          ${content}
-        </div>`;
+    async function rReports(){
+      const r=await fetch('/api/reports',{headers:H});const rp=await r.json();
+      const content=rp.length===0?'<div class="empty"><i data-lucide="check-circle"></i><p>No reports! 🎉</p></div>':`<div class="table-wrap"><table><thead><tr><th>Reporter</th><th>Reported</th><th>Reason</th><th>Date</th><th>Action</th></tr></thead><tbody>${rp.map(x=>`<tr><td><code style="color:var(--accent)">${x.reporter_id}</code></td><td><code style="color:var(--red)">${x.reported_id}</code></td><td>${x.reason||'-'}</td><td>${x.created_at}</td><td><button class="btn btn-danger btn-sm" onclick="delReport(${x.id})"><i data-lucide="trash-2"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+      M.innerHTML=`<div class="card"><div class="card-header"><div class="card-title"><i data-lucide="flag"></i> Reports (${rp.length})</div><button class="btn btn-outline" onclick="rReports()"><i data-lucide="refresh-cw"></i></button></div>${content}</div>`;
+      lucide.createIcons();
+    }
+    async function delReport(id){await fetch(`/api/reports/${id}`,{method:'DELETE',headers:H});showToast('Report deleted');rReports()}
+
+    // ===== DUELS =====
+    async function rDuels(){
+      const r=await fetch('/api/duels',{headers:H});const d=await r.json();
+      let rows=d.map(x=>`<tr><td><code>${x.player_a_id}</code></td><td><code>${x.player_b_id}</code></td><td><span class="badge badge-${x.result==='win'?'green':x.result==='draw'?'yellow':'red'}">${x.result}</span></td><td>${x.xp_reward}xp ${x.gold_reward}g</td><td>${new Date(x.started_at*1000).toLocaleString()}</td></tr>`).join('');
+      M.innerHTML=`<div class="card"><div class="card-header"><div class="card-title"><i data-lucide="swords"></i> Duel History (${d.length})</div></div><div class="table-wrap"><table><thead><tr><th>Player A</th><th>Player B</th><th>Result</th><th>Reward</th><th>Date</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+      lucide.createIcons();
+    }
+
+    // ===== DUNGEONS =====
+    async function rDungeons(){
+      const r=await fetch('/api/dungeons',{headers:H});const d=await r.json();
+      let rows=d.map(x=>`<tr><td><code>${x.player_a_id}</code></td><td><code>${x.player_b_id}</code></td><td>${x.boss_id}</td><td><span class="badge badge-${x.result==='win'?'green':x.result==='lose'?'red':'yellow'}">${x.result}</span></td><td>${new Date(x.started_at*1000).toLocaleString()}</td></tr>`).join('');
+      M.innerHTML=`<div class="card"><div class="card-header"><div class="card-title"><i data-lucide="castle"></i> Dungeon Runs (${d.length})</div></div><div class="table-wrap"><table><thead><tr><th>Player A</th><th>Player B</th><th>Boss</th><th>Result</th><th>Date</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+      lucide.createIcons();
+    }
+
+    // ===== TRANSACTIONS =====
+    async function rTransactions(){
+      const r=await fetch('/api/transactions',{headers:H});const t=await r.json();
+      let rows=t.map(x=>`<tr><td><code>${x.from_user_id||'-'}</code></td><td><code>${x.to_user_id||'-'}</code></td><td>${x.amount}</td><td><span class="badge badge-blue">${x.reason}</span></td><td>${new Date(x.created_at*1000).toLocaleString()}</td></tr>`).join('');
+      M.innerHTML=`<div class="card"><div class="card-header"><div class="card-title"><i data-lucide="coins"></i> Transactions (${t.length})</div></div><div class="table-wrap"><table><thead><tr><th>From</th><th>To</th><th>Amount</th><th>Reason</th><th>Date</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
       lucide.createIcons();
     }
 
     // ===== WORD FILTER =====
-    let CW = [];
-    async function renderWordFilter() {
-      const r = await fetch('/api/wordfilter', { headers: H });
-      const d = await r.json();
-      CW = d.words;
-      drawWF();
-    }
-    function drawWF() {
-      const tags = CW.length > 0
-        ? CW.map((w,i)=>`<span class="filter-tag">${w} <span class="filter-tag-remove" onclick="rmWord(${i})">×</span></span>`).join('')
-        : '<p style="color:var(--muted);font-size:14px;">No blocked words.</p>';
-      document.getElementById('main-content').innerHTML = `
-        <div class="card">
-          <div class="card-header"><div class="card-title"><i data-lucide="shield-ban"></i> Blocked Words (${CW.length})</div></div>
-          <div class="filter-row">
-            <input class="filter-input" id="newWord" placeholder="Add blocked word..." onkeypress="if(event.key==='Enter')addWord()">
-            <button class="btn btn-accent" onclick="addWord()"><i data-lucide="plus"></i> Add</button>
-          </div>
-          <div class="filter-tags">${tags}</div>
-        </div>`;
+    let CW=[];
+    async function rWF(){const r=await fetch('/api/wordfilter',{headers:H});const d=await r.json();CW=d.words;drawWF()}
+    function drawWF(){
+      const tags=CW.length>0?CW.map((w,i)=>`<span class="filter-tag">${w} <span class="filter-tag-remove" onclick="rmW(${i})">×</span></span>`).join(''):'<p style="color:var(--muted)">No blocked words.</p>';
+      M.innerHTML=`<div class="card"><div class="card-header"><div class="card-title"><i data-lucide="shield-ban"></i> Word Filter (${CW.length})</div></div><div class="filter-row"><input class="form-input" id="newWord" placeholder="Add word..." onkeypress="if(event.key==='Enter')addW()" style="flex:1"><button class="btn btn-accent" onclick="addW()"><i data-lucide="plus"></i> Add</button></div><div class="filter-tags">${tags}</div></div>`;
       lucide.createIcons();
     }
-    function addWord() {
-      const i = document.getElementById('newWord');
-      const w = i.value.trim().toLowerCase();
-      if (w && !CW.includes(w)) { CW.push(w); saveWF(); i.value = ''; }
+    function addW(){const i=document.getElementById('newWord');const w=i.value.trim().toLowerCase();if(w&&!CW.includes(w)){CW.push(w);saveWF();i.value=''}}
+    function rmW(i){CW.splice(i,1);saveWF()}
+    async function saveWF(){await fetch('/api/wordfilter',{method:'POST',headers:H,body:JSON.stringify({words:CW})});showToast('Word filter updated');drawWF()}
+
+    // ===== ICEBREAKERS =====
+    let IQ=[];
+    async function rIce(){const r=await fetch('/api/icebreakers',{headers:H});const d=await r.json();IQ=d.questions;drawIce()}
+    function drawIce(){
+      const tags=IQ.length>0?IQ.map((q,i)=>`<span class="filter-tag" style="max-width:100%">${q} <span class="filter-tag-remove" onclick="rmIce(${i})">×</span></span>`).join(''):'<p style="color:var(--muted)">No questions.</p>';
+      M.innerHTML=`<div class="card"><div class="card-header"><div class="card-title"><i data-lucide="message-circle"></i> Icebreakers (${IQ.length})</div></div><div class="filter-row"><input class="form-input" id="newQ" placeholder="Add question..." onkeypress="if(event.key==='Enter')addIce()" style="flex:1"><button class="btn btn-accent" onclick="addIce()"><i data-lucide="plus"></i> Add</button></div><div class="filter-tags" style="flex-direction:column">${tags}</div></div>`;
+      lucide.createIcons();
     }
-    function rmWord(i) { CW.splice(i,1); saveWF(); }
-    async function saveWF() {
-      await fetch('/api/wordfilter',{method:'POST',headers:H,body:JSON.stringify({words:CW})});
-      drawWF();
+    function addIce(){const i=document.getElementById('newQ');const q=i.value.trim();if(q){IQ.push(q);saveIce();i.value=''}}
+    function rmIce(i){IQ.splice(i,1);saveIce()}
+    async function saveIce(){await fetch('/api/icebreakers',{method:'POST',headers:H,body:JSON.stringify({questions:IQ})});showToast('Icebreakers updated');drawIce()}
+
+    // ===== LOGS =====
+    async function rLogs(){
+      const r=await fetch('/api/logs',{headers:H});const d=await r.json();
+      const lines=d.logs.map(l=>`<div style="font-family:monospace;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);color:var(--muted)">${l}</div>`).join('');
+      M.innerHTML=`<div class="card"><div class="card-header"><div class="card-title"><i data-lucide="file-text"></i> Bot Logs (last 100)</div><button class="btn btn-outline" onclick="rLogs()"><i data-lucide="refresh-cw"></i></button></div><div class="card-body" style="max-height:500px;overflow-y:auto">${lines||'<p style="color:var(--muted)">No logs.</p>'}</div></div>`;
+      lucide.createIcons();
     }
 
-    function logout() { sessionStorage.removeItem('auth'); window.location.href = '/'; }
+    // ===== BROADCAST =====
+    function openBroadcast(){
+      openModal('📢 Broadcast to All Users',`<div class="form-row"><textarea class="form-input" id="broadcastMsg" placeholder="Pesan broadcast..."></textarea></div>`,`<button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-yellow" onclick="doBroadcast()"><i data-lucide="megaphone"></i> Send Broadcast</button>`);
+    }
+    async function doBroadcast(){const msg=document.getElementById('broadcastMsg').value;if(!msg)return;await fetch('/api/broadcast',{method:'POST',headers:H,body:JSON.stringify({message:msg})});showToast('Broadcast sending...');closeModal()}
 
-    // Init
-    loadAll().then(() => renderHome());
+    function logout(){sessionStorage.removeItem('auth');window.location.href='/'}
+    loadAll().then(()=>rHome());
   </script>
 </body>
 </html>
