@@ -102,24 +102,31 @@ function handleStop(ctx) {
 }
 
 // ===== COMMANDS =====
+// ===== REPLY KEYBOARD (Menu Bawah Persistent) =====
+const mainKeyboard = Markup.keyboard([
+  [Markup.button.text('🔍 Cari Partner'), Markup.button.text('🔄 Next')],
+  [Markup.button.text('🛑 Stop'), Markup.button.text('⚙️ Setting')]
+]).resize();
+
 bot.start((ctx) => {
   ctx.reply(
     '👋 *Selamat datang di Anonymous Chat Bot!*\n\n' +
     'Ngobrol anonim tanpa perlu bongkar identitas asli kamu. 🎭\n\n' +
-    'Pilih opsi di bawah ini untuk memulai atau ketik /search:',
+    'Gunakan menu di bawah untuk navigasi:',
     {
       parse_mode: 'Markdown',
-      ...Markup.inlineKeyboard([
-        [Markup.button.callback('🔍 Cari Partner', 'cmd_search')],
-        [Markup.button.callback('⚙️ Pengaturan Profil', 'cmd_setting')],
-        [Markup.button.callback('🔄 Cari Baru', 'cmd_next'), Markup.button.callback('🛑 Berhenti', 'cmd_stop')],
-        [Markup.button.callback('🇮🇩 (ID)', 'cmd_lang_id'), Markup.button.callback('🇬🇧 (EN)', 'cmd_lang_en'), Markup.button.callback('🌐 Bebas', 'cmd_lang_any')]
-      ])
+      ...mainKeyboard
     }
   );
 });
 
-bot.command('setting', (ctx) => {
+bot.command('setting', showSettingMenu);
+bot.action('cmd_setting', (ctx) => {
+  ctx.answerCbQuery();
+  showSettingMenu(ctx);
+});
+
+function showSettingMenu(ctx) {
   ctx.reply('⚙️ *Pengaturan Profil & Pencarian*\nAtur identitas dan preferensi pasanganmu di bawah ini:', {
     parse_mode: 'Markdown',
     ...Markup.inlineKeyboard([
@@ -128,7 +135,7 @@ bot.command('setting', (ctx) => {
       [Markup.button.callback('🔎 Cari Siapa Saja', 'set_mg_any')]
     ])
   });
-});
+}
 
 bot.command('lang', (ctx) => {
   const args = ctx.message.text.split(' ');
@@ -544,11 +551,31 @@ bot.command('unequip', rateLimitCommand, (ctx) => {
 
 // ===== RELAY PESAN =====
 // Nge-forward semua jenis pesan (teks, foto, stiker, voice, dll) tanpa nunjukin identitas asli
+// ===== REPLY KEYBOARD BUTTON HANDLERS =====
+bot.hears('🔍 Cari Partner', rateLimitSearch, handleSearch);
+bot.hears('🔄 Next', rateLimitSearch, (ctx) => {
+  const chatId = ctx.chat.id;
+  if (isPaired(chatId)) {
+    const partnerId = unpairUser(chatId);
+    clearRaidSession(chatId, partnerId);
+    bot.telegram.sendMessage(partnerId, '🛑 Partner meninggalkan chat. Ketik /search untuk mencari partner baru.');
+  } else if (isQueued(chatId)) {
+    dequeueUser(chatId);
+  }
+  handleSearch(ctx);
+});
+bot.hears('🛑 Stop', handleStop);
+bot.hears('⚙️ Setting', showSettingMenu);
+
 bot.on('message', rateLimitMessage, async (ctx) => {
   const chatId = ctx.chat.id;
 
   // Abaikan command yang udah dihandle di atas
   if (ctx.message.text && ctx.message.text.startsWith('/')) return;
+
+  // Abaikan reply keyboard buttons (sudah dihandle di atas)
+  const keyboardButtons = ['🔍 Cari Partner', '🔄 Next', '🛑 Stop', '⚙️ Setting'];
+  if (ctx.message.text && keyboardButtons.includes(ctx.message.text)) return;
 
   const partnerId = getPartnerId(chatId);
   if (!partnerId) {
