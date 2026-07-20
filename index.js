@@ -96,12 +96,30 @@ function maintenanceReply(ctx) {
   );
 }
 
+// ===== MAINTENANCE MIDDLEWARE =====
+// Block SEMUA command & pesan saat maintenance (kecuali admin)
+bot.use((ctx, next) => {
+  if (!isMaintenance()) return next();
+  
+  const adminCommands = ['stats', 'ban', 'unban', 'broadcast'];
+  const text = ctx.message?.text || '';
+  const cmd = text.split(' ')[0]?.replace('/', '');
+  
+  // Admin tetap bisa
+  if (ctx.chat?.id?.toString() === ADMIN_CHAT_ID && adminCommands.includes(cmd)) {
+    return next();
+  }
+  
+  // Block semua — JANGAN unpair
+  return maintenanceReply(ctx);
+});
+
 // ===== HANDLERS =====
 function handleSearch(ctx) {
   const chatId = ctx.chat.id;
 
   if (isMaintenance()) {
-    return ctx.reply('🔧 *Bot sedang dalam maintenance.*\n\n' + getMaintenanceMsg() + '\n\n_Pesan tidak akan diteruskan ke partner._', { parse_mode: 'Markdown' });
+    return maintenanceReply(ctx);
   }
 
   if (isBanned(chatId)) {
@@ -147,7 +165,7 @@ function handleStop(ctx) {
 // ===== COMMANDS =====
 bot.start((ctx) => {
   if (isMaintenance()) {
-    return ctx.reply('🔧 Bot sedang dalam maintenance.\n\n' + getMaintenanceMsg() + '\n\nSilakan coba lagi nanti.', { parse_mode: 'Markdown' });
+    return maintenanceReply(ctx);
   }
   ctx.reply(
     '👋 *Selamat datang di Anonymous Chat Bot!*\n\n' +
