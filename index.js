@@ -35,7 +35,7 @@ const { containsBadWord } = require('./src/moderation/wordFilter');
 const { getRandomTopic } = require('./src/icebreakers');
 const { setupRpg, clearRaidSession } = require('./src/rpg/controller');
 const { progressBar } = require('./src/format');
-const { CLASS_DEFS, xpToNextLevel, getCurrentHp, getCurrentEnergy, getEquipmentBonus, getInventory, getOrCreateUser, getEquippedBonus, getEquipped, equipItem, unequipSlot } = require('./src/rpg/db_rpg');
+const { CLASS_DEFS, xpToNextLevel, getCurrentHp, getCurrentEnergy, getEquipmentBonus, getInventory, getOrCreateUser, getEquippedBonus, getEquipped, equipItem, unequipSlot, CLASS_EQUIP_SLOTS } = require('./src/rpg/db_rpg');
 const { RARITY_EMOJI } = require('./src/rpg/profile');
 
 // ===== GLOBAL ERROR HANDLER =====
@@ -479,11 +479,15 @@ bot.command('equip', rateLimitCommand, (ctx) => {
 
     let msg = `<b>🗡️ ${cls.name} — Equipment</b>\n`;
     msg += `━━━━━━━━━━━━━━━━━━━━\n\n`;
-    msg += `⚔️ <b>Weapon   :</b> ${renderSlot(equipped.weapon)}\n`;
-    msg += `🪄 <b>Staff    :</b> ${renderSlot(equipped.staff)}\n`;
-    msg += `🛡️ <b>Armor    :</b> ${renderSlot(equipped.armor)}\n`;
-    msg += `💍 <b>Accessory:</b> ${renderSlot(equipped.accessory)}\n\n`;
-    msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+
+    // Filter slot sesuai class
+    const allowedSlots = CLASS_EQUIP_SLOTS[user.class_name] || ['weapon', 'staff', 'armor', 'accessory'];
+    const slotEmoji = { weapon: '⚔️', staff: '🪄', armor: '🛡️', accessory: '💍' };
+    const slotLabel = { weapon: 'Weapon', staff: 'Staff', armor: 'Armor', accessory: 'Accessory' };
+    for (const slot of allowedSlots) {
+      msg += `${slotEmoji[slot]} <b>${slotLabel[slot].padEnd(9)}:</b> ${renderSlot(equipped[slot])}\n`;
+    }
+    msg += `\n━━━━━━━━━━━━━━━━━━━━\n`;
     msg += `<b>📊 Total Stats (Base + Equip)</b>\n`;
     msg += `⚔️ ATK <b>${effectiveAtk}</b>${equip.atkBonus > 0 ? `  <i>(+${equip.atkBonus})</i>` : ''}   `;
     msg += `🛡️ DEF <b>${effectiveDef}</b>${equip.defBonus > 0 ? `  <i>(+${equip.defBonus})</i>` : ''}\n`;
@@ -512,6 +516,13 @@ bot.command('unequip', rateLimitCommand, (ctx) => {
 
   if (!slot || !['weapon', 'staff', 'armor', 'accessory'].includes(slot)) {
     return ctx.reply('Penggunaan: /unequip [weapon/staff/armor/accessory]');
+  }
+
+  // Validasi slot sesuai class
+  const allowedSlots = CLASS_EQUIP_SLOTS[user.class_name] || ['weapon', 'staff', 'armor', 'accessory'];
+  if (!allowedSlots.includes(slot)) {
+    const clsName = CLASS_DEFS[user.class_name]?.name || user.class_name;
+    return ctx.reply(`❌ ${clsName} tidak punya slot <b>${slot}</b>.`, { parse_mode: 'HTML' });
   }
 
   const result = unequipSlot(userId, slot);

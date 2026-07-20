@@ -662,12 +662,32 @@ function getWinStreak(userId) {
 // ===== EQUIP/UNEQUIP SYSTEM =====
 const EQUIP_CATEGORIES = ['weapon', 'staff', 'armor', 'accessory'];
 
+// Slot yang bisa dipakai tiap class (staff=Penyihir, weapon=Ksatria/Pencuri)
+const CLASS_EQUIP_SLOTS = {
+  ksatria:  ['weapon', 'armor', 'accessory'],
+  penyihir: ['staff', 'armor', 'accessory'],
+  pencuri:  ['weapon', 'armor', 'accessory'],
+};
+
 function equipItem(userId, itemId) {
   const uid = userId.toString();
   // Check item exists in inventory
   const inv = db.prepare('SELECT i.*, c.category, c.display_name FROM rpg_inventory i JOIN items_catalog c ON i.item_id = c.item_id WHERE i.telegram_user_id = ? AND i.item_id = ?').get(uid, itemId);
   if (!inv) return { success: false, reason: 'Item tidak ada di inventory' };
   if (!EQUIP_CATEGORIES.includes(inv.category)) return { success: false, reason: `${inv.display_name} bukan equipment` };
+
+  // Cek class compatibility — weapon hanya untuk physical, staff hanya untuk penyihir
+  const user = db.prepare('SELECT class_name FROM rpg_users WHERE telegram_user_id = ?').get(uid);
+  if (user) {
+    const allowedSlots = CLASS_EQUIP_SLOTS[user.class_name] || EQUIP_CATEGORIES;
+    if (!allowedSlots.includes(inv.category)) {
+      const clsName = CLASS_DEFS[user.class_name]?.name || user.class_name;
+      const reason = inv.category === 'staff'
+        ? `${clsName} tidak bisa pakai Staff (hanya Penyihir)`
+        : `${clsName} tidak bisa pakai Weapon (ganti ke /equip staff atau armor)`;
+      return { success: false, reason };
+    }
+  }
   
   // Unequip current item in same slot
   db.prepare('UPDATE rpg_inventory SET equipped = 0 WHERE telegram_user_id = ? AND equipped = 1 AND item_id IN (SELECT item_id FROM items_catalog WHERE category = ?)').run(uid, inv.category);
@@ -751,5 +771,5 @@ module.exports = {
   getDuelCooldown, setDuelCooldown, createDuelRun, finalizeDuelRun,
   incrementWinStreak, resetWinStreak, getWinStreak,
   // Equip system
-  equipItem, unequipSlot, getEquipped, getEquippedBonus,
+  equipItem, unequipSlot, getEquipped, getEquippedBonus, CLASS_EQUIP_SLOTS,
 };

@@ -5,7 +5,7 @@ const { Markup } = require('telegraf');
 const {
   CLASS_DEFS, xpToNextLevel, calcStats,
   getOrCreateUser, createUser, getCurrentEnergy, getDungeonCooldown,
-  getCurrentHp, getEquippedBonus, getEquipped
+  getCurrentHp, getEquippedBonus, getEquipped, CLASS_EQUIP_SLOTS
 } = require('./db_rpg');
 const { progressBar, hpBar, statLine, divider, kvPair, footer, sectionHeader } = require('../format');
 
@@ -78,11 +78,14 @@ function renderProfile(user) {
   msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 
   // ── Equipment ────────────────────────────────
+  const allowedSlots = CLASS_EQUIP_SLOTS[user.class_name] || ['weapon', 'staff', 'armor', 'accessory'];
+  const slotEmoji = { weapon: '⚔️', staff: '🪄', armor: '🛡️', accessory: '💍' };
+  const slotLabel = { weapon: 'Weapon', staff: 'Staff', armor: 'Armor', accessory: 'Accessory' };
+
   msg += `<b>🗡️ Equipment</b>\n`;
-  msg += `⚔️ Weapon   : ${renderSlot(equipped.weapon)}\n`;
-  msg += `🪄 Staff    : ${renderSlot(equipped.staff)}\n`;
-  msg += `🛡️ Armor    : ${renderSlot(equipped.armor)}\n`;
-  msg += `💍 Accessory: ${renderSlot(equipped.accessory)}\n`;
+  for (const slot of allowedSlots) {
+    msg += `${slotEmoji[slot]} ${slotLabel[slot].padEnd(9)}: ${renderSlot(equipped[slot])}\n`;
+  }
 
   // Bonus equip ringkas
   const bonusParts = [];
