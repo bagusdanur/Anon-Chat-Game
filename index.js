@@ -73,13 +73,27 @@ function isMaintenance() {
 }
 
 function getMaintenanceMsg() {
+  let msg = 'Bot sedang dalam maintenance. Silakan coba lagi nanti.';
   try {
     if (fs.existsSync(MAINTENANCE_FILE)) {
       const data = JSON.parse(fs.readFileSync(MAINTENANCE_FILE, 'utf8'));
-      return data.message || 'Bot sedang dalam maintenance.';
+      if (data.message) msg = data.message;
     }
   } catch (e) {}
-  return 'Bot sedang dalam maintenance.';
+  return msg;
+}
+
+// Format pesan maintenance yang konsisten
+function maintenanceReply(ctx) {
+  const msg = getMaintenanceMsg();
+  return ctx.reply(
+    '🔧 *MAINTENANCE MODE*\n' +
+    '━━━━━━━━━━━━━━━━━━━━\n\n' +
+    msg + '\n\n' +
+    '━━━━━━━━━━━━━━━━━━━━\n' +
+    '_Semua fitur sedang tidak tersedia._',
+    { parse_mode: 'Markdown' }
+  );
 }
 
 // ===== HANDLERS =====
