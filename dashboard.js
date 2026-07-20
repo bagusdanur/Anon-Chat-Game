@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { db } = require('./src/db');
+const { getWords, FILTER_PATH } = require('./src/moderation/wordFilter');
 
 const app = express();
 const PORT = process.env.DASHBOARD_PORT || 3001;
@@ -178,21 +179,13 @@ app.get('/api/duels', auth, (req, res) => {
 
 // ===== WORD FILTER =====
 app.get('/api/wordfilter', auth, (req, res) => {
-  const filterPath = path.join(__dirname, 'src/moderation/wordFilter.js');
-  const content = fs.readFileSync(filterPath, 'utf8');
-  const match = content.match(/const blocklist = \[([^\]]+)\]/);
-  if (match) {
-    const words = match[1].match(/'([^']+)'/g).map(w => w.replace(/'/g, ''));
-    return res.json({ words });
-  }
-  res.json({ words: [] });
+  res.json({ words: getWords() });
 });
 
 app.post('/api/wordfilter', auth, (req, res) => {
   const { words } = req.body;
-  const filterPath = path.join(__dirname, 'src/moderation/wordFilter.js');
-  const newContent = `// Simple blocklist.\nconst blocklist = [${words.map(w => `'${w}'`).join(', ')}];\n\nfunction containsBadWord(text) {\n  if (!text) return false;\n  const lowerText = text.toLowerCase();\n  return blocklist.some(word => lowerText.includes(word));\n}\n\nmodule.exports = {\n  containsBadWord\n};`;
-  fs.writeFileSync(filterPath, newContent);
+  
+  fs.writeFileSync(FILTER_PATH, JSON.stringify(words, null, 2));
   res.json({ success: true });
 });
 
