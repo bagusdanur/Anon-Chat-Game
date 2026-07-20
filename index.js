@@ -458,6 +458,7 @@ bot.command('help', (ctx) => {
     '   /use — Pakai item',
     '   /daily — Hadiah harian',
     '   /give — Kirim gold ke partner',
+    '   /trade — Kirim item ke partner',
   ].join('\n'), { parse_mode: 'Markdown' });
 });
 
@@ -625,6 +626,7 @@ const botCommands = [
   { command: 'use',      description: '🧪 Pakai item' },
   { command: 'daily',    description: '🎁 Hadiah harian' },
   { command: 'give',     description: '💰 Kirim gold ke partner' },
+  { command: 'trade',    description: '📦 Kirim item ke partner' },
 ];
 
 bot.telegram.setMyCommands(botCommands)

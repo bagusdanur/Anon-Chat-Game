@@ -4,10 +4,10 @@ const { Markup } = require('telegraf');
 const { db } = require('../db');
 const {
   getOrCreateUser, getInventory, getItem, removeItem, addItem,
-  spendGold, addGold, getCatalogItem, upgradeItem, updateHp,
-  getCurrentHp, logTransaction, addXp,
+  getCatalogItem, upgradeItem, updateHp,
+  getCurrentHp, logTransaction, addXp, addGold, spendGold,
   incrementQuestProgress,
-  equipItem, unequipSlot, getEquipped, getEquippedBonus
+  equipItem, unequipSlot, getEquipped, getEquippedBonus, GOLD_CAP, INVENTORY_CAP
 } = require('./db_rpg');
 const { RARITY_EMOJI } = require('./profile');
 
@@ -149,6 +149,62 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     ctx.reply(msg, { parse_mode: 'HTML' });
   });
 
+  // ===== /shop2 — Special Shop (Lv20+, gold sink) =====
+  const SPECIAL_SHOP = [
+    { id: 1, item_id: 'ramuan_kehidupan',      buy_price: 2000 },
+    { id: 2, item_id: 'ramuan_energi_besars',   buy_price: 3000 },
+    { id: 3, item_id: 'amulet_keabadian',       buy_price: 10000 },
+    { id: 4, item_id: 'cincin_kekuatan_raksasa', buy_price: 15000 },
+  ];
+
+  bot.command('shop2', rateLimitCommand, (ctx) => {
+    const userId = ctx.chat.id;
+    const user = getOrCreateUser(userId);
+    if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
+    if (user.level < 20) return ctx.reply('🔒 Special Shop unlock di <b>Lv 20</b>!', { parse_mode: 'HTML' });
+
+    let msg = `<b>🏪 SPECIAL SHOP</b> — Lv20+ Only\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `Saldo: 💰 <b>${user.gold}g</b> / <code>${GOLD_CAP}g</code>\n\n`;
+    for (const item of SPECIAL_SHOP) {
+      const catalog = getCatalogItem(item.item_id);
+      if (catalog) {
+        msg += `<code>[${item.id}]</code> ${RARITY_EMOJI[catalog.rarity]} <b>${catalog.display_name}</b> — ${item.buy_price.toLocaleString()}g\n`;
+      }
+    }
+    msg += `\n<i>Ketik /buy2 [nomor] untuk membeli</i>`;
+    ctx.reply(msg, { parse_mode: 'HTML' });
+  });
+
+  // ===== /buy2 — Beli dari Special Shop =====
+  bot.command('buy2', rateLimitCommand, (ctx) => {
+    const userId = ctx.chat.id;
+    const args = ctx.message.text.split(' ').slice(1);
+    const input = args.join('_').toLowerCase();
+
+    if (!input) return ctx.reply('Penggunaan: <code>/buy2 [nomor]</code>\nCek /shop2 untuk daftar.', { parse_mode: 'HTML' });
+
+    const user = getOrCreateUser(userId);
+    if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
+    if (user.level < 20) return ctx.reply('🔒 Special Shop unlock di <b>Lv 20</b>!', { parse_mode: 'HTML' });
+
+    const num = parseInt(input);
+    const shopEntry = SPECIAL_SHOP.find(s => s.id === num);
+    if (!shopEntry) return ctx.reply('❌ Nomor tidak valid. Cek /shop2.', { parse_mode: 'HTML' });
+
+    const catalog = getCatalogItem(shopEntry.item_id);
+    if (spendGold(userId, shopEntry.buy_price)) {
+      if (!addItem(userId, shopEntry.item_id)) {
+        // Inventory penuh — kembalikan gold
+        addGold(userId, shopEntry.buy_price);
+        return ctx.reply('❌ Inventory penuh! Jual atau gunakan item dulu.', { parse_mode: 'HTML' });
+      }
+      ctx.reply(`✅ Berhasil membeli <b>${catalog.display_name}</b> seharga ${shopEntry.buy_price.toLocaleString()}g!`, { parse_mode: 'HTML' });
+    } else {
+      ctx.reply(`❌ Gold tidak cukup! Butuh ${shopEntry.buy_price.toLocaleString()}g. Saldo: ${user.gold}g.`, { parse_mode: 'HTML' });
+    }
+  });
+
   // ===== /buy (terima nomor ID atau nama) =====
   bot.command('buy', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
@@ -165,7 +221,10 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
 
     const catalog = getCatalogItem(shopEntry.item_id);
     if (spendGold(userId, shopEntry.buy_price)) {
-      addItem(userId, shopEntry.item_id);
+      if (!addItem(userId, shopEntry.item_id)) {
+        addGold(userId, shopEntry.buy_price);
+        return ctx.reply('❌ Inventory penuh! Jual atau gunakan item dulu.', { parse_mode: 'HTML' });
+      }
       // BUG-02 FIX: invalidate cache setelah beli agar /sell tidak pakai data stale
       invCache.delete(userId.toString());
       ctx.reply(`✅ Berhasil membeli <b>${catalog.display_name}</b> seharga ${shopEntry.buy_price}g!`, { parse_mode: 'HTML' });
@@ -325,13 +384,13 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
       for (const mat of recipe.materials) {
         if (!removeItem(userId, mat.item, mat.qty)) return false;
       }
-      // Tambah hasil
-      addItem(userId, recipe.result);
+      // Tambah hasil — cek inventory cap
+      if (!addItem(userId, recipe.result)) return false;
       return true;
     })();
 
     if (!craftSuccess) {
-      return ctx.reply('❌ Gagal crafting! Terjadi kesalahan.');
+      return ctx.reply('❌ Gagal crafting! Inventory penuh atau material tidak cukup.');
     }
 
     invCache.delete(userId.toString());
@@ -597,10 +656,79 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     bot.telegram.sendMessage(partnerId, `💰 Kamu menerima <b>${received}g</b> dari partner!`, { parse_mode: 'HTML' }).catch(() => {});
   });
 
+  // ===== /trade — Kirim item ke partner (pajak 10%) =====
+  bot.command('trade', rateLimitCommand, (ctx) => {
+    const userId = ctx.chat.id;
+    const args = ctx.message.text.split(' ').slice(1);
+    const input = args[0];
+    const qty = parseInt(args[1]) || 1;
 
+    if (!input) return ctx.reply(
+      `Penggunaan: <code>/trade [item_id/nomor] [jumlah]</code>\n` +
+      `Contoh: <code>/trade daging_mentah 5</code>\n\n` +
+      `<i>Pajak 10% (partner dapat 90%)</i>\n` +
+      `<i>Hanya material & consumable</i>`,
+      { parse_mode: 'HTML' }
+    );
 
+    const user = getOrCreateUser(userId);
+    if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
+
+    const partnerId = getPartnerId(userId);
+    if (!partnerId) return ctx.reply('❌ Kamu harus sedang terhubung dengan partner (/search).');
+    const partner = getOrCreateUser(partnerId);
+    if (!partner) return ctx.reply('❌ Partnermu belum punya karakter RPG.');
+
+    // Resolve item
+    const itemId = resolveInvInput(userId, input);
+    if (!itemId) return ctx.reply('❌ Nomor item tidak valid. Ketik /inv dulu.');
+
+    const invItem = getItem(userId, itemId);
+    if (!invItem) return ctx.reply('❌ Item tidak ada di inventory.');
+    if (invItem.quantity < qty) return ctx.reply(`❌ Hanya punya ${invItem.quantity}x ${invItem.display_name}.`);
+    if (invItem.equipped) return ctx.reply('❌ Item sedang di-equip. Lepas dulu dengan /unequip.');
+    if (!['material', 'consumable'].includes(invItem.category)) {
+      return ctx.reply('❌ Hanya material & consumable yang bisa di-trade.');
+    }
+
+    // Tax 10%
+    const tax = Math.max(1, Math.floor(qty * 0.10));
+    const received = qty - tax;
+
+    // Atomic trade
+    const tradeSuccess = db.transaction(() => {
+      if (!removeItem(userId, itemId, qty)) return false;
+      // Cek inventory cap partner
+      const partnerCount = db.prepare('SELECT COUNT(*) as cnt FROM rpg_inventory WHERE telegram_user_id = ?').get(partnerId.toString());
+      const partnerHasItem = db.prepare('SELECT quantity FROM rpg_inventory WHERE telegram_user_id = ? AND item_id = ?').get(partnerId.toString(), itemId);
+      if (!partnerHasItem && partnerCount.cnt >= INVENTORY_CAP) return false;
+      addItem(partnerId, itemId, received);
+      return true;
+    })();
+
+    if (!tradeSuccess) {
+      return ctx.reply('❌ Gagal trade! Inventory partner penuh atau item tidak cukup.');
+    }
+
+    invCache.delete(userId.toString());
+    invCache.delete(partnerId.toString());
+
+    ctx.reply(
+      `✅ Trade berhasil!\n` +
+      `📦 <b>${invItem.display_name}</b> x${qty}\n` +
+      `→ Partner menerima: <b>${received}x</b> (pajak ${tax}x)`,
+      { parse_mode: 'HTML' }
+    );
+    incrementQuestProgress(userId, 'give');
+    bot.telegram.sendMessage(partnerId,
+      `📦 Kamu menerima <b>${received}x ${invItem.display_name}</b> dari partner!`,
+      { parse_mode: 'HTML' }
+    ).catch(() => {});
+  });
 
 }
+
+module.exports = { setupEconomy, SHOP_ITEMS };
 
 
 

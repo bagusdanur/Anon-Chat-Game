@@ -186,6 +186,11 @@ const SEED_ITEMS = [
   // shop exclusives (bisa dibeli langsung)
   { item_id: 'ramuan_energi',    display_name: '⚡ Ramuan Energi',    category: 'consumable', rarity: 'uncommon', sell_price: 30, effect_json: JSON.stringify({ energy_restore: 3 }) },
   { item_id: 'amulet_pertahanan',display_name:'🛡️ Amulet Pertahanan',category: 'accessory', rarity: 'rare',    sell_price: 80, effect_json: JSON.stringify({ def_bonus: 3, phys_resist: 0.05, magic_resist: 0.05 }) },
+  // SPECIAL SHOP (Lv20+, gold sink)
+  { item_id: 'ramuan_kehidupan',  display_name: '💖 Ramuan Kehidupan',  category: 'consumable', rarity: 'epic',     sell_price: 100, effect_json: JSON.stringify({ heal_pct: 80 }) },
+  { item_id: 'ramuan_energi_besars', display_name: '⚡ Ramuan Energi Besar', category: 'consumable', rarity: 'epic', sell_price: 150, effect_json: JSON.stringify({ energy_restore: 10 }) },
+  { item_id: 'amulet_keabadian', display_name: '✨ Amulet Keabadian',  category: 'accessory', rarity: 'legendary', sell_price: 500, effect_json: JSON.stringify({ crit_rate: 0.12, atk_bonus: 5, magic_atk_bonus: 5 }) },
+  { item_id: 'cincin_kekuatan_raksasa', display_name: '💍 Cincin Kekuatan Raksasa', category: 'accessory', rarity: 'legendary', sell_price: 800, effect_json: JSON.stringify({ atk_bonus: 8, crit_rate: 0.08, crit_multi: 0.2 }) },
 ];
 
 const insertItem = db.prepare(`
@@ -371,9 +376,13 @@ function addXp(userId, amount) {
   return { leveled, newLevel: level };
 }
 
+// ===== GOLD CAP =====
+const GOLD_CAP = 50000; // Maksimal gold yang bisa dimiliki
+
 function addGold(userId, amount) {
   const now = Math.floor(Date.now() / 1000);
-  db.prepare('UPDATE rpg_users SET gold = MAX(0, gold + ?), updated_at = ? WHERE telegram_user_id = ?')
+  // Cap gold di GOLD_CAP
+  db.prepare(`UPDATE rpg_users SET gold = MIN(${GOLD_CAP}, MAX(0, gold + ?)), updated_at = ? WHERE telegram_user_id = ?`)
     .run(amount, now, userId.toString());
   logTransaction(null, userId, amount, 'reward');
 }
@@ -393,12 +402,23 @@ function updateHp(userId, newHp) {
 }
 
 // ===== INVENTORY =====
+// ===== INVENTORY CAP =====
+const INVENTORY_CAP = 100; // Maksimal jenis item berbeda
+
 function addItem(userId, itemId, qty = 1) {
+  const uid = userId.toString();
+  // Cek inventory cap — hanya jika item baru (bukan stack)
+  const existing = db.prepare('SELECT quantity FROM rpg_inventory WHERE telegram_user_id = ? AND item_id = ?').get(uid, itemId);
+  if (!existing) {
+    const count = db.prepare('SELECT COUNT(*) as cnt FROM rpg_inventory WHERE telegram_user_id = ?').get(uid);
+    if (count.cnt >= INVENTORY_CAP) return false; // Inventory penuh
+  }
   db.prepare(`
     INSERT INTO rpg_inventory (telegram_user_id, item_id, quantity)
     VALUES (?, ?, ?)
     ON CONFLICT(telegram_user_id, item_id) DO UPDATE SET quantity = quantity + excluded.quantity
-  `).run(userId.toString(), itemId, qty);
+  `).run(uid, itemId, qty);
+  return true;
 }
 
 function removeItem(userId, itemId, qty = 1) {
@@ -769,6 +789,10 @@ module.exports = {
   addStatusEffect, getStatusEffects, tickStatusEffects, hasStatusEffect, clearStatusEffects,
   // Damage calculation
   calcPhysicalDamage, calcMagicDamage, rollCrit,
+  // Gold cap
+  GOLD_CAP,
+  // Inventory cap
+  INVENTORY_CAP,
   // Quest system
   incrementQuestProgress, claimQuest, getAllDailyQuests,
   // PvP Duel
