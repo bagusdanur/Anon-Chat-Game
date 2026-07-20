@@ -12,6 +12,7 @@ const {
 const { renderHpBar } = require('./profile');
 
 // In-memory raid state keyed by pairKey
+let botRef = null;
 const raidSessions = new Map();
 
 function getPairKey(a, b) {
@@ -356,6 +357,7 @@ function clearRaidSession(chatId, partnerId) {
 }
 
 function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
+  botRef = bot; // Simpan reference untuk cleanup interval
   // Pending invite map
   const dungeonInvites = new Map();
 
@@ -624,5 +626,30 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
 
   return { clearRaidSession };
 }
+
+
+// ===== PERIODIC CLEANUP =====
+// Auto-abandon raid yang idle > 10 menit (mencegah memory leak + stuck state)
+const RAID_SESSION_TIMEOUT = 10 * 60 * 1000; // 10 menit
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [pairKey, raid] of raidSessions) {
+    if (now - raid.lastActivity > RAID_SESSION_TIMEOUT) {
+      // Auto-abandon
+      finalizeDungeonRun(raid.runId, 'abandoned', null);
+      setDungeonCooldown(raid.chatIdA);
+      setDungeonCooldown(raid.chatIdB);
+
+      const timeoutMsg = '⏰ <b>Raid Timeout!</b>\n' +
+        '\nSesi raid dibatalkan karena tidak ada aktivitas selama 10 menit.\n' +
+        'Cooldown dungeon aktif.';
+      botRef.telegram.sendMessage(raid.chatIdA, timeoutMsg, { parse_mode: 'HTML' }).catch(() => {});
+      botRef.telegram.sendMessage(raid.chatIdB, timeoutMsg, { parse_mode: 'HTML' }).catch(() => {});
+
+      raidSessions.delete(pairKey);
+    }
+  }
+}, 60 * 1000); // Check setiap 1 menit
 
 module.exports = { setupCoop, clearRaidSession };

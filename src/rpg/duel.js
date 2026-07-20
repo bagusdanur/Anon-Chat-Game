@@ -178,6 +178,7 @@ function startDuel(bot, inviterId, inviteeId) {
 }
 
 function setupDuel(bot, { getPartnerId, rateLimitCommand }) {
+  duelBotRef = bot; // Simpan reference untuk cleanup interval
   // ===== /duel — Kirim undangan ke partner =====
   bot.command('duel', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
@@ -337,5 +338,29 @@ function setupDuel(bot, { getPartnerId, rateLimitCommand }) {
     sendDuelUI(bot, duel);
   });
 }
+
+
+// ===== PERIODIC CLEANUP =====
+// Auto-abandon duel yang idle > 5 menit (duel lebih cepat dari raid)
+const DUEL_SESSION_TIMEOUT = 5 * 60 * 1000; // 5 menit
+
+let duelBotRef = null;
+
+setInterval(() => {
+  if (!duelBotRef) return;
+  const now = Date.now();
+  for (const [pairKey, duel] of duelSessions) {
+    if (now - duel.lastActivity > DUEL_SESSION_TIMEOUT) {
+      finalizeDuelRun(duel.runId, null, 0, 0); // draw dengan 0 reward
+
+      const timeoutMsg = '⏰ <b>Duel Timeout!</b>\n' +
+        '\nDuel dibatalkan karena tidak ada aktivitas selama 5 menit.';
+      duelBotRef.telegram.sendMessage(duel.chatIdA, timeoutMsg, { parse_mode: 'HTML' }).catch(() => {});
+      duelBotRef.telegram.sendMessage(duel.chatIdB, timeoutMsg, { parse_mode: 'HTML' }).catch(() => {});
+
+      duelSessions.delete(pairKey);
+    }
+  }
+}, 60 * 1000); // Check setiap 1 menit
 
 module.exports = { setupDuel };

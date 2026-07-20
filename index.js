@@ -384,7 +384,6 @@ bot.command('party', rateLimitCommand, (ctx) => {
   const clsB = CLASS_DEFS[partner.class_name];
 
   // BUG-04 FIX: gunakan effective stats (base + equip bonus), bukan raw DB value
-  const { getEquippedBonus, getCurrentHp } = require('./src/rpg/db_rpg');
   const equipA = getEquippedBonus(userId);
   const equipB = getEquippedBonus(partnerId);
   const hpA   = getCurrentHp(user);

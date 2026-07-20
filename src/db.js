@@ -81,6 +81,18 @@ const stmtUnbanUser = db.prepare('UPDATE users SET is_banned = 0 WHERE chat_id =
 // ===== IN-MEMORY RAM CACHE =====
 // Menyimpan ID partner di RAM supaya relay pesan 0ms tanpa hit database
 const partnerCache = new Map();
+// ===== PERIODIC CLEANUP =====
+// Hapus cache entries untuk user yang sudah tidak aktif (null = tidak paired)
+const PARTNER_CACHE_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 menit
+
+setInterval(() => {
+  for (const [chatId, partnerId] of partnerCache) {
+    if (partnerId === null) {
+      partnerCache.delete(chatId);
+    }
+  }
+}, PARTNER_CACHE_CLEANUP_INTERVAL);
+
 
 function getUser(chatId) {
   let user = stmtGetUser.get(chatId);

@@ -464,7 +464,6 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     addGold(userId, 80);
     addXp(userId, 25);
     addItem(userId, 'ramuan_kecil');
-    const { db } = require('../db');
     db.prepare('UPDATE rpg_users SET last_daily_claim_at = ? WHERE telegram_user_id = ?').run(now, userId.toString());
 
     ctx.reply(
