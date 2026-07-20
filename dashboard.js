@@ -7,26 +7,27 @@ const app = express();
 const PORT = process.env.DASHBOARD_PORT || 3001;
 const PASSWORD = process.env.DASHBOARD_PASS || 'ryudev2024';
 
-// Basic auth middleware
-function auth(req, res, next) {
+// Password check helper
+function checkAuth(req) {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Basic ')) {
-    res.setHeader('WWW-Authenticate', 'Basic realm="Admin Dashboard"');
-    return res.status(401).send('Authentication required');
-  }
+  if (!authHeader || !authHeader.startsWith('Basic ')) return false;
   const credentials = Buffer.from(authHeader.split(' ')[1], 'base64').toString();
-  const [username, password] = credentials.split(':');
-  if (password === PASSWORD) return next();
-  res.setHeader('WWW-Authenticate', 'Basic realm="Admin Dashboard"');
-  return res.status(401).send('Invalid credentials');
+  const [, password] = credentials.split(':');
+  return password === PASSWORD;
 }
 
-app.use(auth);
+// Static files — serve login page TANPA auth
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dashboard')));
 
+// Auth middleware — hanya untuk API + dashboard.html
+function auth(req, res, next) {
+  if (checkAuth(req)) return next();
+  return res.status(401).json({ error: 'Unauthorized' });
+}
+
 // API: Stats
-app.get('/api/stats', (req, res) => {
+app.get('/api/stats', auth, (req, res) => {
   const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
   const onlineUsers = db.prepare("SELECT COUNT(*) as count FROM users WHERE status != 'idle'").get().count;
   const pairedUsers = db.prepare("SELECT COUNT(*) as count FROM users WHERE status = 'chatting'").get().count;
@@ -39,36 +40,36 @@ app.get('/api/stats', (req, res) => {
 });
 
 // API: Users list
-app.get('/api/users', (req, res) => {
+app.get('/api/users', auth, (req, res) => {
   const users = db.prepare('SELECT * FROM users ORDER BY created_at DESC LIMIT 100').all();
   res.json(users);
 });
 
 // API: Ban/Unban
-app.post('/api/users/:id/ban', (req, res) => {
+app.post('/api/users/:id/ban', auth, (req, res) => {
   db.prepare('UPDATE users SET is_banned = 1 WHERE chat_id = ?').run(req.params.id);
   res.json({ success: true });
 });
 
-app.post('/api/users/:id/unban', (req, res) => {
+app.post('/api/users/:id/unban', auth, (req, res) => {
   db.prepare('UPDATE users SET is_banned = 0 WHERE chat_id = ?').run(req.params.id);
   res.json({ success: true });
 });
 
 // API: Reports
-app.get('/api/reports', (req, res) => {
+app.get('/api/reports', auth, (req, res) => {
   const reports = db.prepare('SELECT * FROM reports ORDER BY created_at DESC LIMIT 50').all();
   res.json(reports);
 });
 
 // API: RPG Users
-app.get('/api/rpg-users', (req, res) => {
+app.get('/api/rpg-users', auth, (req, res) => {
   const users = db.prepare('SELECT * FROM rpg_users ORDER BY level DESC LIMIT 50').all();
   res.json(users);
 });
 
 // API: Word Filter
-app.get('/api/wordfilter', (req, res) => {
+app.get('/api/wordfilter', auth, (req, res) => {
   const fs = require('fs');
   const filterPath = path.join(__dirname, 'src/moderation/wordFilter.js');
   const content = fs.readFileSync(filterPath, 'utf8');
@@ -80,7 +81,7 @@ app.get('/api/wordfilter', (req, res) => {
   res.json({ words: [] });
 });
 
-app.post('/api/wordfilter', (req, res) => {
+app.post('/api/wordfilter', auth, (req, res) => {
   const { words } = req.body;
   const fs = require('fs');
   const filterPath = path.join(__dirname, 'src/moderation/wordFilter.js');
@@ -90,7 +91,12 @@ app.post('/api/wordfilter', (req, res) => {
 });
 
 // Fallback to index.html
-// Fallback — redirect to login
+// Auth check endpoint (dipake login page)
+app.get('/api/check-auth', (req, res) => {
+  res.json({ authenticated: checkAuth(req) });
+});
+
+// Fallback
 app.get('/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, 'dashboard', 'index.html'));
 });
