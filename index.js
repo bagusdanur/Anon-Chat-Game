@@ -102,35 +102,23 @@ function handleStop(ctx) {
 }
 
 // ===== COMMANDS =====
-// ===== REPLY KEYBOARD (Context-Aware) =====
-const idleKeyboard = Markup.keyboard([
-  [Markup.button.text('🔍 Cari Partner')],
-  [Markup.button.text('⚙️ Setting')]
-]).resize();
-
-const pairedKeyboard = Markup.keyboard([
-  [Markup.button.text('🔄 Next'), Markup.button.text('🛑 Stop')]
-]).resize();
-
-// Kirim keyboard yang sesuai state user
-function sendKeyboard(ctx, chatId) {
-  const keyboard = isPaired(chatId) ? pairedKeyboard : idleKeyboard;
-  ctx.reply('---', { ...keyboard }).then(() => {}).catch(() => {});
-}
-
 bot.start((ctx) => {
   ctx.reply(
     '👋 *Selamat datang di Anonymous Chat Bot!*\n\n' +
     'Ngobrol anonim tanpa perlu bongkar identitas asli kamu. 🎭\n\n' +
-    'Gunakan menu di bawah untuk navigasi:',
+    'Pilih opsi di bawah ini untuk memulai:',
     {
       parse_mode: 'Markdown',
-      ...idleKeyboard
+      ...Markup.inlineKeyboard([
+        [Markup.button.callback('🔍 Cari Partner', 'cmd_search')],
+        [Markup.button.callback('⚙️ Pengaturan Profil', 'cmd_setting')],
+        [Markup.button.callback('🔄 Cari Baru', 'cmd_next'), Markup.button.callback('🛑 Berhenti', 'cmd_stop')]
+      ])
     }
   );
 });
 
-bot.command('setting', showSettingMenu);
+bot.command('setting' , showSettingMenu);
 bot.action('cmd_setting', (ctx) => {
   ctx.answerCbQuery();
   showSettingMenu(ctx);
