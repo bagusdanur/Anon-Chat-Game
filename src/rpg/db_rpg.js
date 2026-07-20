@@ -152,10 +152,10 @@ const SEED_ITEMS = [
   { item_id: 'ikan_salmon',    display_name: '🐡 Ikan Salmon',    category: 'material', rarity: 'uncommon', sell_price: 15,  effect_json: null },
   { item_id: 'kepiting',       display_name: '🦀 Kepiting',       category: 'material', rarity: 'uncommon', sell_price: 22,  effect_json: null },
   { item_id: 'mutiara',        display_name: '🫧 Mutiara',        category: 'material', rarity: 'epic',     sell_price: 120, effect_json: null },
-  { item_id: 'sepatu_rusak',   display_name: '👟 Sepatu Bot Rusak',category: 'material', rarity: 'common',  sell_price: 0,   effect_json: null },
+  { item_id: 'sepatu_rusak',   display_name: '👟 Sepatu Bot Rusak',category: 'material', rarity: 'common',  sell_price: 2,   effect_json: null },
   // weapons & armor (dari loot)
   { item_id: 'pedang_karatan', display_name: '⚔️ Pedang Karatan', category: 'weapon', rarity: 'rare',      sell_price: 30,  effect_json: JSON.stringify({ atk_bonus: 2, crit_rate: 0.05 }) },
-  { item_id: 'jubah_terkutuk', display_name: '🧥 Jubah Terkutuk', category: 'armor',  rarity: 'epic',      sell_price: 0,   effect_json: JSON.stringify({ def_bonus: 5, magic_resist: 0.10 }) },
+  { item_id: 'jubah_terkutuk', display_name: '🧥 Jubah Terkutuk', category: 'armor',  rarity: 'epic',      sell_price: 40,   effect_json: JSON.stringify({ def_bonus: 5, magic_resist: 0.10 }) },
   // staffs (magic weapons)
   { item_id: 'tongkat_ranting', display_name: '🪄 Tongkat Ranting', category: 'staff', rarity: 'uncommon', sell_price: 20,  effect_json: JSON.stringify({ magic_atk_bonus: 3 }) },
   { item_id: 'tongkat_api',     display_name: '🔥 Tongkat Api',     category: 'staff', rarity: 'rare',     sell_price: 60,  effect_json: JSON.stringify({ magic_atk_bonus: 6, crit_rate: 0.08 }) },
@@ -182,7 +182,7 @@ const SEED_ITEMS = [
   { item_id: 'cincin_keberuntungan', display_name: '💍 Cincin Keberuntungan', category: 'accessory', rarity: 'rare', sell_price: 100, effect_json: JSON.stringify({ crit_rate: 0.08, atk_bonus: 2 }) },
   { item_id: 'kalung_naga',     display_name: '🐉 Kalung Naga',     category: 'accessory', rarity: 'legendary', sell_price: 0, effect_json: JSON.stringify({ atk_bonus: 4, magic_atk_bonus: 4, crit_rate: 0.10, phys_resist: 0.05 }) },
   // shop exclusives (bisa dibeli langsung)
-  { item_id: 'ramuan_energi',    display_name: '⚡ Ramuan Energi',    category: 'consumable', rarity: 'uncommon', sell_price: 15, effect_json: JSON.stringify({ energy_restore: 3 }) },
+  { item_id: 'ramuan_energi',    display_name: '⚡ Ramuan Energi',    category: 'consumable', rarity: 'uncommon', sell_price: 30, effect_json: JSON.stringify({ energy_restore: 3 }) },
   { item_id: 'amulet_pertahanan',display_name:'🛡️ Amulet Pertahanan',category: 'accessory', rarity: 'rare',    sell_price: 80, effect_json: JSON.stringify({ def_bonus: 3, phys_resist: 0.05, magic_resist: 0.05 }) },
 ];
 
@@ -206,7 +206,7 @@ const CLASS_DEFS = {
   },
   penyihir: {
     name: '🔥 Penyihir', damageType: 'magic',
-    base_hp: 35, base_atk: 3, base_def: 2, base_magic_atk: 8,
+    base_hp: 42, base_atk: 3, base_def: 2, base_magic_atk: 8,
     base_crit_rate: 0.10, base_crit_multi: 1.8,
     growth: { hp: 5, atk: 0.5, def: 1, magic_atk: 2.5 },
     physBonus: 0.70, magicBonus: 1.25,  // -30% phys, +25% magic
@@ -216,10 +216,10 @@ const CLASS_DEFS = {
   pencuri: {
     name: '🗡️ Pencuri', damageType: 'physical',
     base_hp: 40, base_atk: 6, base_def: 3, base_magic_atk: 0,
-    base_crit_rate: 0.15, base_crit_multi: 2.0,
+    base_crit_rate: 0.15, base_crit_multi: 1.8,
     growth: { hp: 6, atk: 2, def: 1.5, magic_atk: 0 },
     physBonus: 1.20, magicBonus: 0.80,  // +20% phys, -20% magic
-    skillName: 'Backstab', skillMulti: 3.0, skillType: 'physical',
+    skillName: 'Backstab', skillMulti: 2.2, skillType: 'physical',
     skillDesc: 'Serangan dari belakang — 100% Crit!'
   },
 };
@@ -237,7 +237,7 @@ function calcStats(className, level) {
 }
 
 function xpToNextLevel(level) {
-  return Math.floor(50 * Math.pow(level, 1.5));
+  return Math.floor(50 * Math.pow(level, 1.3)); // casual-friendly, dari 1.5 → 1.3
 }
 
 // ===== USER CRUD =====
@@ -551,14 +551,18 @@ function incrementQuestProgress(userId, actionType) {
 function claimQuest(userId, questId) {
   const resetAt = getTodayReset();
   const progress = getQuestProgress(userId, questId);
-  if (!progress || progress.claimed) return { success: false, reason: 'sudah diklaim atau belum ada progress' };
+  if (!progress) return { success: false, reason: 'belum ada progress hari ini' };
+  if (progress.claimed) return { success: false, reason: 'sudah diklaim' };
 
   const quest = db.prepare('SELECT * FROM quests WHERE quest_id = ?').get(questId);
   if (!quest) return { success: false, reason: 'quest tidak ditemukan' };
   if (progress.current < quest.target_count) return { success: false, reason: 'belum selesai' };
 
-  // Mark claimed
-  db.prepare('UPDATE quest_progress SET claimed = 1 WHERE id = ?').run(progress.id);
+  // Atomic UPDATE — cegah race condition double-klaim
+  const updated = db.prepare(
+    'UPDATE quest_progress SET claimed = 1 WHERE id = ? AND claimed = 0'
+  ).run(progress.id);
+  if (updated.changes === 0) return { success: false, reason: 'sudah diklaim' };
 
   // Give rewards
   if (quest.xp_reward > 0) addXp(userId, quest.xp_reward);

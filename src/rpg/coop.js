@@ -20,7 +20,7 @@ function getPairKey(a, b) {
 
 // ===== BOSS TABLES (rebalanced with resistances) =====
 const BOSS_TIERS = [
-  { tier: 1, minAvgLv: 1,  maxAvgLv: 15, id: 'kepala_goblin',  name: 'Kepala Goblin',     baseHp: 80,   baseAtk: [5,8],   baseDef: 2,  physResist: 0.20, magicResist: 0.50, xpReward: 200,  goldReward: 120, legendaryDrop: 'pedang_goblin'   },
+  { tier: 1, minAvgLv: 1,  maxAvgLv: 15, id: 'kepala_goblin',  name: 'Kepala Goblin',     baseHp: 55,   baseAtk: [3,6],   baseDef: 2,  physResist: 0.20, magicResist: 0.50, xpReward: 200,  goldReward: 120, legendaryDrop: 'pedang_goblin'   },
   { tier: 2, minAvgLv: 16, maxAvgLv: 35, id: 'ratu_laba',      name: 'Ratu Laba-laba',    baseHp: 280,  baseAtk: [10,16], baseDef: 5,  physResist: 0.40, magicResist: 0.20, xpReward: 500,  goldReward: 300, legendaryDrop: 'jaring_sutra'    },
   { tier: 3, minAvgLv: 36, maxAvgLv: 60, id: 'naga_bayangan',  name: 'Naga Bayangan',     baseHp: 550,  baseAtk: [18,26], baseDef: 9,  physResist: 0.30, magicResist: 0.30, xpReward: 1200, goldReward: 700, legendaryDrop: 'sisik_naga'      },
   { tier: 4, minAvgLv: 61, maxAvgLv: 999,id: 'raja_terkutuk',  name: 'Raja Terkutuk',     baseHp: 900,  baseAtk: [26,38], baseDef: 13, physResist: 0.25, magicResist: 0.25, xpReward: 2500, goldReward: 1500,legendaryDrop: 'mahkota_terkutuk' },
@@ -51,6 +51,16 @@ function resolveTurn(raid, actions) {
   const logs = [];
   const boss = raid.boss;
   const bossDefender = { def: boss.def, phys_resist: boss.physResist || 0, magic_resist: boss.magicResist || 0 };
+
+  // Tick burn boss (in-memory, boss bukan user DB)
+  if (raid.boss.burnTurns > 0 && raid.boss.burnDmg > 0) {
+    raid.boss.hp = Math.max(0, raid.boss.hp - raid.boss.burnDmg);
+    logs.push(`🔥 ${boss.name} terbakar! *-${raid.boss.burnDmg} HP* (burn)`);
+    raid.boss.burnTurns--;
+    if (raid.boss.burnTurns <= 0) {
+      raid.boss.burnDmg = 0;
+    }
+  }
 
   // Tick status effects untuk semua pemain
   for (const [uid, player] of Object.entries(raid.players)) {
@@ -86,7 +96,10 @@ function resolveTurn(raid, actions) {
 
     if (action.type === 'attack') {
       // Basic attack — tipe damage sesuai kelas
-      const baseDmg = player.atk + (player.atkBonus || 0);
+      // Penyihir: pakai magic_atk (bukan atk) agar basic attack relevan
+      const baseDmg = cls.damageType === 'magic'
+        ? (player.magicAtk || player.atk)
+        : player.atk + (player.atkBonus || 0);
       let dmg;
       if (cls.damageType === 'magic') {
         dmg = calcMagicDamage(player, bossDefender, baseDmg);
@@ -108,9 +121,11 @@ function resolveTurn(raid, actions) {
       const skillMulti = cls.skillMulti || 2.0;
 
       if (cls.damageType === 'magic') {
-        // Penyihir: Bola Api — magic damage + burn
+        // Penyihir: Bola Api — magic damage + burn (in-memory pada boss)
         dmg = calcMagicDamage(player, bossDefender, baseDmg, skillMulti);
-        addStatusEffect(boss.id, 'burn', 3, Math.floor(dmg * 0.15));
+        // Simpan burn ke raid.boss langsung (boss bukan user DB, tidak bisa di status_effects)
+        raid.boss.burnDmg = Math.floor(dmg * 0.15);
+        raid.boss.burnTurns = (raid.boss.burnTurns || 0) + 3;
         logs.push(`🔥 ${player.className}: ${cls.skillName}! *-${dmg} HP* bos + 🔥 Burn 3 turn!`);
       } else if (player.classId === 'pencuri') {
         // Pencuri: Backstab — physical + 100% crit
@@ -159,14 +174,14 @@ function resolveTurn(raid, actions) {
     raid.enrageAnnounced = true;
     boss.atkRange[0] = Math.floor(boss.atkRange[0] * 1.3);
     boss.atkRange[1] = Math.floor(boss.atkRange[1] * 1.3);
-    logs.push(`😡 **${boss.name} MENGAMUK! ATK meningkat 30%!**`);
+    logs.push(`😡 <b>${boss.name} MENGAMUK! ATK meningkat 30%!</b>`);
   }
 
-  for (const player of Object.values(raid.players)) {
+  for (const [uid, player] of Object.entries(raid.players)) {
     if (!player.alive) continue;
     let dmg = Math.max(1, bossAtk - Math.floor(player.def / 2) + randInt(-2, 3));
-    // Shield: -50% damage
-    if (hasStatusEffect(player.classId, 'shield') || player.defending) {
+    // Shield: -50% damage — cek uid bukan player.classId
+    if (hasStatusEffect(uid, 'shield') || player.defending) {
       dmg = Math.floor(dmg * 0.5);
       player.defending = false;
     }
@@ -184,7 +199,7 @@ function resolveTurn(raid, actions) {
   }
 
   if (isTelegraph && boss.hp > 0) {
-    logs.push(`⚠️ **${boss.name} bersiap untuk serangan berat! Gunakan BERTAHAN!**`);
+    logs.push(`⚠️ <b>${boss.name} bersiap untuk serangan berat! Gunakan BERTAHAN!</b>`);
   }
 
   raid.turnNumber++;
@@ -197,11 +212,11 @@ function sendCombatUI(bot, raid, extraLogs = []) {
   const allLogs = [...extraLogs, ...raid.pendingLogs].join('\n');
   raid.pendingLogs = [];
 
-  let msg = `⚔️ **RAID: ${boss.name}** ⚔️\n\n`;
-  msg += `👹 **${boss.name}**: ${renderHpBar(boss.hp, boss.maxHp, 10)}`;
+  let msg = `⚔️ <b>RAID: ${boss.name}</b> ⚔️\n\n`;
+  msg += `👹 <b>${boss.name}</b>: ${renderHpBar(boss.hp, boss.maxHp, 10)}`;
   msg += `\n🛡️ Phys Res: ${Math.round((boss.physResist||0)*100)}% | 🔮 Magic Res: ${Math.round((boss.magicResist||0)*100)}%\n\n`;
 
-  msg += `🛡️ **PARTY STATUS:**\n`;
+  msg += `🛡️ <b>PARTY STATUS:</b>\n`;
   for (const [uid, p] of Object.entries(players)) {
     if (p.alive) {
       const cls = CLASS_DEFS[p.classId];
@@ -213,7 +228,7 @@ function sendCombatUI(bot, raid, extraLogs = []) {
     }
   }
 
-  if (allLogs) msg += `\n📝 **LOG:**\n${allLogs}\n`;
+  if (allLogs) msg += `\n📝 <b>LOG:</b>\n${allLogs}\n`;
 
   const buttons = [
     [Markup.button.callback('🗡️ Serang', `raid:${pairKey}:${turnNumber}:attack`)],
@@ -227,11 +242,11 @@ function sendCombatUI(bot, raid, extraLogs = []) {
     const p = players[chatId];
     if (p && p.alive) {
       bot.telegram.sendMessage(chatId, msg + `\n_Pilih aksi Turn ${turnNumber}:_`, {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...Markup.inlineKeyboard(buttons)
       }).catch(() => {});
     } else {
-      bot.telegram.sendMessage(chatId, msg + `\n_Kamu sudah tumbang. Menonton..._`, { parse_mode: 'Markdown' }).catch(() => {});
+      bot.telegram.sendMessage(chatId, msg + `\n<i>Kamu sudah tumbang. Menonton...</i>`, { parse_mode: 'HTML' }).catch(() => {});
       raid.actions[chatId] = { type: 'dead' };
     }
   };
@@ -252,11 +267,19 @@ function checkRaidResolve(bot, pairKey) {
   raid.actions = {};
   raid.pendingLogs = logs;
 
+  // Sync HP ke DB setiap akhir turn (agar tidak hilang jika bot restart)
+  updateHp(chatIdA, players[chatIdA].hp);
+  updateHp(chatIdB, players[chatIdB].hp);
+
   const isPartyDead = !players[chatIdA].alive && !players[chatIdB].alive;
   const isBossDead = raid.boss.hp <= 0;
 
   if (isBossDead) {
-    // WIN — gunakan reward tetap per tier, bukan formula HP-based
+    // WIN — set cooldown saat raid selesai (fair: hanya kalau benar-benar selesai)
+    setDungeonCooldown(chatIdA);
+    setDungeonCooldown(chatIdB);
+
+    // gunakan reward tetap per tier, bukan formula HP-based
     const xpReward = raid.boss.xpReward || Math.floor(raid.boss.maxHp * 2);
     const goldReward = raid.boss.goldReward || Math.floor(raid.boss.maxHp * 1.2);
     const lootWinner = Math.random() < 0.5 ? chatIdA : chatIdB;
@@ -273,24 +296,25 @@ function checkRaidResolve(bot, pairKey) {
     raidSessions.delete(pairKey);
 
     // Cek level-up untuk masing-masing pemain
-    const levelUpA = xpResultA.leveled && xpResultA.leveled.length > 0 ? `\n🎉 **${players[chatIdA].className} LEVEL UP!** → Lv **${xpResultA.newLevel}**!` : '';
-    const levelUpB = xpResultB.leveled && xpResultB.leveled.length > 0 ? `\n🎉 **${players[chatIdB].className} LEVEL UP!** → Lv **${xpResultB.newLevel}**!` : '';
+    const levelUpA = xpResultA.leveled && xpResultA.leveled.length > 0 ? `\n🎉 <b>${players[chatIdA].className} LEVEL UP!</b> → Lv <b>${xpResultA.newLevel}</b>!` : '';
+    const levelUpB = xpResultB.leveled && xpResultB.leveled.length > 0 ? `\n🎉 <b>${players[chatIdB].className} LEVEL UP!</b> → Lv <b>${xpResultB.newLevel}</b>!` : '';
 
     const winMsgBase =
-      logs.join('\n') + `\n\n🎉 **BOSS DIKALAHKAN!**\n` +
+      logs.join('\n') + `\n\n🎉 <b>BOSS DIKALAHKAN!</b>\n` +
       `✨ +${xpReward} XP | 💰 +${goldReward}g untuk KEDUA pemain!\n` +
-      `🟠 Drop Legendary: **${raid.boss.legendaryDrop.replace(/_/g, ' ')}** → ${players[lootWinner].className}!`;
+      `🟠 Drop Legendary: <b>${raid.boss.legendaryDrop.replace(/_/g, ' ')}</b> → ${players[lootWinner].className}!`;
 
-    bot.telegram.sendMessage(chatIdA, winMsgBase + levelUpA, { parse_mode: 'Markdown' }).catch(() => {});
-    bot.telegram.sendMessage(chatIdB, winMsgBase + levelUpB, { parse_mode: 'Markdown' }).catch(() => {});
-
-    updateHp(chatIdA, players[chatIdA].hp);
-    updateHp(chatIdB, players[chatIdB].hp);
+    bot.telegram.sendMessage(chatIdA, winMsgBase + levelUpA, { parse_mode: 'HTML' }).catch(() => {});
+    bot.telegram.sendMessage(chatIdB, winMsgBase + levelUpB, { parse_mode: 'HTML' }).catch(() => {});
+    // HP sudah di-sync per turn — tidak perlu updateHp lagi di sini
     return;
   }
 
   if (isPartyDead) {
-    // LOSE
+    // LOSE — set cooldown saat raid selesai
+    setDungeonCooldown(chatIdA);
+    setDungeonCooldown(chatIdB);
+
     const penaltyHpA = Math.floor(players[chatIdA].maxHp * 0.2);
     const penaltyHpB = Math.floor(players[chatIdB].maxHp * 0.2);
     updateHp(chatIdA, penaltyHpA);
@@ -299,10 +323,10 @@ function checkRaidResolve(bot, pairKey) {
     raidSessions.delete(pairKey);
 
     const loseMsg =
-      logs.join('\n') + `\n\n💀 **PARTY TUMBANG...**\n` +
+      logs.join('\n') + `\n\n💀 <b>PARTY TUMBANG...</b>\n` +
       `HP kalian dipulihkan ke 20% max HP.\nCooldown dungeon 10 menit, setelah itu bisa raid lagi!`;
-    bot.telegram.sendMessage(chatIdA, loseMsg, { parse_mode: 'Markdown' }).catch(() => {});
-    bot.telegram.sendMessage(chatIdB, loseMsg, { parse_mode: 'Markdown' }).catch(() => {});
+    bot.telegram.sendMessage(chatIdA, loseMsg, { parse_mode: 'HTML' }).catch(() => {});
+    bot.telegram.sendMessage(chatIdB, loseMsg, { parse_mode: 'HTML' }).catch(() => {});
     return;
   }
 
@@ -320,7 +344,7 @@ function clearRaidSession(chatId, partnerId) {
     // Notifikasi ke partner yang masih aktif
     const remainingId = chatId === raid.chatIdA ? raid.chatIdB : raid.chatIdA;
     const leaverId = chatId === raid.chatIdA ? raid.chatIdA : raid.chatIdB;
-    bot.telegram.sendMessage(remainingId, '⏰ **Raid dibatalkan!**\n\nPartner meninggalkan chat sebelum raid selesai.\nCooldown dungeon tidak aktif (dibatalkan).', { parse_mode: 'Markdown' }).catch(() => {});
+    bot.telegram.sendMessage(remainingId, '⏰ <b>Raid dibatalkan!</b>\n\nPartner meninggalkan chat sebelum raid selesai.\nCooldown dungeon tidak aktif (dibatalkan).', { parse_mode: 'HTML' }).catch(() => {});
   }
 }
 
@@ -347,11 +371,11 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
     const partnerCooldown = getDungeonCooldown(partner);
     if (myCooldown > 0) {
       const mins = Math.ceil(myCooldown / 60);
-      return ctx.reply(`⏳ Kamu masih cooldown dungeon! Bisa raid lagi dalam *${mins} menit*.`, { parse_mode: 'Markdown' });
+      return ctx.reply(`⏳ Kamu masih cooldown dungeon! Bisa raid lagi dalam <b>${mins} menit</b>.`, { parse_mode: 'HTML' });
     }
     if (partnerCooldown > 0) {
       const mins = Math.ceil(partnerCooldown / 60);
-      return ctx.reply(`⏳ Partnermu masih cooldown dungeon! Bisa raid lagi dalam *${mins} menit*.`, { parse_mode: 'Markdown' });
+      return ctx.reply(`⏳ Partnermu masih cooldown dungeon! Bisa raid lagi dalam <b>${mins} menit</b>.`, { parse_mode: 'HTML' });
     }
 
     // Tampilkan menu pilih kategori dungeon
@@ -364,7 +388,7 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
     msg += `⏳ Status: Siap raid!\n\n`;
     msg += `*Dungeon Tersedia:*\n`;
     for (const t of unlockedTiers) {
-      msg += `${t.emoji} **${t.label}** _(Min. Lv ${t.minLv})_\n`;
+      msg += `${t.emoji} <b>${t.label}</b> <i>(Min. Lv ${t.minLv})</i>\n`;
       msg += `   ${t.desc}\n`;
       msg += `   💰 ${t.reward}\n\n`;
     }
@@ -381,7 +405,7 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
     ]);
     buttons.push([Markup.button.callback('❌ Batal', 'dungeon:cancel')]);
 
-    ctx.reply(msg, { parse_mode: 'Markdown', ...Markup.inlineKeyboard(buttons) });
+    ctx.reply(msg, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) });
   });
 
   // Pemain memilih tier dungeon → kirim undangan ke partner
@@ -412,19 +436,19 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
     dungeonInvites.set(pairKey, { inviter: userId, invitee: partnerId, tierId });
     ctx.answerCbQuery(`Undangan ${tierLabel.label} dikirim!`);
     ctx.editMessageText(
-      `${tierLabel.emoji} Kamu memilih **${tierLabel.label}**!\n\nMenunggu konfirmasi partner...`,
-      { parse_mode: 'Markdown' }
+      `${tierLabel.emoji} Kamu memilih <b>${tierLabel.label}</b>!\n\nMenunggu konfirmasi partner...`,
+      { parse_mode: 'HTML' }
     );
 
     bot.telegram.sendMessage(partnerId,
-      `⚔️ **Undangan Dungeon Raid!**\n\n` +
-      `Partnermu mengajak masuk ke **${tierLabel.emoji} ${tierLabel.label}**!\n\n` +
+      `⚔️ <b>Undangan Dungeon Raid!</b>\n\n` +
+      `Partnermu mengajak masuk ke <b>${tierLabel.emoji} ${tierLabel.label}</b>!\n\n` +
       `👹 ${tierLabel.desc}\n` +
       `💰 Reward: ${tierLabel.reward}\n` +
       `📊 Rata-rata level party: ${avgLv}\n\n` +
       `_Cooldown 10 menit aktif setelah raid selesai._`,
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...Markup.inlineKeyboard([
           [Markup.button.callback('✅ Masuk!', 'dungeon:accept'), Markup.button.callback('❌ Tolak', 'dungeon:reject')]
         ])
@@ -457,13 +481,11 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
       return;
     }
 
-    // Accept — start raid, set cooldown LANGSUNG saat mulai
+    // Accept — start raid
+    // Cooldown akan di-set saat raid selesai (win/lose), bukan saat mulai
+    // Sehingga kalau abandon/disconnect, tidak kena cooldown
     const userA = getOrCreateUser(invite.inviter);
     const userB = getOrCreateUser(userId);
-
-    // Set cooldown 30 menit untuk kedua pemain
-    setDungeonCooldown(invite.inviter);
-    setDungeonCooldown(userId);
 
     const avgLv = Math.floor((userA.level + userB.level) / 2);
     // Gunakan tier yang dipilih inviter, bukan auto-detect dari avgLv
@@ -541,9 +563,9 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
     raidSessions.set(pairKey, raid);
 
     ctx.answerCbQuery('Raid dimulai!');
-    const startMsg = `⚔️ **DUNGEON RAID DIMULAI!**\n\n👹 Boss: **${bossTier.name}**\n📊 Rata-rata level party: ${avgLv}\n\nCooldown 10 menit akan aktif setelah raid selesai.\n\nPersiapkan diri!`;
-    bot.telegram.sendMessage(invite.inviter, startMsg, { parse_mode: 'Markdown' }).catch(() => {});
-    bot.telegram.sendMessage(userId, startMsg, { parse_mode: 'Markdown' }).catch(() => {});
+    const startMsg = `⚔️ <b>DUNGEON RAID DIMULAI!</b>\n\n👹 Boss: <b>${bossTier.name}</b>\n📊 Rata-rata level party: ${avgLv}\n\nCooldown 10 menit aktif setelah raid selesai (win/lose).\n\nPersiapkan diri!`;
+    bot.telegram.sendMessage(invite.inviter, startMsg, { parse_mode: 'HTML' }).catch(() => {});
+    bot.telegram.sendMessage(userId, startMsg, { parse_mode: 'HTML' }).catch(() => {});
 
     setTimeout(() => sendCombatUI(bot, raid), 1500);
   });

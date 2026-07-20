@@ -29,7 +29,7 @@ const SHOP_ITEMS = [
 const CRAFT_RECIPES = [
   // Weapons
   { id: 1, result: 'pedang_besi', name: '🗡️ Pedang Besi', gold: 100,
-    materials: [{ item: 'besi', qty: 5 }, { item: 'tembaga', qty: 3 }] },
+    materials: [{ item: 'besi', qty: 3 }, { item: 'tembaga', qty: 3 }] },
   { id: 2, result: 'pedang_naga', name: '🐉 Pedang Naga', gold: 500,
     materials: [{ item: 'besi', qty: 10 }, { item: 'fragmen_naga', qty: 5 }, { item: 'sisik_naga', qty: 3 }] },
   // Staffs
@@ -41,7 +41,7 @@ const CRAFT_RECIPES = [
     materials: [{ item: 'perak', qty: 8 }, { item: 'berlian', qty: 5 }] },
   // Armor
   { id: 6, result: 'perisai_besi', name: '🛡️ Perisai Besi', gold: 120,
-    materials: [{ item: 'besi', qty: 8 }, { item: 'kulit_kasar', qty: 5 }] },
+    materials: [{ item: 'besi', qty: 5 }, { item: 'kulit_kasar', qty: 5 }] },
   { id: 7, result: 'jubah_terkutuk', name: '🧥 Jubah Terkutuk', gold: 300,
     materials: [{ item: 'perak', qty: 5 }, { item: 'emas_ore', qty: 2 }] },
   { id: 8, result: 'armor_naga', name: '🐉 Armor Naga', gold: 600,
@@ -351,18 +351,21 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
       return ctx.reply(`⏳ Hadiah harian sudah diambil! Kembali dalam *${hours}j ${mins}m*.`, { parse_mode: 'Markdown' });
     }
 
-    // Claim daily
-    addGold(userId, 30);
-    addXp(userId, 10);
+    // Claim daily — balance: 80g + 25xp + 1 ramuan = wajar untuk casual
+    addGold(userId, 80);
+    addXp(userId, 25);
     addItem(userId, 'ramuan_kecil');
     const { db } = require('../db');
     db.prepare('UPDATE rpg_users SET last_daily_claim_at = ? WHERE telegram_user_id = ?').run(now, userId.toString());
 
     ctx.reply(
-      `🎁 *Hadiah Harian!*\n\n` +
-      `💰 +30 Gold\n✨ +10 XP\n🧪 +1 Ramuan Kecil\n\n` +
-      `_Kembali lagi dalam 20 jam!_`,
-      { parse_mode: 'Markdown' }
+      `<b>🎁 HADIAH HARIAN!</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `💰 +<b>30</b> Gold\n` +
+      `✨ +<b>10</b> XP\n` +
+      `🧪 +<b>1</b> Ramuan Kecil\n\n` +
+      `<i>Kembali lagi dalam 20 jam!</i>`,
+      { parse_mode: 'HTML' }
     );
   });
 
@@ -382,14 +385,14 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
 
     const invItem = getItem(userId, itemId);
     if (!invItem) return ctx.reply(`❌ Kamu tidak punya item tersebut.`);
-    if (!['weapon', 'armor'].includes(invItem.category)) return ctx.reply(`❌ Hanya senjata/armor yang bisa di-upgrade.`);
+    if (!['weapon', 'armor', 'staff', 'accessory'].includes(invItem.category)) return ctx.reply(`❌ Hanya senjata, armor, staff, atau aksesori yang bisa di-upgrade.`);
     if (invItem.upgrade_tier >= 5) return ctx.reply(`⚠️ <b>${invItem.display_name}</b> sudah di tier maksimal (+5)!`, { parse_mode: 'HTML' });
 
     const currentTier = invItem.upgrade_tier;
     const nextTier = currentTier + 1;
-    const oreNeeded = nextTier * 3;
-    const goldNeeded = nextTier * 100;
-    const statType = invItem.category === 'weapon' ? 'ATK' : 'DEF';
+    const oreNeeded = nextTier <= 3 ? nextTier * 3 : nextTier * 2;
+    const goldNeeded = nextTier <= 3 ? nextTier * 100 : nextTier * 80;
+    const statType = invItem.category === 'weapon' || invItem.category === 'staff' ? 'ATK/Magic' : 'DEF';
 
     // Hitung total ore yang dimiliki
     const oreTypes = ['besi_rongsok', 'tembaga', 'batu_bara', 'besi', 'perak', 'emas_ore'];
@@ -443,8 +446,8 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     }
 
     const nextTier = currentTier + 1;
-    const oreNeeded = nextTier * 3;
-    const goldNeeded = nextTier * 100;
+    const oreNeeded = nextTier <= 3 ? nextTier * 3 : nextTier * 2;
+    const goldNeeded = nextTier <= 3 ? nextTier * 100 : nextTier * 80;
     const oreTypes = ['besi_rongsok', 'tembaga', 'batu_bara', 'besi', 'perak', 'emas_ore'];
     let totalOre = 0;
     for (const oreId of oreTypes) {
@@ -477,7 +480,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     }
 
     invCache.delete(userId.toString());
-    const statType = invItem.category === 'weapon' ? 'ATK' : 'DEF';
+    const statType = invItem.category === 'weapon' || invItem.category === 'staff' ? 'ATK/Magic' : 'DEF';
     ctx.answerCbQuery('Upgrade berhasil!');
     incrementQuestProgress(userId, 'upgrade');
     ctx.editMessageText(
@@ -513,15 +516,23 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const tax = Math.floor(amount * 0.05);
     const received = amount - tax;
 
-    // Atomic: spendGold + addGold dalam satu transaction
+    // Atomic: cek partner punya karakter dulu, baru transfer
     const transferSuccess = db.transaction(() => {
+      // Pastikan partner ada di rpg_users sebelum addGold
+      const partnerCheck = db.prepare('SELECT telegram_user_id FROM rpg_users WHERE telegram_user_id = ?').get(partnerId.toString());
+      if (!partnerCheck) return false;
       if (!spendGold(userId, amount)) return false;
       addGold(partnerId, received);
       return true;
     })();
 
     if (!transferSuccess) {
-      return ctx.reply(`❌ Gold tidak cukup! Butuh ${amount}g. Saldo: ${user.gold}g.`);
+      // Cek apakah gagal karena gold kurang atau partner tidak punya karakter
+      const freshUser = getOrCreateUser(userId);
+      if (!freshUser || freshUser.gold < amount) {
+        return ctx.reply(`❌ Gold tidak cukup! Butuh ${amount}g. Saldo: ${user.gold}g.`);
+      }
+      return ctx.reply('❌ Partnermu belum punya karakter RPG. Minta dia ketik /profile dulu!');
 
 
 
@@ -531,9 +542,9 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     logTransaction(userId, partnerId, received, 'give_transfer');
     logTransaction(userId, null, tax, 'give_tax');
 
-    ctx.reply(`✅ Berhasil mengirim *${received}g* ke partner (pajak 5% = ${tax}g).`, { parse_mode: 'Markdown' });
+    ctx.reply(`✅ Berhasil mengirim <b>${received}g</b> ke partner <i>(pajak 5% = ${tax}g)</i>.`, { parse_mode: 'HTML' });
     incrementQuestProgress(userId, 'give');
-    bot.telegram.sendMessage(partnerId, `💰 Kamu menerima *${received}g* dari partner!`, { parse_mode: 'Markdown' }).catch(() => {});
+    bot.telegram.sendMessage(partnerId, `💰 Kamu menerima <b>${received}g</b> dari partner!`, { parse_mode: 'HTML' }).catch(() => {});
   });
 
 

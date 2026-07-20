@@ -1,20 +1,25 @@
 // src/rpg/profile.js
 // Fase 1: /profile — pembuatan karakter & tampilan stats
+// Design: Discord game bot style, mobile-friendly, HTML parse_mode
 const { Markup } = require('telegraf');
 const {
   CLASS_DEFS, xpToNextLevel, calcStats,
-  getOrCreateUser, createUser, getCurrentEnergy, getDungeonCooldown, getCurrentHp, getEquipmentBonus, getInventory, getEquippedBonus
+  getOrCreateUser, createUser, getCurrentEnergy, getDungeonCooldown,
+  getCurrentHp, getEquippedBonus, getEquipped
 } = require('./db_rpg');
-const { progressBar, hpBar, statLine, divider, sectionHeader, kvPair } = require('../format');
+const { progressBar, hpBar, statLine, divider, kvPair, footer, sectionHeader } = require('../format');
 
 const RARITY_EMOJI = { common: '⚪', uncommon: '🟢', rare: '🔵', epic: '🟣', legendary: '🟠' };
 
-function renderXpBar(xp, nextXp, len = 10) {
-  return progressBar(xp, nextXp, len) + ` ${xp}/${nextXp}`;
-}
-
 function renderHpBar(hp, maxHp, len = 8) {
   return progressBar(hp, maxHp, len) + ` ${Math.max(0, hp)}/${maxHp}`;
+}
+
+function renderSlot(item) {
+  if (!item) return '<i>(Kosong)</i>';
+  const tier = item.upgrade_tier > 0 ? ` <b>+${item.upgrade_tier}</b>` : '';
+  const rarity = RARITY_EMOJI[item.rarity] || '';
+  return `${rarity} ${item.display_name}${tier}`;
 }
 
 function renderProfile(user) {
@@ -23,93 +28,73 @@ function renderProfile(user) {
   const energy = getCurrentEnergy(user);
   const cooldownSecs = getDungeonCooldown(user);
   const hp = getCurrentHp(user);
-  const nextEnergyMin = energy < 10 ? (3 - Math.floor(((Date.now() / 1000) - user.energy_last_update) / 60) % 3) : 0;
   const equip = getEquippedBonus(user.telegram_user_id);
-  const effectiveAtk = user.atk + equip.atkBonus;
-  const effectiveDef = user.def + equip.defBonus;
-  const effectiveMagicAtk = (user.magic_atk || 0) + equip.magicAtkBonus;
-  const totalCritRate = Math.min(0.95, (user.crit_rate || 0.05) + equip.critRate);
-  const totalCritMulti = (user.crit_multi || 1.5) + equip.critMulti;
+  const equipped = getEquipped(user.telegram_user_id);
+
+  const effectiveAtk    = user.atk + equip.atkBonus;
+  const effectiveDef    = user.def + equip.defBonus;
+  const effectiveMagic  = (user.magic_atk || 0) + equip.magicAtkBonus;
+  const totalCrit       = Math.min(95, Math.round(((user.crit_rate || 0.05) + equip.critRate) * 100));
+  const totalCritMulti  = Math.round(((user.crit_multi || 1.5) + equip.critMulti) * 100);
 
   const dungeonStatus = cooldownSecs > 0
-    ? `⏳ Cooldown ${Math.ceil(cooldownSecs / 60)} menit`
-    : `✅ Siap raid!`;
+    ? `⏳ ${Math.ceil(cooldownSecs / 60)}m cooldown`
+    : `✅ Siap raid`;
 
-  const dmgType = cls.damageType === 'magic' ? '🔮 Magic' : '⚔️ Physical';
-  const streak = user.win_streak || 0;
+  const dmgType  = cls.damageType === 'magic' ? '🔮 Magic' : '⚔️ Physical';
+  const streak   = user.win_streak || 0;
+  const nextEMin = energy < 10
+    ? (3 - Math.floor(((Date.now() / 1000) - user.energy_last_update) / 60) % 3)
+    : 0;
 
-  // Build clean profile card
-  let msg = `${cls.name} — *Profil Petualang*\n`;
-  msg += `${divider('═', 30)}\n\n`;
+  // ── Header ──────────────────────────────────
+  let msg = ``;
+  msg += `<b>${cls.name}</b>  <code>Lv.${user.level}</code>  💰 <b>${user.gold}g</b>\n`;
+  if (streak > 0) msg += `🔥 Win Streak: <b>${streak}x</b>\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 
-  // Progress bars
-  msg += `${hpBar('❤️', 'HP', hp, user.max_hp, 8)}\n`;
-  msg += `${hpBar('✨', 'XP', user.xp, nextXp, 8)}\n`;
-  msg += `${hpBar('⚡', 'Energi', energy, 10, 8)}\n\n`;
+  // ── Bars ────────────────────────────────────
+  const hpFilled  = Math.min(10, Math.round((Math.max(0, hp) / user.max_hp) * 10));
+  const xpFilled  = Math.min(10, Math.round((user.xp / nextXp) * 10));
+  const enFilled  = Math.min(10, Math.round((energy / 10) * 10));
 
-  // Stats
-  msg += `${divider('─', 30)}\n`;
-  msg += `**Stats:**\n`;
-  msg += `${statLine('⚔️', 'ATK', effectiveAtk, equip.atkBonus > 0 ? `+${equip.atkBonus} eq` : '')}\n`;
-  msg += `${statLine('🛡️', 'DEF', effectiveDef, equip.defBonus > 0 ? `+${equip.defBonus} eq` : '')}\n`;
-  msg += `${statLine('🔮', 'Magic', effectiveMagicAtk > 0 ? effectiveMagicAtk : '-')}\n`;
-  msg += `${statLine('🎯', 'Damage', dmgType)}\n`;
-  msg += `${statLine('💥', 'Crit', `${Math.round(totalCritRate * 100)}% / ${Math.round(totalCritMulti * 100)}%`)}\n`;
-  msg += `${statLine('🛡️', 'Resist', `Phys ${Math.round((user.phys_resist || 0) * 100)}% | Magic ${Math.round((user.magic_resist || 0) * 100)}%`)}\n\n`;
+  msg += `❤️ <b>HP</b>  ${'█'.repeat(hpFilled)}${'░'.repeat(10 - hpFilled)} <code>${hp}/${user.max_hp}</code>\n`;
+  msg += `✨ <b>XP</b>  ${'█'.repeat(xpFilled)}${'░'.repeat(10 - xpFilled)} <code>${user.xp}/${nextXp}</code>\n`;
+  msg += `⚡ <b>EN</b>  ${'█'.repeat(enFilled)}${'░'.repeat(10 - enFilled)} <code>${energy}/10</code>`;
+  if (energy < 10) msg += `  <i>(+1 ~${nextEMin}m)</i>`;
+  msg += `\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 
-  // Info
-  msg += `${divider('─', 30)}\n`;
-  msg += `💰 Gold: *${user.gold}g*\n`;
-  msg += `🏆 Level: *${user.level}*\n`;
-  if (streak > 0) msg += `🔥 Win Streak: *${streak}x*\n`;
+  // ── Stats ────────────────────────────────────
+  msg += `<b>📊 Stats</b>\n`;
+  msg += `⚔️ ATK <b>${effectiveAtk}</b>${equip.atkBonus > 0 ? `  <i>(+${equip.atkBonus} eq)</i>` : ''}   `;
+  msg += `🛡️ DEF <b>${effectiveDef}</b>${equip.defBonus > 0 ? `  <i>(+${equip.defBonus} eq)</i>` : ''}\n`;
+  if (effectiveMagic > 0) msg += `🔮 Magic <b>${effectiveMagic}</b>${equip.magicAtkBonus > 0 ? `  <i>(+${equip.magicAtkBonus} eq)</i>` : ''}\n`;
+  msg += `💥 Crit <b>${totalCrit}%</b> × <b>${totalCritMulti}%</b>   🎯 ${dmgType}\n`;
+  if ((user.phys_resist || 0) > 0 || (user.magic_resist || 0) > 0) {
+    msg += `🛡 Resist  Phys <b>${Math.round((user.phys_resist||0)*100)}%</b>  Magic <b>${Math.round((user.magic_resist||0)*100)}%</b>\n`;
+  }
   msg += `🏰 Dungeon: ${dungeonStatus}\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 
-  if (energy < 10) {
-    msg += `${footer(`+1 energi dalam ~${nextEnergyMin} menit`)}`;
+  // ── Equipment ────────────────────────────────
+  msg += `<b>🗡️ Equipment</b>\n`;
+  msg += `⚔️ Weapon   : ${renderSlot(equipped.weapon)}\n`;
+  msg += `🪄 Staff    : ${renderSlot(equipped.staff)}\n`;
+  msg += `🛡️ Armor    : ${renderSlot(equipped.armor)}\n`;
+  msg += `💍 Accessory: ${renderSlot(equipped.accessory)}\n`;
+
+  // Bonus equip ringkas
+  const bonusParts = [];
+  if (equip.atkBonus > 0)      bonusParts.push(`ATK+${equip.atkBonus}`);
+  if (equip.defBonus > 0)      bonusParts.push(`DEF+${equip.defBonus}`);
+  if (equip.magicAtkBonus > 0) bonusParts.push(`Magic+${equip.magicAtkBonus}`);
+  if (equip.critRate > 0)      bonusParts.push(`Crit+${Math.round(equip.critRate*100)}%`);
+  if (bonusParts.length > 0) {
+    msg += `<i>Bonus: ${bonusParts.join(' · ')}</i>\n`;
   }
 
-
-  // Equipment section
-  const equipped = { weapon: null, staff: null, armor: null, accessory: null };
-  for (const item of getInventory(user.telegram_user_id)) {
-    if (!item.effect_json || !['weapon', 'staff', 'armor', 'accessory'].includes(item.category)) continue;
-    if (equipped[item.category] && equipped[item.category].rarity > item.rarity) continue;
-    equipped[item.category] = item;
-  }
-
-  const renderSlot = (item) => {
-    if (item) {
-      const tier = item.upgrade_tier > 0 ? ` +${item.upgrade_tier}` : '';
-      const rarity = RARITY_EMOJI[item.rarity] || '';
-      return `${rarity} ${item.display_name}${tier}`;
-    }
-    return '(Kosong)';
-  };
-
-  // Add equipment to profile
-  msg += `${divider('─', 30)}\n`;
-  msg += `**🗡️ Equipment:**\n`;
-  msg += `┌─────────────────┬─────────────────┐\n`;
-  msg += `│ ⚔️ Weapon       │ 🪄 Staff        │\n`;
-  msg += `│ ${renderSlot(equipped.weapon).padEnd(15)} │ ${renderSlot(equipped.staff).padEnd(15)} │\n`;
-  msg += `├─────────────────┼─────────────────┤\n`;
-  msg += `│ 🛡️ Armor        │ 💍 Accessory    │\n`;
-  msg += `│ ${renderSlot(equipped.armor).padEnd(15)} │ ${renderSlot(equipped.accessory).padEnd(15)} │\n`;
-  msg += `└─────────────────┴─────────────────┘\n\n`;
-
-  // Equipment effects
-  const effects = [];
-  for (const [, item] of Object.entries(equipped)) {
-    if (!item) continue;
-    try {
-      const eff = JSON.parse(item.effect_json);
-      if (eff.atk_bonus) effects.push(`ATK+${eff.atk_bonus}`);
-      if (eff.def_bonus) effects.push(`DEF+${eff.def_bonus}`);
-      if (eff.magic_atk_bonus) effects.push(`Magic+${eff.magic_atk_bonus}`);
-      if (eff.crit_rate) effects.push(`Crit+${Math.round(eff.crit_rate * 100)}%`);
-    } catch {}
-  }
-  if (effects.length) msg += `${effects.join(' | ')}\n`;
+  msg += `\n<i>/equip [item] • /unequip [slot] • /inv</i>`;
   return msg;
 }
 
@@ -119,57 +104,52 @@ function setupProfile(bot, { rateLimitCommand }) {
     let user = getOrCreateUser(userId);
 
     if (!user) {
-      // Belum punya karakter — tampilkan pilihan kelas
-      const msg = `${divider('═', 30)}\n` +
-        `**⚔️ PILIH KELASMU**\n` +
-        `${divider('═', 30)}\n\n` +
+      const msg =
+        `<b>⚔️ PILIH KELASMU</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `Pilih kelas untuk memulai petualangan:\n\n` +
-        `${kvPair('⚔️', 'Ksatria', 'Physical fighter, HP & DEF tinggi')}\n` +
-        `${kvPair('🔥', 'Penyihir', 'Magic DPS, ATK magic tinggi')}\n` +
-        `${kvPair('🗡️', 'Pencuri', 'Physical burst, Crit tinggi')}\n\n` +
-        `${divider('─', 30)}\n` +
-        `_Pilih kelasmu:_`;
+        `⚔️ <b>Ksatria</b> — Tank, HP &amp; DEF tinggi\n` +
+        `   Physical fighter, Skill: Tebasan Besar\n\n` +
+        `🔥 <b>Penyihir</b> — Magic DPS, burst damage\n` +
+        `   Skill: Bola Api (Burn 3 turn)\n\n` +
+        `🗡️ <b>Pencuri</b> — Crit tinggi, burst cepat\n` +
+        `   Skill: Backstab (100% Crit!)\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `<i>Pilih kelasmu di bawah:</i>`;
 
-      const buttons = [
-        [Markup.button.callback('⚔️ Ksatria', 'create_ksatria')],
-        [Markup.button.callback('🔥 Penyihir', 'create_penyihir')],
-        [Markup.button.callback('🗡️ Pencuri', 'create_pencuri')],
-      ];
-
-      return ctx.reply(msg, { parse_mode: 'Markdown', ...Markup.inlineKeyboard(buttons) });
+      return ctx.reply(msg, {
+        parse_mode: 'HTML',
+        ...Markup.inlineKeyboard([
+          [Markup.button.callback('⚔️ Ksatria', 'create_ksatria')],
+          [Markup.button.callback('🔥 Penyihir', 'create_penyihir')],
+          [Markup.button.callback('🗡️ Pencuri', 'create_pencuri')],
+        ])
+      });
     }
 
-    // Sudah punya karakter — tampilkan profile
-    const profileMsg = renderProfile(user);
-    ctx.reply(profileMsg, { parse_mode: 'Markdown' });
+    ctx.reply(renderProfile(user), { parse_mode: 'HTML' });
   });
 
-  // Create character handlers
   ['ksatria', 'penyihir', 'pencuri'].forEach(className => {
     bot.action(`create_${className}`, async (ctx) => {
       const userId = ctx.chat.id;
       const existing = getOrCreateUser(userId);
-      if (existing) {
-        return ctx.answerCbQuery('Kamu sudah punya karakter!', { show_alert: true });
-      }
+      if (existing) return ctx.answerCbQuery('Kamu sudah punya karakter!', { show_alert: true });
 
       createUser(userId, className);
       const cls = CLASS_DEFS[className];
       ctx.answerCbQuery(`${cls.name} dipilih!`);
       ctx.editMessageText(
-        `${divider('═', 30)}\n` +
-        `**${cls.name} — Karakter Dibuat!**\n` +
-        `${divider('═', 30)}\n\n` +
-        `Selamat datang, Petualang! 🎉\n\n` +
-        `Kamu sekarang adalah **${cls.name}**.\n\n` +
-        `${divider('─', 30)}\n` +
-        `**Langkah selanjutnya:**\n` +
-        `${kvPair('1', '/profile', 'Lihat stats karakter')}\n` +
-        `${kvPair('2', '/hunt', 'Berburu monster (2 energi)')}\n` +
-        `${kvPair('3', '/shop', 'Beli item')}\n` +
-        `${kvPair('4', '/helprpg', 'Panduan lengkap')}\n\n` +
-        `${footer('Selamat bertualang! 🎮⚔️')}`,
-        { parse_mode: 'Markdown' }
+        `<b>🎉 ${cls.name} — Karakter Dibuat!</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `Selamat datang, Petualang! ⚔️\n\n` +
+        `<b>Langkah pertama:</b>\n` +
+        `1. /profile — Lihat stats karakter\n` +
+        `2. /hunt — Berburu monster (2 ⚡)\n` +
+        `3. /daily — Ambil hadiah harian\n` +
+        `4. /helprpg — Panduan lengkap\n\n` +
+        `<i>Selamat bertualang! 🎮</i>`,
+        { parse_mode: 'HTML' }
       );
     });
   });

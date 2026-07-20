@@ -30,12 +30,12 @@ const {
   getAllUserIds,
   db
 } = require('./src/db');
-const { rateLimitMessage, rateLimitCommand } = require('./src/middleware/rateLimit');
+const { rateLimitMessage, rateLimitCommand, rateLimitSearch } = require('./src/middleware/rateLimit');
 const { containsBadWord } = require('./src/moderation/wordFilter');
 const { getRandomTopic } = require('./src/icebreakers');
 const { setupRpg, clearRaidSession } = require('./src/rpg/controller');
 const { progressBar } = require('./src/format');
-const { CLASS_DEFS, xpToNextLevel, getCurrentHp, getCurrentEnergy, getEquipmentBonus, getInventory } = require('./src/rpg/db_rpg');
+const { CLASS_DEFS, xpToNextLevel, getCurrentHp, getCurrentEnergy, getEquipmentBonus, getInventory, getOrCreateUser, getEquippedBonus, getEquipped, equipItem, unequipSlot } = require('./src/rpg/db_rpg');
 const { RARITY_EMOJI } = require('./src/rpg/profile');
 
 // ===== GLOBAL ERROR HANDLER =====
@@ -140,11 +140,11 @@ bot.command('lang', (ctx) => {
   ctx.reply(`Preferensi bahasa kamu sekarang diatur ke: ${lang.toUpperCase()}`);
 });
 
-bot.command('search', rateLimitCommand, handleSearch);
+bot.command('search', rateLimitSearch, handleSearch);
 
 bot.command('stop', handleStop);
 
-bot.command('next', rateLimitCommand, (ctx) => {
+bot.command('next', rateLimitSearch, (ctx) => {
   const chatId = ctx.chat.id;
 
   if (isPaired(chatId)) {
@@ -160,12 +160,12 @@ bot.command('next', rateLimitCommand, (ctx) => {
 });
 
 // ===== BUTTON ACTIONS =====
-bot.action('cmd_search', rateLimitCommand, (ctx) => {
+bot.action('cmd_search', rateLimitSearch, (ctx) => {
   ctx.answerCbQuery();
   handleSearch(ctx);
 });
 
-bot.action('cmd_next', rateLimitCommand, (ctx) => {
+bot.action('cmd_next', rateLimitSearch, (ctx) => {
   ctx.answerCbQuery();
   const chatId = ctx.chat.id;
   if (isPaired(chatId)) {
@@ -241,7 +241,7 @@ bot.command('stats', (ctx) => {
                `Paired Users: ${pairedUsers}\n` +
                `In Queue: ${queuedUsers}\n` +
                `Reports (24h): ${recentReports}`;
-  ctx.reply(text, { parse_mode: 'Markdown' });
+  ctx.reply(text, { parse_mode: 'HTML' });
 });
 
 bot.command('ban', (ctx) => {
@@ -271,7 +271,7 @@ bot.command('broadcast', async (ctx) => {
   let successCount = 0;
   for (const userId of users) {
     try {
-      await bot.telegram.sendMessage(userId, `📢 *PENGUMUMAN*\n\n${message}`, { parse_mode: 'Markdown' });
+      await bot.telegram.sendMessage(userId, `📢 <b>PENGUMUMAN</b>\n\n${message}`, { parse_mode: 'HTML' });
       successCount++;
     } catch (e) {
       // Ignored
@@ -294,8 +294,8 @@ bot.command('topic', rateLimitCommand, (ctx) => {
   const topic = getRandomTopic();
   const message = `🎲 *Topik Acak*\n\n"${topic}"\n\n_Silakan dibahas bersama partner kamu!_`;
   
-  ctx.reply(message, { parse_mode: 'Markdown' });
-  bot.telegram.sendMessage(partnerId, message, { parse_mode: 'Markdown' }).catch(() => {});
+  ctx.reply(message, { parse_mode: 'HTML' });
+  bot.telegram.sendMessage(partnerId, message, { parse_mode: 'HTML' }).catch(() => {});
 });
 
 // ===== REPORT COMMAND =====
@@ -347,7 +347,6 @@ bot.command('quest', rateLimitCommand, (ctx) => {
   const quests = getAllDailyQuests(userId);
   let msg = `📋 <b>Quest Harian</b> _(reset jam 00:00)_\n\n`;
 
-  let totalClaimed = 0, totalDone = 0;
   for (const q of quests) {
     const progress = Math.min(q.current, q.target_count);
     const bar = '█'.repeat(progress) + '░'.repeat(q.target_count - progress);
@@ -362,12 +361,11 @@ bot.command('quest', rateLimitCommand, (ctx) => {
     msg += `   🎁 ${q.xp_reward}xp + ${q.gold_reward}g`;
     if (q.item_reward) msg += ` + 1 item`;
     msg += '\n\n';
-    if (q.claimed) claimedCount++;
   }
 
   const total = quests.length;
   const claimed = quests.filter(q => q.claimed).length;
-  msg = `📋 <b>Quest Harian</b> — ${claimed}/${total} diklaim\n\nReset: Jam 00:00 (UTC+7)\n\n` + msg;
+  msg = `📋 <b>Quest Harian</b> — ${claimed}/${total} diklaim\nReset: Jam 00:00 (WIB)\n\n` + msg;
 
   return ctx.reply(msg, { parse_mode: 'HTML' });
 });
@@ -406,6 +404,8 @@ bot.command('party', rateLimitCommand, (ctx) => {
 
   // Party summary
   const avgLv = Math.floor((user.level + partner.level) / 2);
+  const totalAtk = (user.atk || 0) + (partner.atk || 0);
+  const totalDef = (user.def || 0) + (partner.def || 0);
   msg += `📊 <b>Party Summary:</b>\n`;
   msg += `   Avg Level: ${avgLv} | Total ATK: ${totalAtk} | Total DEF: ${totalDef}`;
 
@@ -449,6 +449,7 @@ bot.command('help', (ctx) => {
     '   /daily — Hadiah harian',
     '   /give — Kirim gold ke partner',
   ].join('\n'), { parse_mode: 'Markdown' });
+});
 
 
 bot.command('equip', rateLimitCommand, (ctx) => {
@@ -463,39 +464,42 @@ bot.command('equip', rateLimitCommand, (ctx) => {
   const equip = getEquippedBonus(userId);
   const equipped = getEquipped(userId);
 
-  if (!input) {
-    const renderSlot = (item) => {
-      if (item) {
-        const tier = item.upgrade_tier > 0 ? ` +${item.upgrade_tier}` : '';
-        const rarity = RARITY_EMOJI[item.rarity] || '';
-        return `${rarity} ${item.display_name}${tier}`;
-      }
-      return '(Kosong)';
-    };
+  const renderSlot = (item) => {
+    if (!item) return '<i>(Kosong)</i>';
+    const tier = item.upgrade_tier > 0 ? ` <b>+${item.upgrade_tier}</b>` : '';
+    const rarity = RARITY_EMOJI[item.rarity] || '';
+    return `${rarity} ${item.display_name}${tier}`;
+  };
 
-    let msg = `🗡️ **Equipment — ${cls.name}**\n`;
-    msg += `══════════════════════════════\n\n`;
-    msg += `┌─────────────────┬─────────────────┐\n`;
-    msg += `│ ⚔️ Weapon       │ 🪄 Staff        │\n`;
-    msg += `│ ${renderSlot(equipped.weapon).padEnd(15)} │ ${renderSlot(equipped.staff).padEnd(15)} │\n`;
-    msg += `├─────────────────┼─────────────────┤\n`;
-    msg += `│ 🛡️ Armor        │ 💍 Accessory    │\n`;
-    msg += `│ ${renderSlot(equipped.armor).padEnd(15)} │ ${renderSlot(equipped.accessory).padEnd(15)} │\n`;
-    msg += `└─────────────────┴─────────────────┘\n\n`;
-    msg += `──────────────────────────────\n`;
-    msg += `📈 **Total Bonus:**\n`;
-    msg += `⚔️ ATK +${equip.atkBonus} | 🛡️ DEF +${equip.defBonus}\n`;
-    if (equip.magicAtkBonus > 0) msg += `🔮 Magic +${equip.magicAtkBonus}\n`;
-    if (equip.critRate > 0) msg += `💥 Crit +${Math.round(equip.critRate * 100)}%\n`;
-    msg += `\n💡 Gunakan: \`/equip [nama_item]\``;
-    return ctx.reply(msg, { parse_mode: 'Markdown' });
+  if (!input) {
+    const effectiveAtk   = (user.atk || 0) + equip.atkBonus;
+    const effectiveDef   = (user.def || 0) + equip.defBonus;
+    const effectiveMagic = (user.magic_atk || 0) + equip.magicAtkBonus;
+    const totalCrit      = Math.min(95, Math.round(((user.crit_rate || 0.05) + equip.critRate) * 100));
+
+    let msg = `<b>🗡️ ${cls.name} — Equipment</b>\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+    msg += `⚔️ <b>Weapon   :</b> ${renderSlot(equipped.weapon)}\n`;
+    msg += `🪄 <b>Staff    :</b> ${renderSlot(equipped.staff)}\n`;
+    msg += `🛡️ <b>Armor    :</b> ${renderSlot(equipped.armor)}\n`;
+    msg += `💍 <b>Accessory:</b> ${renderSlot(equipped.accessory)}\n\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `<b>📊 Total Stats (Base + Equip)</b>\n`;
+    msg += `⚔️ ATK <b>${effectiveAtk}</b>${equip.atkBonus > 0 ? `  <i>(+${equip.atkBonus})</i>` : ''}   `;
+    msg += `🛡️ DEF <b>${effectiveDef}</b>${equip.defBonus > 0 ? `  <i>(+${equip.defBonus})</i>` : ''}\n`;
+    if (effectiveMagic > 0) msg += `🔮 Magic <b>${effectiveMagic}</b>${equip.magicAtkBonus > 0 ? `  <i>(+${equip.magicAtkBonus})</i>` : ''}\n`;
+    msg += `💥 Crit <b>${totalCrit}%</b>\n`;
+    if (equip.physResist > 0) msg += `🛡 Phys Resist <b>${Math.round(equip.physResist * 100)}%</b>\n`;
+    if (equip.magicResist > 0) msg += `✨ Magic Resist <b>${Math.round(equip.magicResist * 100)}%</b>\n`;
+    msg += `\n<i>/equip [nama_item] — Pasang\n/unequip [slot] — Lepas</i>`;
+    return ctx.reply(msg, { parse_mode: 'HTML' });
   }
 
   const invItem = getInventory(userId).find(i => i.item_id === input);
-  if (!invItem) return ctx.reply(`❌ Item "${input}" tidak ada di inventory.`);
+  if (!invItem) return ctx.reply(`❌ Item "<code>${input}</code>" tidak ada di inventory.`, { parse_mode: 'HTML' });
   const result = equipItem(userId, invItem.item_id);
   if (!result.success) return ctx.reply(`❌ ${result.reason}`);
-  ctx.reply(`✅ **${result.item}** terpasang di slot **${result.slot}**!`, { parse_mode: 'Markdown' });
+  ctx.reply(`✅ <b>${result.item}</b> terpasang di slot <b>${result.slot}</b>!`, { parse_mode: 'HTML' });
 });
 
 bot.command('unequip', rateLimitCommand, (ctx) => {
@@ -512,10 +516,9 @@ bot.command('unequip', rateLimitCommand, (ctx) => {
 
   const result = unequipSlot(userId, slot);
   if (!result.success) return ctx.reply(`❌ ${result.reason}`);
-  ctx.reply(`✅ **${result.item}** dilepas dari slot **${result.slot}**!`, { parse_mode: 'Markdown' });
+  ctx.reply(`✅ <b>${result.item}</b> dilepas dari slot <b>${result.slot}</b>!`, { parse_mode: 'HTML' });
 });
 
-});
 
 
 // ===== RELAY PESAN =====
@@ -639,4 +642,3 @@ process.on('uncaughtException', (err) => {
   }
   logger.error({ event: 'uncaught_exception', msg }, 'Uncaught exception — bot tetap berjalan');
 });
-

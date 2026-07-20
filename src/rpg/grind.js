@@ -1,5 +1,5 @@
 // src/rpg/grind.js
-// Fase 2: /hunt, /fish, /mine + sistem energi
+// Fase 2: /hunt, /fish, /mine + sistem energi — Discord game bot style
 const {
   getOrCreateUser, getCurrentEnergy, spendEnergy, getCurrentHp,
   addXp, addGold, addItem, updateHp, CLASS_DEFS,
@@ -9,13 +9,12 @@ const { RARITY_EMOJI } = require('./profile');
 
 // ===== MONSTER TABLES =====
 const MONSTERS = [
-  { tier: 1, minLv: 1,  maxLv: 10, list: ['Slime Hijau','Goblin Kecil','Babi Hutan'],   hp: [15,25], atk: [2,4],  xp: [12,20], gold: [5,15]  },
-  { tier: 2, minLv: 11, maxLv: 25, list: ['Orc Perampok','Laba-laba Raksasa','Bandit'], hp: [30,50], atk: [5,9],  xp: [30,55], gold: [20,45] },
-  { tier: 3, minLv: 26, maxLv: 50, list: ['Troll Hutan','Wyvern Muda','Kultis Gelap'], hp: [60,100],atk: [10,16],xp: [70,130],gold: [50,100]},
-  { tier: 4, minLv: 51, maxLv: 999,list: ['Naga Muda','Lich Tua','Ksatria Terkutuk'], hp: [120,200],atk:[18,28], xp:[180,320],gold:[120,250]},
+  { tier: 1, minLv: 1,  maxLv: 10, list: ['🟢 Slime Hijau','👺 Goblin Kecil','🐗 Babi Hutan'],   hp: [15,25], atk: [2,4],  xp: [12,20], gold: [5,15]  },
+  { tier: 2, minLv: 11, maxLv: 25, list: ['👹 Orc Perampok','🕷️ Laba-laba Raksasa','🗡️ Bandit'], hp: [30,50], atk: [5,9],  xp: [30,55], gold: [20,45] },
+  { tier: 3, minLv: 26, maxLv: 50, list: ['🌲 Troll Hutan','🐉 Wyvern Muda','👤 Kultis Gelap'], hp: [60,100],atk: [10,16],xp: [70,130],gold: [50,100]},
+  { tier: 4, minLv: 51, maxLv: 999,list: ['🐲 Naga Muda','💀 Lich Tua','⚔️ Ksatria Terkutuk'], hp: [120,200],atk:[18,28], xp:[180,320],gold:[120,250]},
 ];
 
-// ===== LOOT TABLES PER AKTIVITAS =====
 const HUNT_LOOT = {
   common:    ['daging_mentah', 'kulit_kasar'],
   uncommon:  ['ramuan_kecil', 'besi_rongsok'],
@@ -26,12 +25,12 @@ const HUNT_LOOT = {
 const FISH_LOOT_T1 = { common: ['ikan_teri','ikan_mujair','sepatu_rusak'], uncommon: ['ikan_teri'], rare: [], epic: [], legendary: [] };
 const FISH_LOOT_T2 = { common: ['ikan_mujair'], uncommon: ['ikan_salmon','kepiting'], rare: ['ikan_salmon'], epic: [], legendary: [] };
 const FISH_LOOT_T3 = { common: ['ikan_mujair'], uncommon: ['kepiting'], rare: ['kepiting'], epic: ['mutiara'], legendary: ['mutiara'] };
-const MINE_LOOT_T1 = { common: ['tembaga','batu_bara'], uncommon: ['tembaga'], rare: [], epic: [], legendary: [] };
+const MINE_LOOT_T1 = { common: ['tembaga','batu_bara'], uncommon: ['tembaga', 'besi_rongsok'], rare: ['besi_rongsok'], epic: [], legendary: [] };
 const MINE_LOOT_T2 = { common: ['batu_bara'], uncommon: ['besi'], rare: ['perak'], epic: [], legendary: [] };
 const MINE_LOOT_T3 = { common: ['besi'], uncommon: ['perak'], rare: ['emas_ore'], epic: ['emas_ore'], legendary: ['berlian'] };
 
 const RARITY_ROLLS = [
-  { rarity: 'legendary', threshold: 0.002 },
+  { rarity: 'legendary', threshold: 0.005 },
   { rarity: 'epic',      threshold: 0.02  },
   { rarity: 'rare',      threshold: 0.10  },
   { rarity: 'uncommon',  threshold: 0.30  },
@@ -41,8 +40,8 @@ const RARITY_ROLLS = [
 function rollRarity(boost = 0) {
   const r = Math.random();
   for (const entry of RARITY_ROLLS) {
-    const adjustedThreshold = Math.min(entry.threshold * (1 + boost * 0.5), 1);
-    if (r < adjustedThreshold) return entry.rarity;
+    const adj = Math.min(entry.threshold * (1 + boost * 0.5), 1);
+    if (r < adj) return entry.rarity;
   }
   return 'common';
 }
@@ -74,13 +73,10 @@ function getLootTable(activity, level) {
   return HUNT_LOOT;
 }
 
-// Quick battle simulation untuk /hunt
 function simulateBattle(playerAtk, playerDef, playerHp, monsterHp, monsterAtk, monsterDef, className) {
-  let pHp = playerHp;
-  let mHp = monsterHp;
-  let rounds = 0;
+  let pHp = playerHp, mHp = monsterHp, rounds = 0;
   while (pHp > 0 && mHp > 0 && rounds < 20) {
-    const playerDmg = Math.max(1, playerAtk - Math.floor(monsterDef / 2) + randInt(-1, 2));
+    const playerDmg  = Math.max(1, playerAtk - Math.floor(monsterDef / 2) + randInt(-1, 2));
     const monsterDmg = Math.max(1, monsterAtk - Math.floor(playerDef / 2) + randInt(-1, 2));
     mHp -= playerDmg;
     if (mHp > 0) pHp -= monsterDmg;
@@ -90,7 +86,6 @@ function simulateBattle(playerAtk, playerDef, playerHp, monsterHp, monsterAtk, m
 }
 
 function setupGrind(bot, { rateLimitCommand }) {
-  // Cooldown anti-spam
   const cmdCooldown = new Map();
   function isOnCooldown(userId, cmd, ms = 2000) {
     const key = `${userId}:${cmd}`;
@@ -111,49 +106,57 @@ function setupGrind(bot, { rateLimitCommand }) {
     const energyCost = 2;
     const energy = getCurrentEnergy(user);
     if (energy < energyCost) {
-      const minsUntilRegen = (5 - Math.floor(((Date.now() / 1000) - user.energy_last_update) / 60) % 5);
-      return ctx.reply(`⚡ Energimu cuma ${energy}/10. Butuh ${energyCost} buat /hunt. Regen +1 dalam ~${minsUntilRegen} menit.`);
+      return ctx.reply(
+        `⚡ <b>Energi tidak cukup!</b>\n\n` +
+        `Energi: <b>${energy}/10</b> (butuh ${energyCost})\n` +
+        `<i>Regen +1 setiap 3 menit otomatis</i>\n` +
+        `atau /use ramuan_energi`,
+        { parse_mode: 'HTML' }
+      );
     }
 
-    // Cek HP SEBELUM spend energy (energy baru dikurangi jika HP cukup)
     const currentHp = getCurrentHp(user);
     if (currentHp <= 0) {
-      return ctx.reply('❤️ HP kamu habis! Pakai /inv lalu gunakan Ramuan untuk pulih, atau tunggu regen otomatis.');
+      return ctx.reply(
+        `❤️ <b>HP habis!</b>\n\n` +
+        `Pakai /inv → /use ramuan untuk pulih\n` +
+        `atau tunggu regen otomatis (+10% per 10 menit)`,
+        { parse_mode: 'HTML' }
+      );
     }
 
     spendEnergy(userId, energyCost);
 
     const tier = getMonsterTier(user.level);
     const monster = pickRandom(tier.list);
-    const mHp = randInt(...tier.hp);
+    const mHp  = randInt(...tier.hp);
     const mAtk = randInt(...tier.atk);
     const result = simulateBattle(user.atk, user.def, currentHp, mHp, mAtk, 1, user.class_name);
 
-    let msg = `⚔️ **Berburu** ⚔️\n\nKamu menjumpai **${monster}**!\n`;
+    let msg = `<b>⚔️ BERBURU</b>\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `Kamu menemukan <b>${monster}</b>!\n\n`;
 
     if (result.win) {
-      let xpGain = randInt(...tier.xp);
+      let xpGain   = randInt(...tier.xp);
       let goldGain = randInt(...tier.gold);
-      // Trait Penyihir: +25% XP dari semua grinding
       if (user.class_name === 'penyihir') xpGain = Math.floor(xpGain * 1.25);
-      // Trait Pencuri: +gold per 5 level (maks +25%)
       if (user.class_name === 'pencuri') {
         const bonus = Math.min(0.25, Math.floor(user.level / 5) * 0.02);
         goldGain = Math.floor(goldGain * (1 + bonus));
       }
 
-      msg += `\n💥 Damage diterima: ${result.damageTaken}\n`;
-      msg += `\n🏆 **Menang!**\n`;
-      msg += `✨ +${xpGain} XP | 💰 +${goldGain}g\n`;
-
-      // Loot roll
-      const rarity = rollRarity();
+      const rarity    = rollRarity();
       const lootTable = getLootTable('hunt', user.level);
-      const itemOptions = lootTable[rarity] || lootTable.common;
-      const item = pickRandom(itemOptions);
+      const itemOpts  = lootTable[rarity] || lootTable.common;
+      const item      = pickRandom(itemOpts);
+
+      msg += `✅ <b>MENANG!</b>\n`;
+      msg += `💥 Damage diterima: <b>${result.damageTaken}</b>\n`;
+      msg += `✨ +<b>${xpGain}</b> XP   💰 +<b>${goldGain}</b>g\n`;
       if (item) {
+        msg += `${RARITY_EMOJI[rarity]} Loot: <b>${item.replace(/_/g, ' ')}</b>\n`;
         addItem(userId, item);
-        msg += `${RARITY_EMOJI[rarity]} Loot: **${item.replace(/_/g, ' ')}**\n`;
       }
 
       const { leveled, newLevel } = addXp(userId, xpGain);
@@ -162,17 +165,25 @@ function setupGrind(bot, { rateLimitCommand }) {
       const newHp = Math.max(1, currentHp - result.damageTaken);
       updateHp(userId, newHp);
 
+      const hpBar = (() => {
+        const len = 8;
+        const f = Math.min(len, Math.round((newHp / user.max_hp) * len));
+        return '█'.repeat(f) + '░'.repeat(len - f);
+      })();
+      msg += `\n❤️ HP: ${hpBar} <code>${newHp}/${user.max_hp}</code>`;
+
       if (leveled && leveled.length > 0) {
-        msg += `\n🎉 **LEVEL UP!** Kamu sekarang Level **${newLevel}**! Stats meningkat!`;
+        msg += `\n\n🎉 <b>LEVEL UP!</b> → Lv <b>${newLevel}</b>! Stats meningkat!`;
       }
     } else {
-      msg += `\n💥 Kamu kewalahan dan terpaksa kabur!\n`;
-      msg += `❤️ HP berkurang signifikan. Istirahatlah sebentar.`;
       const newHp = Math.max(1, Math.floor(currentHp * 0.3));
       updateHp(userId, newHp);
+      msg += `💀 <b>KABUR!</b>\n`;
+      msg += `Musuh terlalu kuat, kamu terpaksa kabur!\n`;
+      msg += `❤️ HP tersisa: <b>${newHp}/${user.max_hp}</b>`;
     }
 
-    ctx.reply(msg, { parse_mode: 'Markdown' });
+    ctx.reply(msg, { parse_mode: 'HTML' });
   });
 
   // ===== /fish =====
@@ -186,41 +197,42 @@ function setupGrind(bot, { rateLimitCommand }) {
     const energyCost = 1;
     const energy = getCurrentEnergy(user);
     if (energy < energyCost) {
-      return ctx.reply(`⚡ Energimu cuma ${energy}/10. Butuh ${energyCost} buat /fish. Regen +1 tiap 5 menit.`);
+      return ctx.reply(`⚡ <b>Energi tidak cukup!</b>\nEnergi: <b>${energy}/10</b> (butuh ${energyCost})\n<i>Regen +1 tiap 3 menit</i>`, { parse_mode: 'HTML' });
     }
 
     spendEnergy(userId, energyCost);
 
     const lootTable = getLootTable('fish', user.level);
-    const rarity = rollRarity();
-    const itemOptions = lootTable[rarity];
-    const item = pickRandom(itemOptions.length ? itemOptions : lootTable.common);
+    const rarity    = rollRarity();
+    const itemOpts  = lootTable[rarity];
+    const item      = pickRandom(itemOpts.length ? itemOpts : lootTable.common);
 
-    // Hitung XP dulu, jangan panggil addXp dua kali
     let xpGain = randInt(5, 15);
-    // Trait Penyihir: +25% XP dari semua grinding
     if (user.class_name === 'penyihir') xpGain = Math.floor(xpGain * 1.25);
 
-    let msg = `🎣 **Mancing** 🎣\n\nKamu melempar kail ke sungai...\n\n`;
+    let msg = `<b>🎣 MANCING</b>\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `Kamu melempar kail ke sungai...\n\n`;
+
     if (item === 'sepatu_rusak') {
-      msg += `👟 Dapat **Sepatu Bot Rusak**... ya sudahlah. (0g)\n`;
+      msg += `👟 Dapat <b>Sepatu Bot Rusak</b>... ya sudahlah\n`;
       addItem(userId, 'sepatu_rusak');
     } else if (item) {
+      msg += `${RARITY_EMOJI[rarity]} Dapat: <b>${item.replace(/_/g, ' ')}</b>\n`;
       addItem(userId, item);
-      const sellHint = lootTable[rarity].length ? ` _(jual: /sell ${item.replace(/_/g,' ')})_` : '';
-      msg += `${RARITY_EMOJI[rarity]} Dapat: **${item.replace(/_/g, ' ')}**${sellHint}\n`;
     } else {
       msg += `Tidak dapat apa-apa... Coba lagi!\n`;
     }
-    msg += `\n✨ +${xpGain} XP\n_Lihat /inv untuk menjual item_`;
 
-    // Satu kali addXp, cek level-up
     const { leveled, newLevel } = addXp(userId, xpGain);
     incrementQuestProgress(userId, 'fish');
+    msg += `✨ +<b>${xpGain}</b> XP`;
     if (leveled && leveled.length > 0) {
-      msg += `\n\n🎉 **LEVEL UP!** Kamu sekarang Level **${newLevel}**! Stats meningkat!`;
+      msg += `\n\n🎉 <b>LEVEL UP!</b> → Lv <b>${newLevel}</b>!`;
     }
-    ctx.reply(msg, { parse_mode: 'Markdown' });
+    msg += `\n<i>/inv untuk lihat inventaris</i>`;
+
+    ctx.reply(msg, { parse_mode: 'HTML' });
   });
 
   // ===== /mine =====
@@ -234,19 +246,17 @@ function setupGrind(bot, { rateLimitCommand }) {
     const energyCost = 3;
     const energy = getCurrentEnergy(user);
     if (energy < energyCost) {
-      return ctx.reply(`⚡ Energimu cuma ${energy}/10. Butuh ${energyCost} buat /mine. Regen +1 tiap 5 menit.`);
+      return ctx.reply(`⚡ <b>Energi tidak cukup!</b>\nEnergi: <b>${energy}/10</b> (butuh ${energyCost})\n<i>Regen +1 tiap 3 menit</i>`, { parse_mode: 'HTML' });
     }
 
     spendEnergy(userId, energyCost);
 
     const lootTable = getLootTable('mine', user.level);
-    const rarity = rollRarity();
-    const itemOptions = lootTable[rarity];
-    const item = pickRandom(itemOptions.length ? itemOptions : lootTable.common);
-
+    const rarity    = rollRarity();
+    const itemOpts  = lootTable[rarity];
+    const item      = pickRandom(itemOpts.length ? itemOpts : lootTable.common);
     if (item) addItem(userId, item);
 
-    // Gold kecil dari menambang (bonus mining)
     const mineGoldRange = user.level <= 20 ? [3, 10] : user.level <= 45 ? [10, 25] : [25, 60];
     let goldGain = randInt(...mineGoldRange);
     if (user.class_name === 'pencuri') {
@@ -261,18 +271,21 @@ function setupGrind(bot, { rateLimitCommand }) {
     addGold(userId, goldGain);
     incrementQuestProgress(userId, 'mine');
 
-    let msg = `⛏️ **Menambang** ⛏️\n\nKamu memukul batu dengan beliungmu...\n\n`;
+    let msg = `<b>⛏️ MENAMBANG</b>\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `Kamu memukul batu dengan beliungmu...\n\n`;
     if (item) {
-      msg += `${RARITY_EMOJI[rarity]} Dapat: **${item.replace(/_/g, ' ')}**\n`;
+      msg += `${RARITY_EMOJI[rarity]} Dapat: <b>${item.replace(/_/g, ' ')}</b>\n`;
     } else {
       msg += `Tidak ada yang tergali saat ini...\n`;
     }
-    msg += `💰 +${goldGain}g | ✨ +${xpGain} XP\n_Lihat /inv atau jual /sell_`;
-
+    msg += `✨ +<b>${xpGain}</b> XP   💰 +<b>${goldGain}</b>g`;
     if (leveled && leveled.length > 0) {
-      msg += `\n\n🎉 **LEVEL UP!** Kamu sekarang Level **${newLevel}**! Stats meningkat!`;
+      msg += `\n\n🎉 <b>LEVEL UP!</b> → Lv <b>${newLevel}</b>!`;
     }
-    ctx.reply(msg, { parse_mode: 'Markdown' });
+    msg += `\n<i>/inv untuk lihat inventaris</i>`;
+
+    ctx.reply(msg, { parse_mode: 'HTML' });
   });
 }
 
