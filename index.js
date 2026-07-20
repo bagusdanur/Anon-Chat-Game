@@ -91,8 +91,8 @@ function handleStop(ctx) {
   if (isPaired(chatId)) {
     const partnerId = unpairUser(chatId);
     clearRaidSession(chatId, partnerId);
-    ctx.reply('🛑 Chat diakhiri. Ketik /search untuk mencari partner baru.');
-    bot.telegram.sendMessage(partnerId, '🛑 Partner mengakhiri chat. Ketik /search untuk mencari partner baru.');
+    ctx.reply('🛑 Chat diakhiri. Tap 🔍 Cari Partner untuk cari yang baru.', { ...idleKeyboard });
+    bot.telegram.sendMessage(partnerId, '🛑 Partner mengakhiri chat. Tap 🔍 Cari Partner untuk cari yang baru.', { ...idleKeyboard });
   } else if (isQueued(chatId)) {
     dequeueUser(chatId);
     ctx.reply('🛑 Pencarian dibatalkan.');
@@ -102,11 +102,21 @@ function handleStop(ctx) {
 }
 
 // ===== COMMANDS =====
-// ===== REPLY KEYBOARD (Menu Bawah Persistent) =====
-const mainKeyboard = Markup.keyboard([
-  [Markup.button.text('🔍 Cari Partner'), Markup.button.text('🔄 Next')],
-  [Markup.button.text('🛑 Stop'), Markup.button.text('⚙️ Setting')]
+// ===== REPLY KEYBOARD (Context-Aware) =====
+const idleKeyboard = Markup.keyboard([
+  [Markup.button.text('🔍 Cari Partner')],
+  [Markup.button.text('⚙️ Setting')]
 ]).resize();
+
+const pairedKeyboard = Markup.keyboard([
+  [Markup.button.text('🔄 Next'), Markup.button.text('🛑 Stop')]
+]).resize();
+
+// Kirim keyboard yang sesuai state user
+function sendKeyboard(ctx, chatId) {
+  const keyboard = isPaired(chatId) ? pairedKeyboard : idleKeyboard;
+  ctx.reply('---', { ...keyboard }).then(() => {}).catch(() => {});
+}
 
 bot.start((ctx) => {
   ctx.reply(
@@ -115,7 +125,7 @@ bot.start((ctx) => {
     'Gunakan menu di bawah untuk navigasi:',
     {
       parse_mode: 'Markdown',
-      ...mainKeyboard
+      ...idleKeyboard
     }
   );
 });
@@ -178,7 +188,7 @@ bot.action('cmd_next', rateLimitSearch, (ctx) => {
   if (isPaired(chatId)) {
     const partnerId = unpairUser(chatId);
     clearRaidSession(chatId, partnerId);
-    bot.telegram.sendMessage(partnerId, '🛑 Partner meninggalkan chat. Ketik /search untuk mencari partner baru.');
+    bot.telegram.sendMessage(partnerId, '🛑 Partner meninggalkan chat.', { ...idleKeyboard });
   } else if (isQueued(chatId)) {
     dequeueUser(chatId);
   }
@@ -552,13 +562,16 @@ bot.command('unequip', rateLimitCommand, (ctx) => {
 // ===== RELAY PESAN =====
 // Nge-forward semua jenis pesan (teks, foto, stiker, voice, dll) tanpa nunjukin identitas asli
 // ===== REPLY KEYBOARD BUTTON HANDLERS =====
-bot.hears('🔍 Cari Partner', rateLimitSearch, handleSearch);
+bot.hears('🔍 Cari Partner', rateLimitSearch, (ctx) => {
+  handleSearch(ctx);
+  // Keyboard akan diupdate otomatis saat partner ditemukan
+});
 bot.hears('🔄 Next', rateLimitSearch, (ctx) => {
   const chatId = ctx.chat.id;
   if (isPaired(chatId)) {
     const partnerId = unpairUser(chatId);
     clearRaidSession(chatId, partnerId);
-    bot.telegram.sendMessage(partnerId, '🛑 Partner meninggalkan chat. Ketik /search untuk mencari partner baru.');
+    bot.telegram.sendMessage(partnerId, '🛑 Partner meninggalkan chat.', { ...idleKeyboard });
   } else if (isQueued(chatId)) {
     dequeueUser(chatId);
   }
@@ -574,7 +587,7 @@ bot.on('message', rateLimitMessage, async (ctx) => {
   if (ctx.message.text && ctx.message.text.startsWith('/')) return;
 
   // Abaikan reply keyboard buttons (sudah dihandle di atas)
-  const keyboardButtons = ['🔍 Cari Partner', '🔄 Next', '🛑 Stop', '⚙️ Setting'];
+  const keyboardButtons = ['🔍 Cari Partner', '🔄 Next', '🛑 Stop', '⚙️ Setting', '---'];
   if (ctx.message.text && keyboardButtons.includes(ctx.message.text)) return;
 
   const partnerId = getPartnerId(chatId);
