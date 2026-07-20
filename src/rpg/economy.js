@@ -69,6 +69,9 @@ const invCache = new Map();
 // Cache untuk pending upgrade confirmation
 const upgradeConfirmCache = new Map();
 
+// UX-03: Cache untuk pending sell confirmation (item epic/legendary)
+const sellConfirmCache = new Map();
+
 function resolveShopInput(input) {
   // Bisa angka (ID) atau string (item_id)
   const num = parseInt(input);
@@ -163,6 +166,8 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const catalog = getCatalogItem(shopEntry.item_id);
     if (spendGold(userId, shopEntry.buy_price)) {
       addItem(userId, shopEntry.item_id);
+      // BUG-02 FIX: invalidate cache setelah beli agar /sell tidak pakai data stale
+      invCache.delete(userId.toString());
       ctx.reply(`✅ Berhasil membeli <b>${catalog.display_name}</b> seharga ${shopEntry.buy_price}g!`, { parse_mode: 'HTML' });
     } else {
       ctx.reply(`❌ Gold tidak cukup! Butuh ${shopEntry.buy_price}g. Saldo: ${user.gold}g.`);
@@ -187,6 +192,23 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     if (!invItem) return ctx.reply(`❌ Kamu tidak punya item tersebut di inventaris.`);
     if (invItem.sell_price === 0) return ctx.reply(`❌ <b>${invItem.display_name}</b> tidak bisa dijual.`, { parse_mode: 'HTML' });
 
+    // UX-03: Item epic/legendary butuh konfirmasi sebelum jual
+    if (invItem.rarity === 'epic' || invItem.rarity === 'legendary') {
+      sellConfirmCache.set(userId.toString(), { itemId, displayName: invItem.display_name, sellPrice: invItem.sell_price });
+      const rarityWarning = invItem.rarity === 'legendary' ? '🟠 LEGENDARY' : '🟣 EPIC';
+      return ctx.reply(
+        `⚠️ <b>Konfirmasi Jual Item ${rarityWarning}</b>\n\n` +
+        `Kamu akan menjual <b>${invItem.display_name}</b> seharga <b>${invItem.sell_price}g</b>.\n\n` +
+        `<i>Item ini tidak bisa dikembalikan setelah dijual!</i>`,
+        {
+          parse_mode: 'HTML',
+          ...Markup.inlineKeyboard([
+            [Markup.button.callback('✅ Ya, Jual!', 'sell:confirm'), Markup.button.callback('❌ Batal', 'sell:cancel')]
+          ])
+        }
+      );
+    }
+
     if (removeItem(userId, itemId, 1)) {
       addGold(userId, invItem.sell_price);
       // Invalidate cache setelah sell
@@ -197,6 +219,34 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
       ctx.reply(`❌ Gagal menjual item. Pastikan kamu punya item tersebut.`);
     }
   });
+
+  // Handler konfirmasi sell item epic/legendary
+  bot.action('sell:confirm', rateLimitCommand, (ctx) => {
+    const userId = ctx.chat.id;
+    const pending = sellConfirmCache.get(userId.toString());
+    if (!pending) return ctx.answerCbQuery('Tidak ada item yang menunggu konfirmasi.', { show_alert: true });
+    sellConfirmCache.delete(userId.toString());
+
+    const { itemId, displayName, sellPrice } = pending;
+    if (removeItem(userId, itemId, 1)) {
+      addGold(userId, sellPrice);
+      invCache.delete(userId.toString());
+      incrementQuestProgress(userId, 'sell');
+      ctx.answerCbQuery('Berhasil dijual!');
+      ctx.editMessageText(`✅ <b>${displayName}</b> berhasil dijual seharga <b>${sellPrice}g</b>!`, { parse_mode: 'HTML' });
+    } else {
+      ctx.answerCbQuery('Gagal menjual!', { show_alert: true });
+    }
+  });
+
+  bot.action('sell:cancel', (ctx) => {
+    const userId = ctx.chat.id;
+    sellConfirmCache.delete(userId.toString());
+    ctx.answerCbQuery('Dibatalkan.');
+    ctx.editMessageText('❌ Penjualan dibatalkan.');
+  });
+
+
 
   // ===== /craft — Crafting Equipment dari Material =====
   bot.command('craft', rateLimitCommand, (ctx) => {

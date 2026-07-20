@@ -19,12 +19,16 @@ function getPairKey(a, b) {
 }
 
 // ===== BOSS TABLES (rebalanced with resistances) =====
+// BAL-03: Boss HP gap antar tier dikurangi agar transisi lebih smooth
+//   Sebelum: 55 → 280 → 550 → 900 (terlalu ekstrem)
+//   Sesudah: 80 → 200 → 400 → 700 (gradual, masih menantang)
 const BOSS_TIERS = [
-  { tier: 1, minAvgLv: 1,  maxAvgLv: 15, id: 'kepala_goblin',  name: 'Kepala Goblin',     baseHp: 55,   baseAtk: [3,6],   baseDef: 2,  physResist: 0.20, magicResist: 0.50, xpReward: 200,  goldReward: 120, legendaryDrop: 'pedang_goblin'   },
-  { tier: 2, minAvgLv: 16, maxAvgLv: 35, id: 'ratu_laba',      name: 'Ratu Laba-laba',    baseHp: 280,  baseAtk: [10,16], baseDef: 5,  physResist: 0.40, magicResist: 0.20, xpReward: 500,  goldReward: 300, legendaryDrop: 'jaring_sutra'    },
-  { tier: 3, minAvgLv: 36, maxAvgLv: 60, id: 'naga_bayangan',  name: 'Naga Bayangan',     baseHp: 550,  baseAtk: [18,26], baseDef: 9,  physResist: 0.30, magicResist: 0.30, xpReward: 1200, goldReward: 700, legendaryDrop: 'sisik_naga'      },
-  { tier: 4, minAvgLv: 61, maxAvgLv: 999,id: 'raja_terkutuk',  name: 'Raja Terkutuk',     baseHp: 900,  baseAtk: [26,38], baseDef: 13, physResist: 0.25, magicResist: 0.25, xpReward: 2500, goldReward: 1500,legendaryDrop: 'mahkota_terkutuk' },
+  { tier: 1, minAvgLv: 1,  maxAvgLv: 15, id: 'kepala_goblin',  name: 'Kepala Goblin',     baseHp: 80,   baseAtk: [3,6],   baseDef: 2,  physResist: 0.20, magicResist: 0.50, xpReward: 200,  goldReward: 120, legendaryDrop: 'pedang_goblin'   },
+  { tier: 2, minAvgLv: 16, maxAvgLv: 35, id: 'ratu_laba',      name: 'Ratu Laba-laba',    baseHp: 200,  baseAtk: [10,16], baseDef: 5,  physResist: 0.40, magicResist: 0.20, xpReward: 500,  goldReward: 300, legendaryDrop: 'jaring_sutra'    },
+  { tier: 3, minAvgLv: 36, maxAvgLv: 60, id: 'naga_bayangan',  name: 'Naga Bayangan',     baseHp: 400,  baseAtk: [18,26], baseDef: 9,  physResist: 0.30, magicResist: 0.30, xpReward: 1200, goldReward: 700, legendaryDrop: 'sisik_naga'      },
+  { tier: 4, minAvgLv: 61, maxAvgLv: 999,id: 'raja_terkutuk',  name: 'Raja Terkutuk',     baseHp: 700,  baseAtk: [26,38], baseDef: 13, physResist: 0.25, magicResist: 0.25, xpReward: 2500, goldReward: 1500,legendaryDrop: 'mahkota_terkutuk' },
 ];
+
 
 // Label & emoji per tier untuk tampilan menu
 const TIER_LABELS = [
@@ -123,10 +127,11 @@ function resolveTurn(raid, actions) {
       if (cls.damageType === 'magic') {
         // Penyihir: Bola Api — magic damage + burn (in-memory pada boss)
         dmg = calcMagicDamage(player, bossDefender, baseDmg, skillMulti);
-        // Simpan burn ke raid.boss langsung (boss bukan user DB, tidak bisa di status_effects)
-        raid.boss.burnDmg = Math.floor(dmg * 0.15);
+        // BAL-04: Nerf burn dari 15% ke 10% per tick agar tidak terlalu dominan
+        raid.boss.burnDmg = Math.floor(dmg * 0.10);
         raid.boss.burnTurns = (raid.boss.burnTurns || 0) + 3;
         logs.push(`🔥 ${player.className}: ${cls.skillName}! *-${dmg} HP* bos + 🔥 Burn 3 turn!`);
+
       } else if (player.classId === 'pencuri') {
         // Pencuri: Backstab — physical + 100% crit
         dmg = calcPhysicalDamage(player, bossDefender, baseDmg, skillMulti);

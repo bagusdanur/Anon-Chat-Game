@@ -1,4 +1,7 @@
-const classes = {
+// CATATAN: File ini adalah DEAD CODE / LEGACY — tidak di-require oleh siapapun.
+// Definisi class RPG yang AKTIF dipakai ada di src/rpg/db_rpg.js (CLASS_DEFS).
+// Jangan hapus dulu kalau ingin dijadikan referensi desain awal, tapi jangan edit.
+
   ksatria: {
     name: 'Ksatria',
     icon: '⚔️',

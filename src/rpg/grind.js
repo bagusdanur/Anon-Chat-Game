@@ -255,17 +255,23 @@ function setupGrind(bot, { rateLimitCommand }) {
     const rarity    = rollRarity();
     const itemOpts  = lootTable[rarity];
     const item      = pickRandom(itemOpts.length ? itemOpts : lootTable.common);
-    if (item) addItem(userId, item);
 
-    const mineGoldRange = user.level <= 20 ? [3, 10] : user.level <= 45 ? [10, 25] : [25, 60];
+    // BAL-01 FIX: naikkan gold reward agar mine lebih kompetitif vs fish/hunt
+    const mineGoldRange = user.level <= 20 ? [8, 18] : user.level <= 45 ? [15, 35] : [30, 70];
     let goldGain = randInt(...mineGoldRange);
     if (user.class_name === 'pencuri') {
       const bonus = Math.min(0.25, Math.floor(user.level / 5) * 0.02);
       goldGain = Math.floor(goldGain * (1 + bonus));
     }
 
-    let xpGain = randInt(3, 10);
+    // BAL-01 FIX: naikkan XP dari 3-10 ke 8-20 (mine itu susah, pantas dapat XP lebih)
+    let xpGain = randInt(8, 20);
     if (user.class_name === 'penyihir') xpGain = Math.floor(xpGain * 1.25);
+
+    // BAL-01 FIX: 10% chance dapat double ore (bonus unik mining)
+    const doubleOre = item && Math.random() < 0.10;
+    if (item) addItem(userId, item);
+    if (doubleOre) addItem(userId, item); // second copy
 
     const { leveled, newLevel } = addXp(userId, xpGain);
     addGold(userId, goldGain);
@@ -275,7 +281,7 @@ function setupGrind(bot, { rateLimitCommand }) {
     msg += `━━━━━━━━━━━━━━━━━━━━\n`;
     msg += `Kamu memukul batu dengan beliungmu...\n\n`;
     if (item) {
-      msg += `${RARITY_EMOJI[rarity]} Dapat: <b>${item.replace(/_/g, ' ')}</b>\n`;
+      msg += `${RARITY_EMOJI[rarity]} Dapat: <b>${item.replace(/_/g, ' ')}</b>${doubleOre ? ' ×2 <b>🎉 Double Ore!</b>' : ''}\n`;
     } else {
       msg += `Tidak ada yang tergali saat ini...\n`;
     }
@@ -288,5 +294,6 @@ function setupGrind(bot, { rateLimitCommand }) {
     ctx.reply(msg, { parse_mode: 'HTML' });
   });
 }
+
 
 module.exports = { setupGrind };

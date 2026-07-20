@@ -383,6 +383,13 @@ bot.command('party', rateLimitCommand, (ctx) => {
   const clsA = CLASS_DEFS[user.class_name];
   const clsB = CLASS_DEFS[partner.class_name];
 
+  // BUG-04 FIX: gunakan effective stats (base + equip bonus), bukan raw DB value
+  const { getEquippedBonus, getCurrentHp } = require('./src/rpg/db_rpg');
+  const equipA = getEquippedBonus(userId);
+  const equipB = getEquippedBonus(partnerId);
+  const hpA   = getCurrentHp(user);
+  const hpB   = getCurrentHp(partner);
+
   const renderBar = (cur, max, len = 8) => {
     const filled = Math.min(len, Math.round((Math.max(0, cur) / max) * len));
     return '🟩'.repeat(filled) + '⬛'.repeat(len - filled) + ` ${Math.max(0, cur)}/${max}`;
@@ -392,25 +399,28 @@ bot.command('party', rateLimitCommand, (ctx) => {
 
   // Player A
   msg += `<b>${clsA.name} — Lv.${user.level}</b>\n`;
-  msg += `❤️ HP: ${renderBar(user.hp, user.max_hp)}\n`;
+  msg += `❤️ HP: ${renderBar(hpA, user.max_hp)}\n`;
+  msg += `⚔️ ATK: <b>${(user.atk || 0) + equipA.atkBonus}</b>  🛡️ DEF: <b>${(user.def || 0) + equipA.defBonus}</b>\n`;
   msg += `💰 Gold: ${user.gold}g\n\n`;
 
-  msg += `<b>VS</b>\n\n`;
+  msg += `<b>🤝 Party</b>\n\n`;
 
   // Player B (Partner)
   msg += `<b>${clsB.name} — Lv.${partner.level}</b>\n`;
-  msg += `❤️ HP: ${renderBar(partner.hp, partner.max_hp)}\n`;
+  msg += `❤️ HP: ${renderBar(hpB, partner.max_hp)}\n`;
+  msg += `⚔️ ATK: <b>${(partner.atk || 0) + equipB.atkBonus}</b>  🛡️ DEF: <b>${(partner.def || 0) + equipB.defBonus}</b>\n`;
   msg += `💰 Gold: ${partner.gold}g\n\n`;
 
   // Party summary
-  const avgLv = Math.floor((user.level + partner.level) / 2);
-  const totalAtk = (user.atk || 0) + (partner.atk || 0);
-  const totalDef = (user.def || 0) + (partner.def || 0);
+  const avgLv   = Math.floor((user.level + partner.level) / 2);
+  const totalAtk = ((user.atk || 0) + equipA.atkBonus) + ((partner.atk || 0) + equipB.atkBonus);
+  const totalDef = ((user.def || 0) + equipA.defBonus) + ((partner.def || 0) + equipB.defBonus);
   msg += `📊 <b>Party Summary:</b>\n`;
   msg += `   Avg Level: ${avgLv} | Total ATK: ${totalAtk} | Total DEF: ${totalDef}`;
 
   return ctx.reply(msg, { parse_mode: 'HTML' });
 });
+
 
 
 bot.command('help', (ctx) => {

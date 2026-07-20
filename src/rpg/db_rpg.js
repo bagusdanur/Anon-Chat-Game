@@ -128,6 +128,8 @@ try { db.exec('ALTER TABLE rpg_users ADD COLUMN phys_resist REAL DEFAULT 0'); } 
 try { db.exec('ALTER TABLE rpg_users ADD COLUMN magic_resist REAL DEFAULT 0'); } catch(e) {}
 try { db.exec('ALTER TABLE rpg_users ADD COLUMN win_streak INTEGER DEFAULT 0'); } catch(e) {}
 try { db.exec('ALTER TABLE rpg_inventory ADD COLUMN equipped BOOLEAN DEFAULT 0'); } catch(e) {}
+// BUG-01 FIX: last_duel_at dibutuhkan oleh getDuelCooldown() tapi tidak ada di schema awal
+try { db.exec('ALTER TABLE rpg_users ADD COLUMN last_duel_at INTEGER DEFAULT NULL'); } catch(e) {}
 
 // ===== SEED ITEMS CATALOG =====
 const SEED_ITEMS = [
@@ -237,7 +239,9 @@ function calcStats(className, level) {
 }
 
 function xpToNextLevel(level) {
-  return Math.floor(50 * Math.pow(level, 1.3)); // casual-friendly, dari 1.5 → 1.3
+  // BAL-02: Diubah dari 50*level^1.3 ke 40*level^1.2
+  // Lebih casual-friendly (~25% lebih cepat), cocok untuk anon chat bot yang session-based
+  return Math.floor(40 * Math.pow(level, 1.2));
 }
 
 // ===== USER CRUD =====
