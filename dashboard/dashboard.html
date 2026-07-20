@@ -2,907 +2,662 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Dashboard — Anon Chat Bot</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg-primary: #030712;
-      --bg-card: rgba(15, 23, 42, 0.6);
-      --bg-card-hover: rgba(30, 41, 59, 0.8);
-      --border: rgba(255, 255, 255, 0.06);
-      --border-active: rgba(99, 102, 241, 0.5);
-      --text-primary: #f1f5f9;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --accent: #6366f1;
-      --accent-glow: rgba(99, 102, 241, 0.3);
-      --green: #22c55e;
-      --green-bg: rgba(34, 197, 94, 0.1);
-      --blue: #3b82f6;
-      --blue-bg: rgba(59, 130, 246, 0.1);
-      --yellow: #eab308;
-      --yellow-bg: rgba(234, 179, 8, 0.1);
-      --red: #ef4444;
-      --red-bg: rgba(239, 68, 68, 0.1);
-      --purple: #a855f7;
-      --purple-bg: rgba(168, 85, 247, 0.1);
-      --cyan: #06b6d4;
-      --cyan-bg: rgba(6, 182, 212, 0.1);
+      --bg: #1a1a2e;
+      --surface: #16213e;
+      --border: #e2e8f0;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #a78bfa;
+      --accent-dark: #7c3aed;
+      --yellow: #facc15;
+      --green: #4ade80;
+      --red: #f87171;
+      --blue: #60a5fa;
+      --pink: #f472b6;
+      --cyan: #22d3ee;
+      --orange: #fb923c;
+      --shadow: 4px 4px 0px #000;
+      --shadow-sm: 2px 2px 0px #000;
+      --shadow-lg: 6px 6px 0px #000;
     }
 
     body {
-      font-family: 'Inter', -apple-system, sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
+      border: 3px solid var(--border);
     }
 
-    /* Background effects */
-    .bg-orb {
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(150px);
-      opacity: 0.15;
-      pointer-events: none;
-    }
-    .bg-orb-1 { width: 600px; height: 600px; background: #6366f1; top: -200px; right: -200px; }
-    .bg-orb-2 { width: 400px; height: 400px; background: #ec4899; bottom: -100px; left: -100px; }
-
-    /* Layout */
-    .layout {
+    /* ===== HEADER ===== */
+    .header {
+      background: var(--surface);
+      border-bottom: 3px solid var(--border);
+      padding: 14px 16px;
       display: flex;
-      min-height: 100vh;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      width: 260px;
-      background: rgba(15, 23, 42, 0.9);
-      backdrop-filter: blur(20px);
-      border-right: 1px solid var(--border);
-      padding: 24px 16px;
-      display: flex;
-      flex-direction: column;
-      position: fixed;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
       top: 0;
-      left: 0;
-      bottom: 0;
-      z-index: 100;
-      transition: transform 0.3s;
+      z-index: 50;
     }
-
-    .sidebar-brand {
+    .header-left {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 0 8px 24px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 24px;
     }
-    .sidebar-brand-icon {
+    .hamburger {
+      display: none;
       width: 40px;
       height: 40px;
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      border-radius: 12px;
+      border: 3px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .hamburger i { width: 20px; height: 20px; }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--yellow);
+      border: 3px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .header-icon i { width: 18px; height: 18px; color: #000; }
+    .header h1 { font-size: 16px; font-weight: 700; }
+    .header-btn {
+      padding: 8px 14px;
+      border: 3px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.1s;
+    }
+    .header-btn:hover {
+      transform: translate(2px, 2px);
+      box-shadow: none;
+    }
+    .header-btn i { width: 16px; height: 16px; }
+    .header-btn.danger { background: var(--red); color: #000; }
+
+    /* ===== LAYOUT ===== */
+    .layout {
+      display: flex;
+      min-height: calc(100vh - 57px);
+    }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      width: 220px;
+      background: var(--surface);
+      border-right: 3px solid var(--border);
+      padding: 16px 0;
       flex-shrink: 0;
     }
-    .sidebar-brand-icon i { width: 20px; height: 20px; color: white; }
-    .sidebar-brand-text h2 { font-size: 16px; font-weight: 700; }
-    .sidebar-brand-text p { font-size: 11px; color: var(--text-muted); }
-
-    .sidebar-nav { flex: 1; }
-    .nav-section { margin-bottom: 24px; }
     .nav-label {
       font-size: 11px;
-      font-weight: 600;
-      color: var(--text-muted);
+      font-weight: 700;
+      color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 1px;
-      padding: 0 12px;
-      margin-bottom: 8px;
+      padding: 0 16px;
+      margin: 16px 0 8px;
     }
     .nav-item {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 10px 12px;
-      border-radius: 10px;
+      gap: 10px;
+      padding: 10px 16px;
       cursor: pointer;
-      transition: all 0.15s;
-      color: var(--text-secondary);
       font-size: 14px;
       font-weight: 500;
+      color: var(--muted);
+      transition: all 0.1s;
+      border-left: 3px solid transparent;
     }
-    .nav-item:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+    .nav-item:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+    }
     .nav-item.active {
-      background: rgba(99, 102, 241, 0.15);
-      color: #818cf8;
+      background: rgba(167, 139, 250, 0.1);
+      color: var(--accent);
+      border-left-color: var(--accent);
     }
-    .nav-item i { width: 20px; height: 20px; flex-shrink: 0; }
+    .nav-item i { width: 18px; height: 18px; flex-shrink: 0; }
     .nav-badge {
       margin-left: auto;
       background: var(--red);
-      color: white;
+      color: #000;
       font-size: 11px;
       font-weight: 700;
       padding: 2px 8px;
-      border-radius: 10px;
+      border: 2px solid var(--border);
     }
 
-    .sidebar-footer {
-      padding-top: 16px;
-      border-top: 1px solid var(--border);
-    }
-
-    /* Main content */
+    /* ===== MAIN ===== */
     .main {
       flex: 1;
-      margin-left: 260px;
-      padding: 24px;
-      position: relative;
+      padding: 16px;
+      overflow-x: hidden;
     }
 
-    /* Top bar */
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-    }
-    .topbar-left h1 { font-size: 24px; font-weight: 800; }
-    .topbar-left p { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
-    .topbar-right { display: flex; gap: 12px; align-items: center; }
-    .topbar-btn {
-      padding: 10px 16px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: var(--bg-card);
-      color: var(--text-secondary);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      font-family: 'Inter', sans-serif;
-      transition: all 0.15s;
-    }
-    .topbar-btn:hover { border-color: var(--border-active); color: var(--text-primary); }
-    .topbar-btn i { width: 18px; height: 18px; }
-    .topbar-btn.danger { border-color: var(--red); color: var(--red); }
-    .topbar-btn.danger:hover { background: var(--red-bg); }
-
-    /* Stats cards */
+    /* ===== STATS GRID ===== */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
     }
     .stat-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      backdrop-filter: blur(10px);
-      transition: all 0.2s;
+      background: var(--surface);
+      border: 3px solid var(--border);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      transition: all 0.1s;
       position: relative;
       overflow: hidden;
     }
     .stat-card:hover {
-      border-color: rgba(255,255,255,0.1);
-      transform: translateY(-2px);
+      transform: translate(2px, 2px);
+      box-shadow: var(--shadow-sm);
     }
-    .stat-card::before {
-      content: '';
+    .stat-card .accent-bar {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      height: 3px;
-      border-radius: 16px 16px 0 0;
+      height: 4px;
     }
-    .stat-card.green::before { background: linear-gradient(90deg, #22c55e, #16a34a); }
-    .stat-card.blue::before { background: linear-gradient(90deg, #3b82f6, #2563eb); }
-    .stat-card.yellow::before { background: linear-gradient(90deg, #eab308, #ca8a04); }
-    .stat-card.red::before { background: linear-gradient(90deg, #ef4444, #dc2626); }
-    .stat-card.purple::before { background: linear-gradient(90deg, #a855f7, #9333ea); }
-    .stat-card.cyan::before { background: linear-gradient(90deg, #06b6d4, #0891b2); }
-    .stat-card.indigo::before { background: linear-gradient(90deg, #6366f1, #4f46e5); }
-
-    .stat-header {
+    .stat-card .stat-top {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
-    .stat-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
+    .stat-card .stat-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stat-card .stat-icon {
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    .stat-icon.green { background: var(--green-bg); color: var(--green); }
-    .stat-icon.blue { background: var(--blue-bg); color: var(--blue); }
-    .stat-icon.yellow { background: var(--yellow-bg); color: var(--yellow); }
-    .stat-icon.red { background: var(--red-bg); color: var(--red); }
-    .stat-icon.purple { background: var(--purple-bg); color: var(--purple); }
-    .stat-icon.cyan { background: var(--cyan-bg); color: var(--cyan); }
-    .stat-icon.indigo { background: rgba(99,102,241,0.1); color: var(--accent); }
-    .stat-icon i { width: 20px; height: 20px; }
+    .stat-card .stat-icon i { width: 16px; height: 16px; }
+    .stat-card .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+    }
 
-    .stat-label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
-    .stat-value { font-size: 28px; font-weight: 800; margin-top: 4px; }
-
-    /* Content cards */
-    .content-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      backdrop-filter: blur(10px);
-      overflow: hidden;
+    /* ===== CONTENT CARD ===== */
+    .card {
+      background: var(--surface);
+      border: 3px solid var(--border);
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
     }
     .card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 20px 24px;
-      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+      border-bottom: 3px solid var(--border);
+      flex-wrap: wrap;
+      gap: 8px;
     }
-    .card-header-left {
+    .card-title {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 700;
     }
-    .card-header-left i { width: 20px; height: 20px; color: var(--accent); }
-    .card-header h3 { font-size: 16px; font-weight: 700; }
-    .card-body { padding: 0; }
+    .card-title i { width: 18px; height: 18px; color: var(--accent); }
 
-    /* Tabs */
+    /* ===== TABS ===== */
     .tab-bar {
       display: flex;
       gap: 4px;
-      padding: 8px;
+      padding: 6px;
+      background: var(--bg);
+      border: 3px solid var(--border);
       margin-bottom: 16px;
-      background: rgba(0,0,0,0.2);
-      border-radius: 12px;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
     .tab-btn {
-      padding: 10px 16px;
-      border: none;
-      border-radius: 8px;
+      padding: 10px 14px;
+      border: 2px solid transparent;
       background: transparent;
-      color: var(--text-muted);
+      color: var(--muted);
       cursor: pointer;
       font-size: 13px;
-      font-weight: 600;
-      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       white-space: nowrap;
-      transition: all 0.15s;
+      transition: all 0.1s;
     }
-    .tab-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
-    .tab-btn.active { background: var(--accent); color: white; }
+    .tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .tab-btn.active {
+      background: var(--accent-dark);
+      color: #fff;
+      border-color: var(--border);
+      box-shadow: var(--shadow-sm);
+    }
     .tab-btn i { width: 16px; height: 16px; }
-    .tab-badge {
-      background: rgba(255,255,255,0.2);
-      padding: 1px 6px;
-      border-radius: 6px;
-      font-size: 11px;
-    }
-    .tab-btn.active .tab-badge { background: rgba(255,255,255,0.25); }
 
-    /* Table */
-    .table-wrapper { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
+    /* ===== TABLE ===== */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; }
     th {
-      padding: 12px 20px;
+      padding: 10px 14px;
       text-align: left;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      background: rgba(0,0,0,0.2);
-      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      border-bottom: 3px solid var(--border);
     }
     td {
-      padding: 14px 20px;
-      font-size: 14px;
-      border-bottom: 1px solid var(--border);
+      padding: 12px 14px;
+      font-size: 13px;
+      border-bottom: 2px solid var(--border);
     }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: rgba(255,255,255,0.02); }
 
-    /* Badges */
+    /* ===== BADGES ===== */
     .badge {
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      padding: 4px 10px;
-      border-radius: 6px;
+      padding: 3px 10px;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
+      border: 2px solid var(--border);
+      box-shadow: var(--shadow-sm);
     }
     .badge i { width: 12px; height: 12px; }
-    .badge-green { background: var(--green-bg); color: var(--green); }
-    .badge-red { background: var(--red-bg); color: var(--red); }
-    .badge-blue { background: var(--blue-bg); color: var(--blue); }
-    .badge-yellow { background: var(--yellow-bg); color: var(--yellow); }
-    .badge-purple { background: var(--purple-bg); color: var(--purple); }
-    .badge-gray { background: rgba(100,116,139,0.1); color: var(--text-muted); }
+    .badge-green { background: var(--green); color: #000; }
+    .badge-red { background: var(--red); color: #000; }
+    .badge-blue { background: var(--blue); color: #000; }
+    .badge-yellow { background: var(--yellow); color: #000; }
+    .badge-accent { background: var(--accent); color: #000; }
+    .badge-gray { background: #475569; color: #fff; }
 
-    /* Buttons */
+    /* ===== BUTTONS ===== */
     .btn {
-      padding: 6px 14px;
-      border: none;
-      border-radius: 8px;
+      padding: 6px 12px;
+      border: 2px solid var(--border);
       cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      transition: all 0.15s;
+      gap: 4px;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.1s;
+    }
+    .btn:hover {
+      transform: translate(1px, 1px);
+      box-shadow: none;
     }
     .btn i { width: 14px; height: 14px; }
-    .btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
-    .btn-danger:hover { background: rgba(239,68,68,0.2); }
-    .btn-success { background: var(--green-bg); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
-    .btn-success:hover { background: rgba(34,197,94,0.2); }
-    .btn-primary { background: var(--accent); color: white; }
-    .btn-primary:hover { background: #4f46e5; }
-    .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
-    .btn-outline:hover { border-color: var(--border-active); color: var(--text-primary); }
+    .btn-danger { background: var(--red); color: #000; }
+    .btn-success { background: var(--green); color: #000; }
+    .btn-accent { background: var(--accent); color: #000; }
+    .btn-outline { background: var(--surface); color: var(--text); }
 
-    /* Word filter */
-    .filter-input-row {
+    /* ===== WORD FILTER ===== */
+    .filter-row {
       display: flex;
       gap: 8px;
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+      border-bottom: 3px solid var(--border);
     }
     .filter-input {
       flex: 1;
       padding: 10px 14px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(0,0,0,0.3);
-      color: var(--text-primary);
+      border: 3px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
       font-size: 14px;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 500;
+      box-shadow: var(--shadow-sm);
     }
-    .filter-input:focus { outline: none; border-color: var(--accent); }
+    .filter-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      transform: translate(2px, 2px);
+      box-shadow: none;
+    }
     .filter-tags {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      padding: 16px 20px;
+      padding: 14px 16px;
     }
     .filter-tag {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       padding: 6px 12px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      background: var(--bg);
+      border: 2px solid var(--border);
       font-size: 13px;
-      color: var(--text-secondary);
+      font-weight: 700;
+      box-shadow: var(--shadow-sm);
     }
     .filter-tag-remove {
       cursor: pointer;
-      color: var(--text-muted);
-      transition: color 0.15s;
+      color: var(--red);
+      font-weight: 700;
     }
-    .filter-tag-remove:hover { color: var(--red); }
-    .filter-tag-remove i { width: 14px; height: 14px; }
 
-    /* Empty state */
-    .empty-state {
-      padding: 48px 20px;
+    /* ===== EMPTY STATE ===== */
+    .empty {
+      padding: 40px 20px;
       text-align: center;
-      color: var(--text-muted);
+      color: var(--muted);
     }
-    .empty-state i { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.3; }
-    .empty-state p { font-size: 14px; }
+    .empty i { width: 40px; height: 40px; margin-bottom: 8px; opacity: 0.3; }
+    .empty p { font-size: 14px; font-weight: 500; }
 
-    /* Mobile hamburger */
-    .hamburger {
-      display: none;
-      width: 40px;
-      height: 40px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: var(--bg-card);
-      color: var(--text-primary);
-      cursor: pointer;
-      align-items: center;
-      justify-content: center;
-    }
-    .hamburger i { width: 20px; height: 20px; }
-
-    /* Mobile overlay */
+    /* ===== MOBILE SIDEBAR OVERLAY ===== */
     .sidebar-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 99;
+      background: rgba(0,0,0,0.6);
+      z-index: 40;
     }
     .sidebar-overlay.show { display: block; }
 
-    /* Responsive */
+    /* ===== MOBILE ===== */
     @media (max-width: 768px) {
       .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 45;
         transform: translateX(-100%);
+        transition: transform 0.2s;
+        width: 240px;
+        border-right: 3px solid var(--border);
       }
       .sidebar.open { transform: translateX(0); }
-      .main { margin-left: 0; padding: 16px; }
       .hamburger { display: flex; }
-      .topbar { flex-direction: column; gap: 12px; align-items: flex-start; }
-      .topbar-right { width: 100%; }
-      .topbar-btn { flex: 1; justify-content: center; }
-      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-      .stat-card { padding: 16px; }
-      .stat-value { font-size: 22px; }
-      .card-header { padding: 16px; }
-      td, th { padding: 10px 12px; font-size: 13px; }
+      .main { padding: 12px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .stat-card { padding: 12px; }
+      .stat-card .stat-value { font-size: 22px; }
+      .header h1 { font-size: 14px; }
+      .header-btn span { display: none; }
+      table { min-width: 500px; }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 400px) {
       .stats-grid { grid-template-columns: 1fr 1fr; }
-      .stat-card { padding: 14px; }
-      .stat-value { font-size: 20px; }
-      .tab-btn { padding: 8px 12px; font-size: 12px; }
+      .stat-card { padding: 10px; }
+      .stat-card .stat-value { font-size: 20px; }
+      .tab-btn { padding: 8px 10px; font-size: 12px; }
+      .card-header { padding: 12px; }
     }
   </style>
 </head>
 <body>
-  <div class="bg-orb bg-orb-1"></div>
-  <div class="bg-orb bg-orb-2"></div>
-
-  <!-- Mobile overlay -->
   <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <i data-lucide="menu"></i>
+      </button>
+      <div class="header-brand">
+        <div class="header-icon"><i data-lucide="shield"></i></div>
+        <h1>Anon Chat Bot</h1>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="header-btn" onclick="loadAll()"><i data-lucide="refresh-cw"></i><span>Refresh</span></button>
+      <button class="header-btn danger" onclick="logout()"><i data-lucide="log-out"></i><span>Logout</span></button>
+    </div>
+  </header>
 
   <div class="layout">
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
-      <div class="sidebar-brand">
-        <div class="sidebar-brand-icon">
-          <i data-lucide="shield"></i>
-        </div>
-        <div class="sidebar-brand-text">
-          <h2>Anon Chat Bot</h2>
-          <p>@anonrpg_bot</p>
-        </div>
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active" onclick="switchPage('home', this)">
+        <i data-lucide="layout-dashboard"></i> Dashboard
       </div>
 
-      <nav class="sidebar-nav">
-        <div class="nav-section">
-          <div class="nav-label">Overview</div>
-          <div class="nav-item active" onclick="switchPage('home', this)">
-            <i data-lucide="layout-dashboard"></i>
-            Dashboard
-          </div>
-        </div>
+      <div class="nav-label">Management</div>
+      <div class="nav-item" onclick="switchPage('users', this)">
+        <i data-lucide="users"></i> Users
+        <span class="nav-badge" id="nav-count">-</span>
+      </div>
+      <div class="nav-item" onclick="switchPage('rpg', this)">
+        <i data-lucide="swords"></i> RPG Players
+      </div>
+      <div class="nav-item" onclick="switchPage('reports', this)">
+        <i data-lucide="flag"></i> Reports
+      </div>
 
-        <div class="nav-section">
-          <div class="nav-label">Management</div>
-          <div class="nav-item" onclick="switchPage('users', this)">
-            <i data-lucide="users"></i>
-            Users
-            <span class="nav-badge" id="nav-user-count">-</span>
-          </div>
-          <div class="nav-item" onclick="switchPage('rpg', this)">
-            <i data-lucide="swords"></i>
-            RPG Players
-          </div>
-          <div class="nav-item" onclick="switchPage('reports', this)">
-            <i data-lucide="flag"></i>
-            Reports
-          </div>
-        </div>
-
-        <div class="nav-section">
-          <div class="nav-label">Moderation</div>
-          <div class="nav-item" onclick="switchPage('wordfilter', this)">
-            <i data-lucide="shield-ban"></i>
-            Word Filter
-          </div>
-        </div>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="nav-item" onclick="logout()">
-          <i data-lucide="log-out"></i>
-          Logout
-        </div>
+      <div class="nav-label">Moderation</div>
+      <div class="nav-item" onclick="switchPage('wordfilter', this)">
+        <i data-lucide="shield-ban"></i> Word Filter
       </div>
     </aside>
 
-    <!-- Main content -->
-    <main class="main">
-      <!-- Top bar -->
-      <div class="topbar">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <button class="hamburger" onclick="toggleSidebar()">
-            <i data-lucide="menu"></i>
-          </button>
-          <div class="topbar-left">
-            <h1 id="page-title">Dashboard</h1>
-            <p id="page-subtitle">Overview & statistics</p>
-          </div>
-        </div>
-        <div class="topbar-right">
-          <button class="topbar-btn" onclick="loadAll()">
-            <i data-lucide="refresh-cw"></i>
-            Refresh
-          </button>
-          <button class="topbar-btn danger" onclick="logout()">
-            <i data-lucide="log-out"></i>
-            Logout
-          </button>
-        </div>
-      </div>
-
-      <!-- Page content -->
-      <div id="page-content"></div>
-    </main>
+    <!-- Main -->
+    <main class="main" id="main-content"></main>
   </div>
 
   <script>
     const auth = sessionStorage.getItem('auth');
     if (!auth) window.location.href = '/';
-    const headers = { 'Authorization': 'Basic ' + auth, 'Content-Type': 'application/json' };
+    const H = { 'Authorization': 'Basic ' + auth, 'Content-Type': 'application/json' };
 
-    let statsData = {};
+    let S = {};
 
-    // Sidebar toggle
     function toggleSidebar() {
       document.getElementById('sidebar').classList.toggle('open');
       document.getElementById('overlay').classList.toggle('show');
     }
 
-    // Load all data
     async function loadAll() {
-      await loadStats();
-      const activePage = document.querySelector('.nav-item.active')?.textContent?.trim().toLowerCase() || 'home';
-      switchPage(activePage);
+      const r = await fetch('/api/stats', { headers: H });
+      S = await r.json();
+      document.getElementById('nav-count').textContent = S.totalUsers;
+      const active = document.querySelector('.nav-item.active');
+      const page = active?.textContent?.trim().toLowerCase().replace(/\s/g, '') || 'home';
+      renderPage(page === 'dashboard' ? 'home' : page);
     }
 
-    // Stats
-    async function loadStats() {
-      const res = await fetch('/api/stats', { headers });
-      statsData = await res.json();
-      document.getElementById('nav-user-count').textContent = statsData.totalUsers;
-    }
-
-    // Page switcher
-    function switchPage(page, el) {
+    function switchPage(p, el) {
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       if (el) el.classList.add('active');
-
-      // Close mobile sidebar
       document.getElementById('sidebar').classList.remove('open');
       document.getElementById('overlay').classList.remove('show');
-
-      const titles = {
-        home: ['Dashboard', 'Overview & statistics'],
-        users: ['Users', 'Manage registered users'],
-        rpg: ['RPG Players', 'Character progression data'],
-        reports: ['Reports', 'User reports & moderation'],
-        wordfilter: ['Word Filter', 'Manage blocked words']
-      };
-
-      document.getElementById('page-title').textContent = titles[page]?.[0] || page;
-      document.getElementById('page-subtitle').textContent = titles[page]?.[1] || '';
-
-      if (page === 'home') renderHome();
-      else if (page === 'users') renderUsers();
-      else if (page === 'rpg') renderRPG();
-      else if (page === 'reports') renderReports();
-      else if (page === 'wordfilter') renderWordFilter();
+      renderPage(p);
     }
 
-    // ===== HOME PAGE =====
+    function renderPage(p) {
+      const titles = { home: 'Dashboard', users: 'Users', rpg: 'RPG Players', reports: 'Reports', wordfilter: 'Word Filter' };
+      if (p === 'home') renderHome();
+      else if (p === 'users') renderUsers();
+      else if (p === 'rpg') renderRPG();
+      else if (p === 'reports') renderReports();
+      else if (p === 'wordfilter') renderWordFilter();
+    }
+
+    // ===== HOME =====
     function renderHome() {
-      const s = statsData;
-      document.getElementById('page-content').innerHTML = `
+      document.getElementById('main-content').innerHTML = `
         <div class="stats-grid">
-          <div class="stat-card indigo">
-            <div class="stat-header">
-              <div class="stat-label">Total Users</div>
-              <div class="stat-icon indigo"><i data-lucide="users"></i></div>
-            </div>
-            <div class="stat-value">${s.totalUsers}</div>
-          </div>
-          <div class="stat-card green">
-            <div class="stat-header">
-              <div class="stat-label">Online</div>
-              <div class="stat-icon green"><i data-lucide="wifi"></i></div>
-            </div>
-            <div class="stat-value">${s.onlineUsers}</div>
-          </div>
-          <div class="stat-card yellow">
-            <div class="stat-header">
-              <div class="stat-label">Paired</div>
-              <div class="stat-icon yellow"><i data-lucide="heart"></i></div>
-            </div>
-            <div class="stat-value">${s.pairedUsers}</div>
-          </div>
-          <div class="stat-card cyan">
-            <div class="stat-header">
-              <div class="stat-label">In Queue</div>
-              <div class="stat-icon cyan"><i data-lucide="clock"></i></div>
-            </div>
-            <div class="stat-value">${s.queuedUsers}</div>
-          </div>
-          <div class="stat-card red">
-            <div class="stat-header">
-              <div class="stat-label">Banned</div>
-              <div class="stat-icon red"><i data-lucide="ban"></i></div>
-            </div>
-            <div class="stat-value">${s.bannedUsers}</div>
-          </div>
-          <div class="stat-card purple">
-            <div class="stat-header">
-              <div class="stat-label">Reports (24h)</div>
-              <div class="stat-icon purple"><i data-lucide="flag"></i></div>
-            </div>
-            <div class="stat-value">${s.reports24h}</div>
-          </div>
-          <div class="stat-card blue">
-            <div class="stat-header">
-              <div class="stat-label">RPG Players</div>
-              <div class="stat-icon blue"><i data-lucide="swords"></i></div>
-            </div>
-            <div class="stat-value">${s.rpgUsers}</div>
-          </div>
+          <div class="stat-card"><div class="accent-bar" style="background:var(--blue)"></div><div class="stat-top"><div class="stat-label">Total Users</div><div class="stat-icon" style="background:var(--blue);color:#000"><i data-lucide="users"></i></div></div><div class="stat-value">${S.totalUsers}</div></div>
+          <div class="stat-card"><div class="accent-bar" style="background:var(--green)"></div><div class="stat-top"><div class="stat-label">Online</div><div class="stat-icon" style="background:var(--green);color:#000"><i data-lucide="wifi"></i></div></div><div class="stat-value">${S.onlineUsers}</div></div>
+          <div class="stat-card"><div class="accent-bar" style="background:var(--yellow)"></div><div class="stat-top"><div class="stat-label">Paired</div><div class="stat-icon" style="background:var(--yellow);color:#000"><i data-lucide="heart"></i></div></div><div class="stat-value">${S.pairedUsers}</div></div>
+          <div class="stat-card"><div class="accent-bar" style="background:var(--cyan)"></div><div class="stat-top"><div class="stat-label">In Queue</div><div class="stat-icon" style="background:var(--cyan);color:#000"><i data-lucide="clock"></i></div></div><div class="stat-value">${S.queuedUsers}</div></div>
+          <div class="stat-card"><div class="accent-bar" style="background:var(--red)"></div><div class="stat-top"><div class="stat-label">Banned</div><div class="stat-icon" style="background:var(--red);color:#000"><i data-lucide="ban"></i></div></div><div class="stat-value">${S.bannedUsers}</div></div>
+          <div class="stat-card"><div class="accent-bar" style="background:var(--pink)"></div><div class="stat-top"><div class="stat-label">Reports 24h</div><div class="stat-icon" style="background:var(--pink);color:#000"><i data-lucide="flag"></i></div></div><div class="stat-value">${S.reports24h}</div></div>
+          <div class="stat-card"><div class="accent-bar" style="background:var(--accent)"></div><div class="stat-top"><div class="stat-label">RPG Players</div><div class="stat-icon" style="background:var(--accent);color:#000"><i data-lucide="swords"></i></div></div><div class="stat-value">${S.rpgUsers}</div></div>
         </div>
-        <div class="content-card">
-          <div class="card-header">
-            <div class="card-header-left">
-              <i data-lucide="activity"></i>
-              <h3>Quick Actions</h3>
-            </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title"><i data-lucide="zap"></i> Quick Actions</div></div>
+          <div style="padding:16px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-outline" onclick="switchPage('users',document.querySelectorAll('.nav-item')[1])"><i data-lucide="users"></i> Users</button>
+            <button class="btn btn-outline" onclick="switchPage('reports',document.querySelectorAll('.nav-item')[3])"><i data-lucide="flag"></i> Reports</button>
+            <button class="btn btn-outline" onclick="switchPage('wordfilter',document.querySelectorAll('.nav-item')[4])"><i data-lucide="shield-ban"></i> Word Filter</button>
           </div>
-          <div style="padding:20px;display:flex;gap:12px;flex-wrap:wrap;">
-            <button class="btn btn-outline" onclick="switchPage('users', document.querySelectorAll('.nav-item')[1])">
-              <i data-lucide="users"></i> Manage Users
-            </button>
-            <button class="btn btn-outline" onclick="switchPage('reports', document.querySelectorAll('.nav-item')[3])">
-              <i data-lucide="flag"></i> View Reports
-            </button>
-            <button class="btn btn-outline" onclick="switchPage('wordfilter', document.querySelectorAll('.nav-item')[4])">
-              <i data-lucide="shield-ban"></i> Word Filter
-            </button>
-          </div>
-        </div>
-      `;
+        </div>`;
       lucide.createIcons();
     }
 
-    // ===== USERS PAGE =====
+    // ===== USERS =====
     async function renderUsers() {
-      const res = await fetch('/api/users', { headers });
-      const users = await res.json();
-
+      const r = await fetch('/api/users', { headers: H });
+      const users = await r.json();
       let rows = users.map(u => {
-        const statusBadge = u.status === 'chatting' ? 'badge-green' : u.status === 'queued' ? 'badge-yellow' : 'badge-gray';
-        const statusIcon = u.status === 'chatting' ? 'heart' : u.status === 'queued' ? 'clock' : 'user';
+        const sb = u.status === 'chatting' ? 'badge-green' : u.status === 'queued' ? 'badge-yellow' : 'badge-gray';
+        const si = u.status === 'chatting' ? 'heart' : u.status === 'queued' ? 'clock' : 'user';
         return `<tr>
-          <td><code style="color:var(--accent);font-size:13px;">${u.chat_id}</code></td>
-          <td><span class="badge ${statusBadge}"><i data-lucide="${statusIcon}"></i> ${u.status}</span></td>
-          <td>${u.lang || 'any'}</td>
-          <td>${u.gender || '-'}</td>
-          <td>${u.is_banned ? '<span class="badge badge-red"><i data-lucide="ban"></i> Banned</span>' : '<span class="badge badge-gray">Active</span>'}</td>
-          <td>${u.created_at || '-'}</td>
-          <td>${u.is_banned
-            ? `<button class="btn btn-success" onclick="unbanUser('${u.chat_id}')"><i data-lucide="check"></i> Unban</button>`
-            : `<button class="btn btn-danger" onclick="banUser('${u.chat_id}')"><i data-lucide="ban"></i> Ban</button>`
-          }</td>
+          <td><code style="color:var(--accent)">${u.chat_id}</code></td>
+          <td><span class="badge ${sb}"><i data-lucide="${si}"></i> ${u.status}</span></td>
+          <td>${u.lang||'any'}</td>
+          <td>${u.gender||'-'}</td>
+          <td>${u.is_banned?'<span class="badge badge-red"><i data-lucide="ban"></i> Banned</span>':'<span class="badge badge-gray">OK</span>'}</td>
+          <td>${u.created_at||'-'}</td>
+          <td>${u.is_banned?`<button class="btn btn-success" onclick="unban('${u.chat_id}')"><i data-lucide="check"></i> Unban</button>`:`<button class="btn btn-danger" onclick="banU('${u.chat_id}')"><i data-lucide="ban"></i> Ban</button>`}</td>
         </tr>`;
       }).join('');
-
-      document.getElementById('page-content').innerHTML = `
-        <div class="content-card">
-          <div class="card-header">
-            <div class="card-header-left">
-              <i data-lucide="users"></i>
-              <h3>Users (${users.length})</h3>
-            </div>
-            <button class="btn btn-outline" onclick="renderUsers()"><i data-lucide="refresh-cw"></i> Refresh</button>
-          </div>
-          <div class="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Chat ID</th>
-                  <th>Status</th>
-                  <th>Lang</th>
-                  <th>Gender</th>
-                  <th>Ban Status</th>
-                  <th>Joined</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>${rows}</tbody>
-            </table>
-          </div>
-        </div>
-      `;
+      document.getElementById('main-content').innerHTML = `
+        <div class="card">
+          <div class="card-header"><div class="card-title"><i data-lucide="users"></i> Users (${users.length})</div><button class="btn btn-outline" onclick="renderUsers()"><i data-lucide="refresh-cw"></i> Refresh</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Chat ID</th><th>Status</th><th>Lang</th><th>Gender</th><th>Ban</th><th>Joined</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>
+        </div>`;
       lucide.createIcons();
     }
 
-    async function banUser(id) {
-      await fetch(`/api/users/${id}/ban`, { method: 'POST', headers });
-      loadStats();
-      renderUsers();
-    }
+    async function banU(id) { await fetch(`/api/users/${id}/ban`,{method:'POST',headers:H}); loadAll(); renderUsers(); }
+    async function unban(id) { await fetch(`/api/users/${id}/unban`,{method:'POST',headers:H}); loadAll(); renderUsers(); }
 
-    async function unbanUser(id) {
-      await fetch(`/api/users/${id}/unban`, { method: 'POST', headers });
-      loadStats();
-      renderUsers();
-    }
-
-    // ===== RPG PAGE =====
+    // ===== RPG =====
     async function renderRPG() {
-      const res = await fetch('/api/rpg-users', { headers });
-      const users = await res.json();
-
-      const classIcon = c => c === 'ksatria' ? '⚔️' : c === 'penyihir' ? '🔥' : '🗡️';
-      const classBadge = c => c === 'ksatria' ? 'badge-blue' : c === 'penyihir' ? 'badge-purple' : 'badge-yellow';
-
+      const r = await fetch('/api/rpg-users', { headers: H });
+      const users = await r.json();
+      const ci = c => c==='ksatria'?'⚔️':c==='penyihir'?'🔥':'🗡️';
+      const cb = c => c==='ksatria'?'badge-blue':c==='penyihir'?'badge-accent':'badge-yellow';
       let rows = users.map(u => `<tr>
-        <td><code style="color:var(--accent);font-size:13px;">${u.telegram_user_id}</code></td>
-        <td><span class="badge ${classBadge(u.class_name)}">${classIcon(u.class_name)} ${u.class_name}</span></td>
-        <td><strong>Lv.${u.level}</strong></td>
-        <td>${u.xp}</td>
-        <td>💰 ${u.gold}g</td>
-        <td>❤️ ${u.hp}/${u.max_hp}</td>
-        <td>⚡ ${u.energy_current}/10</td>
+        <td><code style="color:var(--accent)">${u.telegram_user_id}</code></td>
+        <td><span class="badge ${cb(u.class_name)}">${ci(u.class_name)} ${u.class_name}</span></td>
+        <td><strong>Lv.${u.level}</strong></td><td>${u.xp}</td><td>💰${u.gold}g</td><td>❤️${u.hp}/${u.max_hp}</td>
       </tr>`).join('');
-
-      document.getElementById('page-content').innerHTML = `
-        <div class="content-card">
-          <div class="card-header">
-            <div class="card-header-left">
-              <i data-lucide="swords"></i>
-              <h3>RPG Players (${users.length})</h3>
-            </div>
-            <button class="btn btn-outline" onclick="renderRPG()"><i data-lucide="refresh-cw"></i> Refresh</button>
-          </div>
-          <div class="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>User ID</th>
-                  <th>Class</th>
-                  <th>Level</th>
-                  <th>XP</th>
-                  <th>Gold</th>
-                  <th>HP</th>
-                  <th>Energy</th>
-                </tr>
-              </thead>
-              <tbody>${rows}</tbody>
-            </table>
-          </div>
-        </div>
-      `;
+      document.getElementById('main-content').innerHTML = `
+        <div class="card">
+          <div class="card-header"><div class="card-title"><i data-lucide="swords"></i> RPG Players (${users.length})</div><button class="btn btn-outline" onclick="renderRPG()"><i data-lucide="refresh-cw"></i> Refresh</button></div>
+          <div class="table-wrap"><table><thead><tr><th>User ID</th><th>Class</th><th>Level</th><th>XP</th><th>Gold</th><th>HP</th></tr></thead><tbody>${rows}</tbody></table></div>
+        </div>`;
       lucide.createIcons();
     }
 
-    // ===== REPORTS PAGE =====
+    // ===== REPORTS =====
     async function renderReports() {
-      const res = await fetch('/api/reports', { headers });
-      const reports = await res.json();
-
-      let rows = reports.map(r => `<tr>
-        <td><code style="color:var(--accent);font-size:13px;">${r.reporter_id}</code></td>
-        <td><code style="color:var(--red);font-size:13px;">${r.reported_id}</code></td>
-        <td>${r.reason || '-'}</td>
-        <td>${r.created_at}</td>
-      </tr>`).join('');
-
+      const r = await fetch('/api/reports', { headers: H });
+      const reports = await r.json();
       const content = reports.length === 0
-        ? `<div class="empty-state"><i data-lucide="check-circle"></i><p>No reports yet. Good vibes! 🎉</p></div>`
-        : `<div class="table-wrapper"><table>
-            <thead><tr><th>Reporter</th><th>Reported</th><th>Reason</th><th>Date</th></tr></thead>
-            <tbody>${rows}</tbody>
-          </table></div>`;
-
-      document.getElementById('page-content').innerHTML = `
-        <div class="content-card">
-          <div class="card-header">
-            <div class="card-header-left">
-              <i data-lucide="flag"></i>
-              <h3>Reports (${reports.length})</h3>
-            </div>
-            <button class="btn btn-outline" onclick="renderReports()"><i data-lucide="refresh-cw"></i> Refresh</button>
-          </div>
+        ? `<div class="empty"><i data-lucide="check-circle"></i><p>No reports. All good! 🎉</p></div>`
+        : `<div class="table-wrap"><table><thead><tr><th>Reporter</th><th>Reported</th><th>Reason</th><th>Date</th></tr></thead><tbody>${reports.map(r=>`<tr><td><code style="color:var(--accent)">${r.reporter_id}</code></td><td><code style="color:var(--red)">${r.reported_id}</code></td><td>${r.reason||'-'}</td><td>${r.created_at}</td></tr>`).join('')}</tbody></table></div>`;
+      document.getElementById('main-content').innerHTML = `
+        <div class="card">
+          <div class="card-header"><div class="card-title"><i data-lucide="flag"></i> Reports (${reports.length})</div><button class="btn btn-outline" onclick="renderReports()"><i data-lucide="refresh-cw"></i> Refresh</button></div>
           ${content}
-        </div>
-      `;
+        </div>`;
       lucide.createIcons();
     }
 
-    // ===== WORD FILTER PAGE =====
-    let currentWords = [];
-
+    // ===== WORD FILTER =====
+    let CW = [];
     async function renderWordFilter() {
-      const res = await fetch('/api/wordfilter', { headers });
-      const data = await res.json();
-      currentWords = data.words;
-      drawWordFilter();
+      const r = await fetch('/api/wordfilter', { headers: H });
+      const d = await r.json();
+      CW = d.words;
+      drawWF();
     }
-
-    function drawWordFilter() {
-      const tags = currentWords.length > 0
-        ? currentWords.map((w, i) => `<span class="filter-tag">${w} <span class="filter-tag-remove" onclick="removeWord(${i})"><i data-lucide="x"></i></span></span>`).join('')
-        : '<p style="color:var(--text-muted);font-size:14px;">No blocked words yet.</p>';
-
-      document.getElementById('page-content').innerHTML = `
-        <div class="content-card">
-          <div class="card-header">
-            <div class="card-header-left">
-              <i data-lucide="shield-ban"></i>
-              <h3>Blocked Words (${currentWords.length})</h3>
-            </div>
-          </div>
-          <div class="filter-input-row">
-            <input class="filter-input" type="text" id="newWord" placeholder="Add new blocked word..." onkeypress="if(event.key==='Enter')addWord()">
-            <button class="btn btn-primary" onclick="addWord()"><i data-lucide="plus"></i> Add</button>
+    function drawWF() {
+      const tags = CW.length > 0
+        ? CW.map((w,i)=>`<span class="filter-tag">${w} <span class="filter-tag-remove" onclick="rmWord(${i})">×</span></span>`).join('')
+        : '<p style="color:var(--muted);font-size:14px;">No blocked words.</p>';
+      document.getElementById('main-content').innerHTML = `
+        <div class="card">
+          <div class="card-header"><div class="card-title"><i data-lucide="shield-ban"></i> Blocked Words (${CW.length})</div></div>
+          <div class="filter-row">
+            <input class="filter-input" id="newWord" placeholder="Add blocked word..." onkeypress="if(event.key==='Enter')addWord()">
+            <button class="btn btn-accent" onclick="addWord()"><i data-lucide="plus"></i> Add</button>
           </div>
           <div class="filter-tags">${tags}</div>
-        </div>
-      `;
+        </div>`;
       lucide.createIcons();
     }
-
     function addWord() {
-      const input = document.getElementById('newWord');
-      const word = input.value.trim().toLowerCase();
-      if (word && !currentWords.includes(word)) {
-        currentWords.push(word);
-        saveWords();
-        input.value = '';
-      }
+      const i = document.getElementById('newWord');
+      const w = i.value.trim().toLowerCase();
+      if (w && !CW.includes(w)) { CW.push(w); saveWF(); i.value = ''; }
+    }
+    function rmWord(i) { CW.splice(i,1); saveWF(); }
+    async function saveWF() {
+      await fetch('/api/wordfilter',{method:'POST',headers:H,body:JSON.stringify({words:CW})});
+      drawWF();
     }
 
-    function removeWord(i) {
-      currentWords.splice(i, 1);
-      saveWords();
-    }
-
-    async function saveWords() {
-      await fetch('/api/wordfilter', { method: 'POST', headers, body: JSON.stringify({ words: currentWords }) });
-      drawWordFilter();
-    }
-
-    // Logout
-    function logout() {
-      sessionStorage.removeItem('auth');
-      window.location.href = '/';
-    }
+    function logout() { sessionStorage.removeItem('auth'); window.location.href = '/'; }
 
     // Init
-    loadStats().then(() => renderHome());
+    loadAll().then(() => renderHome());
   </script>
 </body>
 </html>
