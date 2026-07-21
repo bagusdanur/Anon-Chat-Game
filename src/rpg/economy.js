@@ -10,6 +10,7 @@ const {
   equipItem, unequipSlot, getEquipped, getEquippedBonus, GOLD_CAP, INVENTORY_CAP
 } = require('./db_rpg');
 const { RARITY_EMOJI } = require('./profile');
+const { getGameSettings } = require('./config');
 
 const fs = require('fs');
 const path = require('path');
