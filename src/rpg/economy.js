@@ -59,7 +59,15 @@ function resolveShopInput(input) {
 
 function resolveInvInput(userId, input) {
   const num = parseInt(input);
-  const cache = invCache.get(userId.toString());
+  
+  // Auto-populate cache jika kosong (biar /equip 1 tanpa /inv dulu tetep work)
+  let cache = invCache.get(userId.toString());
+  if (!cache) {
+    const items = getInventory(userId);
+    cache = items.map(i => i.item_id);
+    invCache.set(userId.toString(), cache);
+  }
+  
   if (!isNaN(num) && cache) {
     return cache[num - 1] || null; // ID 1-indexed
   }
