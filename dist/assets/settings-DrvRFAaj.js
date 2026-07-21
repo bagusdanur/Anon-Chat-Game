@@ -1,0 +1,48 @@
+import{c as e,l as t,u as n}from"./index-DUqRozNy.js";async function r(t){t.innerHTML=`<div class="page-enter"><div class="skeleton" style="height:300px"></div></div>`;try{let n=await e.get(`/api/settings`);t.innerHTML=`
+      <div class="page-enter">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              Dynamic Game Settings
+            </div>
+            <span style="font-size:12px;color:var(--muted)">Live config without restarting bot</span>
+          </div>
+          <div class="card-body">
+            <form id="settingsForm" style="display:flex;flex-direction:column;gap:20px;max-width:500px">
+              
+              <div>
+                <label style="display:block;margin-bottom:8px;font-weight:bold">EXP Multiplier (x)</label>
+                <input type="number" id="exp_multiplier" step="0.1" class="input" value="${n.exp_multiplier}" required>
+                <div style="font-size:12px;color:var(--muted);margin-top:4px">Contoh: 2.0 untuk Double EXP event.</div>
+              </div>
+              
+              <div>
+                <label style="display:block;margin-bottom:8px;font-weight:bold">Gold Multiplier (x)</label>
+                <input type="number" id="gold_multiplier" step="0.1" class="input" value="${n.gold_multiplier}" required>
+                <div style="font-size:12px;color:var(--muted);margin-top:4px">Mempengaruhi reward /hunt, /mine, /dungeon.</div>
+              </div>
+              
+              <div>
+                <label style="display:block;margin-bottom:8px;font-weight:bold">Drop Rate Multiplier (x)</label>
+                <input type="number" id="drop_rate_multiplier" step="0.1" class="input" value="${n.drop_rate_multiplier}" required>
+                <div style="font-size:12px;color:var(--muted);margin-top:4px">Meningkatkan peluang item langka. 1.0 = Normal.</div>
+              </div>
+
+              <div>
+                <label style="display:block;margin-bottom:8px;font-weight:bold">Grind Cooldown (Minutes)</label>
+                <input type="number" id="grind_cooldown_minutes" class="input" value="${n.grind_cooldown_minutes}" required>
+                <div style="font-size:12px;color:var(--muted);margin-top:4px">Waktu cooldown untuk regenerasi energi atau limit hunt.</div>
+              </div>
+
+              <div style="margin-top:10px">
+                <button type="submit" class="btn btn-primary">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                  Save Settings
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    `,document.getElementById(`settingsForm`).addEventListener(`submit`,async t=>{t.preventDefault();let n=t.target.querySelector(`button`);n.disabled=!0,n.innerHTML=`Saving...`;let r={exp_multiplier:parseFloat(document.getElementById(`exp_multiplier`).value),gold_multiplier:parseFloat(document.getElementById(`gold_multiplier`).value),drop_rate_multiplier:parseFloat(document.getElementById(`drop_rate_multiplier`).value),grind_cooldown_minutes:parseInt(document.getElementById(`grind_cooldown_minutes`).value)};try{await e.post(`/api/settings`,r),window.showToast(`Game Settings updated successfully!`,`success`)}catch(e){window.showToast(e.message,`error`)}finally{n.disabled=!1,n.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save Settings`}})}catch(e){t.innerHTML=`<div class="card"><div class="card-body"><p style="color:var(--red)">Failed to load settings: ${e.message}</p></div></div>`}}n((()=>{t()}))();export{r as render};

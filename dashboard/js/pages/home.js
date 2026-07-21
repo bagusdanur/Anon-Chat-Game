@@ -5,6 +5,7 @@ import API from '../api.js';
 import { skeletonStats } from '../components.js';
 
 let _refreshTimer = null;
+let _chartObj = null;
 
 export async function render(container) {
   // Show skeletons first
@@ -21,7 +22,6 @@ export async function render(container) {
         <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">
           <div class="skeleton" style="height:38px;width:160px"></div>
           <div class="skeleton" style="height:38px;width:130px"></div>
-          <div class="skeleton" style="height:38px;width:150px"></div>
         </div>
       </div>
     </div>`;
@@ -32,16 +32,20 @@ export async function render(container) {
 
 export function cleanup() {
   if (_refreshTimer) { clearInterval(_refreshTimer); _refreshTimer = null; }
+  if (_chartObj) { _chartObj.destroy(); _chartObj = null; }
 }
 
 function startAutoRefresh(container) {
   if (_refreshTimer) clearInterval(_refreshTimer);
-  _refreshTimer = setInterval(() => loadStats(container), 30000);
+  _refreshTimer = setInterval(() => loadStats(container, false), 30000);
 }
 
-async function loadStats(container) {
+async function loadStats(container, fullRender = true) {
   try {
-    const S = await API.get('/api/stats');
+    const [S, chartData] = await Promise.all([
+      API.get('/api/stats'),
+      API.get('/api/stats/chart')
+    ]);
 
     const cards = [
       { label: 'Total Users',    val: S.totalUsers,       color: '--blue',   icon: 'users',         sub: 'terdaftar' },
@@ -71,6 +75,17 @@ async function loadStats(container) {
         `).join('')}
       </div>`;
 
+    const chartHTML = `
+      <div class="card" style="margin-top:20px">
+        <div class="card-header">
+          <div class="card-title">${lucideIcon('trending-up')} Trend 7 Hari Terakhir</div>
+        </div>
+        <div class="card-body">
+          <canvas id="trendChart" height="80"></canvas>
+        </div>
+      </div>
+    `;
+
     const quickHTML = `
       <div class="card">
         <div class="card-header">
@@ -89,8 +104,8 @@ async function loadStats(container) {
           <button class="btn btn-outline" onclick="window.triggerBroadcast()">
             ${lucideIcon('megaphone')} Broadcast
           </button>
-          <button class="btn btn-outline" onclick="window.appNav('maintenance')">
-            ${lucideIcon('wrench')} Maintenance
+          <button class="btn btn-outline" onclick="window.appNav('settings')">
+            ${lucideIcon('settings')} Game Settings
           </button>
         </div>
       </div>
@@ -113,11 +128,84 @@ async function loadStats(container) {
         </div>
       </div>`;
 
-    container.innerHTML = `<div class="page-enter">${statsHTML}${quickHTML}</div>`;
-    if (window.lucide) lucide.createIcons({ scope: container });
+    if (fullRender) {
+      container.innerHTML = `<div class="page-enter">${statsHTML}${chartHTML}${quickHTML}</div>`;
+      if (window.lucide) lucide.createIcons({ scope: container });
+      renderChart(chartData);
+    } else {
+      // Just update the numbers if we don't want to break the chart instance
+      // (Simplified for this project: re-render everything since it's fast anyway)
+      container.innerHTML = `<div class="page-enter">${statsHTML}${chartHTML}${quickHTML}</div>`;
+      if (window.lucide) lucide.createIcons({ scope: container });
+      renderChart(chartData);
+    }
   } catch (e) {
-    container.innerHTML = `<div class="card"><div class="card-body"><p style="color:var(--red)">Gagal memuat stats: ${e.message}</p></div></div>`;
+    if (fullRender) {
+      container.innerHTML = `<div class="card"><div class="card-body"><p style="color:var(--red)">Gagal memuat stats: ${e.message}</p></div></div>`;
+    }
   }
+}
+
+function renderChart(data) {
+  const ctx = document.getElementById('trendChart');
+  if (!ctx || !window.Chart) return;
+  if (_chartObj) _chartObj.destroy();
+
+  // Combine dates from both datasets
+  const dates = [...new Set([
+    ...data.users.map(d => d.date),
+    ...data.transactions.map(d => d.date)
+  ])].sort();
+
+  const userCounts = dates.map(d => {
+    const f = data.users.find(x => x.date === d);
+    return f ? f.count : 0;
+  });
+
+  const txTotals = dates.map(d => {
+    const f = data.transactions.find(x => x.date === d);
+    return f ? (f.total || 0) : 0;
+  });
+
+  Chart.defaults.color = '#a0a0b0';
+  Chart.defaults.font.family = '"Space Grotesk", sans-serif';
+
+  _chartObj = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [
+        {
+          label: 'User Baru',
+          data: userCounts,
+          borderColor: '#4ade80',
+          backgroundColor: 'rgba(74, 222, 128, 0.2)',
+          borderWidth: 3,
+          tension: 0.3,
+          fill: true
+        },
+        {
+          label: 'Volume Transaksi Gold',
+          data: txTotals,
+          borderColor: '#60a5fa',
+          backgroundColor: 'rgba(96, 165, 250, 0.2)',
+          borderWidth: 3,
+          tension: 0.3,
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { font: { weight: 'bold' } } }
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+        x: { grid: { color: 'rgba(255,255,255,0.05)' } }
+      }
+    }
+  });
 }
 
 function lucideIcon(name) {

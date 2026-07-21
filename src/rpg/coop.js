@@ -1,6 +1,7 @@
 // src/rpg/coop.js
 // Fase 5: /dungeon — co-op raid boss turn-based
 const { Markup } = require('telegraf');
+const { getGameSettings } = require('./config');
 const {
   getOrCreateUser, getDungeonCooldown, setDungeonCooldown,
   addXp, addGold, addItem, updateHp, getCurrentHp,
@@ -286,8 +287,9 @@ function checkRaidResolve(bot, pairKey) {
     setDungeonCooldown(chatIdB);
 
     // gunakan reward tetap per tier, bukan formula HP-based
-    const xpReward = raid.boss.xpReward || Math.floor(raid.boss.maxHp * 2);
-    const goldReward = raid.boss.goldReward || Math.floor(raid.boss.maxHp * 1.2);
+    const settings = getGameSettings();
+    const xpReward = Math.floor((raid.boss.xpReward || Math.floor(raid.boss.baseHp * 2)) * settings.exp_multiplier);
+    const goldReward = Math.floor((raid.boss.goldReward || Math.floor(raid.boss.baseHp * 1.2)) * settings.gold_multiplier);
     const lootWinner = Math.random() < 0.5 ? chatIdA : chatIdB;
 
     const xpResultA = addXp(chatIdA, xpReward);

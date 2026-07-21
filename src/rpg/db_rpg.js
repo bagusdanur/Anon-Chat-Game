@@ -131,6 +131,35 @@ try { db.exec('ALTER TABLE rpg_inventory ADD COLUMN equipped BOOLEAN DEFAULT 0')
 // BUG-01 FIX: last_duel_at dibutuhkan oleh getDuelCooldown() tapi tidak ada di schema awal
 try { db.exec('ALTER TABLE rpg_users ADD COLUMN last_duel_at INTEGER DEFAULT NULL'); } catch(e) {}
 
+// ===== MIGRATE CLASS CONSTRAINT =====
+// Hapus CHECK constraint agar bisa tambah custom class dari dashboard
+const tableSql = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='rpg_users'").get()?.sql || '';
+if (tableSql.includes("CHECK (class_name IN ('ksatria','penyihir','pencuri'))")) {
+  console.log('[RPG DB] Migrating rpg_users to remove class_name constraint...');
+  db.exec(`
+    PRAGMA foreign_keys=off;
+    BEGIN TRANSACTION;
+    CREATE TABLE IF NOT EXISTS rpg_users_new (
+      telegram_user_id TEXT PRIMARY KEY, class_name TEXT NOT NULL DEFAULT 'ksatria',
+      level INTEGER NOT NULL DEFAULT 1, xp INTEGER NOT NULL DEFAULT 0, gold INTEGER NOT NULL DEFAULT 0,
+      hp INTEGER NOT NULL DEFAULT 50, max_hp INTEGER NOT NULL DEFAULT 50,
+      atk INTEGER NOT NULL DEFAULT 5, def INTEGER NOT NULL DEFAULT 5, magic_atk INTEGER NOT NULL DEFAULT 0,
+      crit_rate REAL NOT NULL DEFAULT 0.05, crit_multi REAL NOT NULL DEFAULT 1.5,
+      phys_resist REAL NOT NULL DEFAULT 0, magic_resist REAL NOT NULL DEFAULT 0,
+      energy_current INTEGER NOT NULL DEFAULT 10, energy_last_update INTEGER NOT NULL DEFAULT 0,
+      last_dungeon_at INTEGER DEFAULT NULL, last_daily_claim_at INTEGER DEFAULT NULL,
+      created_at INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL DEFAULT 0,
+      win_streak INTEGER DEFAULT 0, last_duel_at INTEGER DEFAULT NULL
+    );
+    INSERT INTO rpg_users_new SELECT telegram_user_id, class_name, level, xp, gold, hp, max_hp, atk, def, magic_atk, crit_rate, crit_multi, phys_resist, magic_resist, energy_current, energy_last_update, last_dungeon_at, last_daily_claim_at, created_at, updated_at, win_streak, last_duel_at FROM rpg_users;
+    DROP TABLE rpg_users;
+    ALTER TABLE rpg_users_new RENAME TO rpg_users;
+    COMMIT;
+    PRAGMA foreign_keys=on;
+  `);
+  console.log('[RPG DB] Migration complete.');
+}
+
 // ===== SEED ITEMS CATALOG =====
 const SEED_ITEMS = [
   // consumables
@@ -200,45 +229,46 @@ const insertItem = db.prepare(`
 const seedAll = db.transaction(() => { SEED_ITEMS.forEach(i => insertItem.run(i)); });
 seedAll();
 
-// ===== CLASS DEFINITIONS =====
-const CLASS_DEFS = {
-  ksatria: {
-    name: '⚔️ Ksatria', damageType: 'physical',
-    base_hp: 50, base_atk: 5, base_def: 5, base_magic_atk: 0,
-    base_crit_rate: 0.05, base_crit_multi: 1.5,
-    growth: { hp: 8, atk: 1.5, def: 2, magic_atk: 0 },
-    physBonus: 1.15, magicBonus: 0.80,  // +15% phys, -20% magic
-    skillName: 'Tebasan Besar', skillMulti: 2.0, skillType: 'physical',
-    skillDesc: 'Tebasan kuat dengan bonus armor penetrate 10%'
+// ===== DYNAMIC CLASS DEFINITIONS =====
+const fs = require('fs');
+const path = require('path');
+const CLASSES_FILE = path.join(__dirname, '../../data/rpg_classes.json');
+
+function getClassesConfig() {
+  try {
+    if (fs.existsSync(CLASSES_FILE)) {
+      const arr = JSON.parse(fs.readFileSync(CLASSES_FILE, 'utf8'));
+      const map = {};
+      arr.forEach(c => map[c.id] = c);
+      return map;
+    }
+  } catch (e) { console.error('[RPG] Error reading rpg_classes.json', e); }
+  return {}; // fallback
+}
+
+// Proxy object to maintain backward compatibility with CLASS_DEFS usage
+const CLASS_DEFS = new Proxy({}, {
+  get: function(target, prop) {
+    const classes = getClassesConfig();
+    return classes[prop];
   },
-  penyihir: {
-    name: '🔥 Penyihir', damageType: 'magic',
-    base_hp: 42, base_atk: 3, base_def: 2, base_magic_atk: 8,
-    base_crit_rate: 0.10, base_crit_multi: 1.8,
-    growth: { hp: 5, atk: 0.5, def: 1, magic_atk: 2.5 },
-    physBonus: 0.70, magicBonus: 1.25,  // -30% phys, +25% magic
-    skillName: 'Bola Api', skillMulti: 2.5, skillType: 'magic',
-    skillDesc: 'Bola api yang membakar musuh selama 3 turn'
+  ownKeys: function() {
+    return Object.keys(getClassesConfig());
   },
-  pencuri: {
-    name: '🗡️ Pencuri', damageType: 'physical',
-    base_hp: 40, base_atk: 6, base_def: 3, base_magic_atk: 0,
-    base_crit_rate: 0.15, base_crit_multi: 1.8,
-    growth: { hp: 6, atk: 2, def: 1.5, magic_atk: 0 },
-    physBonus: 1.20, magicBonus: 0.80,  // +20% phys, -20% magic
-    skillName: 'Backstab', skillMulti: 1.8, skillType: 'physical',
-    skillDesc: 'Serangan dari belakang — 100% Crit!'
-  },
-};
+  getOwnPropertyDescriptor: function(target, prop) {
+    const classes = getClassesConfig();
+    return classes[prop] ? { enumerable: true, configurable: true, value: classes[prop] } : undefined;
+  }
+});
 
 function calcStats(className, level) {
-  const cls = CLASS_DEFS[className];
+  const cls = CLASS_DEFS[className] || CLASS_DEFS['ksatria']; // fallback to ksatria if not found
   return {
     max_hp:    Math.floor(cls.base_hp + cls.growth.hp * (level - 1)),
     atk:       Math.floor(cls.base_atk + cls.growth.atk * (level - 1)),
     def:       Math.floor(cls.base_def + cls.growth.def * (level - 1)),
     magic_atk: Math.floor(cls.base_magic_atk + cls.growth.magic_atk * (level - 1)),
-    crit_rate: cls.base_crit_rate + (level - 1) * (className === 'pencuri' ? 0.015 : className === 'penyihir' ? 0.01 : 0.005),
+    crit_rate: cls.base_crit_rate + (level - 1) * (cls.growth.crit_rate || 0.005),
     crit_multi: cls.base_crit_multi,
   };
 }

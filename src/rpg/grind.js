@@ -6,6 +6,7 @@ const {
   incrementQuestProgress
 } = require('./db_rpg');
 const { RARITY_EMOJI } = require('./profile');
+const { getGameSettings } = require('./config');
 
 // ===== MONSTER TABLES =====
 const MONSTERS = [
@@ -38,9 +39,13 @@ const RARITY_ROLLS = [
 ];
 
 function rollRarity(boost = 0) {
+  const settings = getGameSettings();
+  const globalDropBoost = settings.drop_rate_multiplier - 1.0;
+  const totalBoost = boost + globalDropBoost;
+  
   const r = Math.random();
   for (const entry of RARITY_ROLLS) {
-    const adj = Math.min(entry.threshold * (1 + boost * 0.5), 1);
+    const adj = Math.min(entry.threshold * (1 + totalBoost * 0.5), 1);
     if (r < adj) return entry.rarity;
   }
   return 'common';
@@ -138,8 +143,10 @@ function setupGrind(bot, { rateLimitCommand }) {
     msg += `Kamu menemukan <b>${monster}</b>!\n\n`;
 
     if (result.win) {
-      let xpGain   = randInt(...tier.xp);
-      let goldGain = randInt(...tier.gold);
+      const settings = getGameSettings();
+      let xpGain   = Math.floor(randInt(...tier.xp) * settings.exp_multiplier);
+      let goldGain = Math.floor(randInt(...tier.gold) * settings.gold_multiplier);
+      
       if (user.class_name === 'penyihir') xpGain = Math.floor(xpGain * 1.25);
       if (user.class_name === 'pencuri') {
         const bonus = Math.min(0.25, Math.floor(user.level / 5) * 0.02);
@@ -207,7 +214,8 @@ function setupGrind(bot, { rateLimitCommand }) {
     const itemOpts  = lootTable[rarity];
     const item      = pickRandom(itemOpts.length ? itemOpts : lootTable.common);
 
-    let xpGain = randInt(5, 15);
+    const settings = getGameSettings();
+    let xpGain = Math.floor(randInt(5, 15) * settings.exp_multiplier);
     if (user.class_name === 'penyihir') xpGain = Math.floor(xpGain * 1.25);
 
     let msg = `<b>🎣 MANCING</b>\n`;
@@ -257,15 +265,16 @@ function setupGrind(bot, { rateLimitCommand }) {
     const item      = pickRandom(itemOpts.length ? itemOpts : lootTable.common);
 
     // BAL-01 FIX: naikkan gold reward agar mine lebih kompetitif vs fish/hunt
+    const settings = getGameSettings();
     const mineGoldRange = user.level <= 20 ? [8, 18] : user.level <= 45 ? [15, 35] : [30, 70];
-    let goldGain = randInt(...mineGoldRange);
+    let goldGain = Math.floor(randInt(...mineGoldRange) * settings.gold_multiplier);
     if (user.class_name === 'pencuri') {
       const bonus = Math.min(0.25, Math.floor(user.level / 5) * 0.02);
       goldGain = Math.floor(goldGain * (1 + bonus));
     }
 
     // BAL-01 FIX: naikkan XP dari 3-10 ke 8-20 (mine itu susah, pantas dapat XP lebih)
-    let xpGain = randInt(8, 20);
+    let xpGain = Math.floor(randInt(8, 20) * settings.exp_multiplier);
     if (user.class_name === 'penyihir') xpGain = Math.floor(xpGain * 1.25);
 
     // BAL-01 FIX: 10% chance dapat double ore (bonus unik mining)

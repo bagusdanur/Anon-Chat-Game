@@ -18,6 +18,8 @@ const pages = {
   wordfilter:   () => import('./pages/wordfilter.js'),
   icebreakers:  () => import('./pages/icebreakers.js'),
   logs:         () => import('./pages/logs.js'),
+  settings:     () => import('./pages/settings.js'),
+  classes:      () => import('./pages/classes.js'),
   maintenance:  () => import('./pages/maintenance.js'),
 };
 

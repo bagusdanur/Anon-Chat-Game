@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { db } = require('./src/db');
 const { getWords, FILTER_PATH } = require('./src/moderation/wordFilter');
+const { getGameSettings, saveGameSettings } = require('./src/rpg/config');
 
 const app = express();
 const PORT = process.env.DASHBOARD_PORT || 3001;
@@ -57,6 +58,28 @@ app.get('/api/stats', auth, (req, res) => {
   const totalTransactions = db.prepare('SELECT COUNT(*) as count FROM transactions_log').get().count;
 
   res.json({ totalUsers, onlineUsers, pairedUsers, queuedUsers, bannedUsers, reports24h, rpgUsers, totalReports, totalDungeonRuns, totalDuels, totalTransactions });
+});
+
+app.get('/api/stats/chart', auth, (req, res) => {
+  // Get 7 days data for new users (created_at is DATETIME)
+  const userStats = db.prepare(`
+    SELECT DATE(created_at) as date, COUNT(*) as count 
+    FROM users 
+    WHERE created_at >= date('now', '-7 days')
+    GROUP BY date
+    ORDER BY date ASC
+  `).all();
+
+  // Get 7 days data for transactions (created_at is INTEGER unix timestamp)
+  const txStats = db.prepare(`
+    SELECT DATE(created_at, 'unixepoch') as date, SUM(amount) as total 
+    FROM transactions_log 
+    WHERE created_at >= strftime('%s', 'now', '-7 days')
+    GROUP BY date
+    ORDER BY date ASC
+  `).all();
+
+  res.json({ users: userStats, transactions: txStats });
 });
 
 // ===== USER SEARCH =====
@@ -232,13 +255,39 @@ app.post('/api/icebreakers', auth, (req, res) => {
   res.json({ success: true });
 });
 
-// ===== BOT LOGS =====
 app.get('/api/logs', auth, (req, res) => {
   const logFile = path.join(__dirname, 'data/bot.log');
   if (!fs.existsSync(logFile)) return res.json({ logs: [] });
   const content = fs.readFileSync(logFile, 'utf8');
   const lines = content.split('\n').filter(Boolean).slice(-100);
   res.json({ logs: lines });
+});
+
+// ===== GAME SETTINGS =====
+app.get('/api/settings', auth, (req, res) => {
+  res.json(getGameSettings());
+});
+
+app.post('/api/settings', auth, (req, res) => {
+  const newSettings = saveGameSettings(req.body);
+  res.json({ success: true, settings: newSettings });
+});
+
+// ===== DYNAMIC RPG CLASSES =====
+app.get('/api/classes', auth, (req, res) => {
+  const file = path.join(__dirname, 'data/rpg_classes.json');
+  if (fs.existsSync(file)) {
+    res.json(JSON.parse(fs.readFileSync(file, 'utf8')));
+  } else {
+    res.json([]);
+  }
+});
+
+app.post('/api/classes', auth, (req, res) => {
+  const { classes } = req.body;
+  const file = path.join(__dirname, 'data/rpg_classes.json');
+  fs.writeFileSync(file, JSON.stringify(classes, null, 2));
+  res.json({ success: true });
 });
 
 // ===== BROADCAST (via bot API) =====
