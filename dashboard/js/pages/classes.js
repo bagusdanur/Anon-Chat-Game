@@ -88,42 +88,42 @@ function renderList() {
   if (!container) return;
   
   container.innerHTML = _classes.map((cls, i) => `
-    <div style="border:2px solid var(--border-dark);background:var(--surface);padding:15px;position:relative">
-      <button class="btn btn-red" style="position:absolute;top:15px;right:15px;padding:5px 10px;min-width:0" onclick="window.deleteClass(${i})">X</button>
+    <div class="card" style="margin-bottom:20px;position:relative">
+      <button class="btn btn-danger" style="position:absolute;top:15px;right:15px;padding:6px 12px;min-width:0;z-index:10" onclick="window.deleteClass(${i})">X</button>
       
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
-        <div>
-          <label style="display:block;font-size:12px;font-weight:bold;margin-bottom:4px">ID (Unik)</label>
-          <input type="text" class="input" value="${cls.id}" onchange="window.updateClass(${i}, 'id', this.value)">
+      <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">ID (Unik)</label>
+          <input type="text" class="form-control" value="${cls.id}" onchange="window.updateClass(${i}, 'id', this.value)">
         </div>
-        <div>
-          <label style="display:block;font-size:12px;font-weight:bold;margin-bottom:4px">Display Name (Emoji + Nama)</label>
-          <input type="text" class="input" value="${cls.name}" onchange="window.updateClass(${i}, 'name', this.value)">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Display Name (Emoji + Nama)</label>
+          <input type="text" class="form-control" value="${cls.name}" onchange="window.updateClass(${i}, 'name', this.value)">
         </div>
-        <div>
-          <label style="display:block;font-size:12px;font-weight:bold;margin-bottom:4px">Base HP / ATK / DEF / Magic</label>
-          <div style="display:flex;gap:5px">
-            <input type="number" class="input" style="padding:4px" value="${cls.base_hp}" onchange="window.updateClass(${i}, 'base_hp', this.value)">
-            <input type="number" class="input" style="padding:4px" value="${cls.base_atk}" onchange="window.updateClass(${i}, 'base_atk', this.value)">
-            <input type="number" class="input" style="padding:4px" value="${cls.base_def}" onchange="window.updateClass(${i}, 'base_def', this.value)">
-            <input type="number" class="input" style="padding:4px" value="${cls.base_magic_atk}" onchange="window.updateClass(${i}, 'base_magic_atk', this.value)">
-          </div>
-        </div>
-        <div>
-          <label style="display:block;font-size:12px;font-weight:bold;margin-bottom:4px">Growth (HP / ATK / DEF / Magic) per level</label>
-          <div style="display:flex;gap:5px">
-            <input type="number" class="input" style="padding:4px" step="0.1" value="${cls.growth.hp}" onchange="window.updateClass(${i}, 'growth.hp', this.value)">
-            <input type="number" class="input" style="padding:4px" step="0.1" value="${cls.growth.atk}" onchange="window.updateClass(${i}, 'growth.atk', this.value)">
-            <input type="number" class="input" style="padding:4px" step="0.1" value="${cls.growth.def}" onchange="window.updateClass(${i}, 'growth.def', this.value)">
-            <input type="number" class="input" style="padding:4px" step="0.1" value="${cls.growth.magic_atk}" onchange="window.updateClass(${i}, 'growth.magic_atk', this.value)">
-          </div>
-        </div>
-        <div style="grid-column:1 / -1;border-top:1px solid var(--border-dark);padding-top:10px;margin-top:5px">
-          <label style="display:block;font-size:12px;font-weight:bold;margin-bottom:4px">Skill Name & Description</label>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Base HP / ATK / DEF / Magic</label>
           <div style="display:flex;gap:10px">
-            <input type="text" class="input" style="flex:1" value="${cls.skillName}" onchange="window.updateClass(${i}, 'skillName', this.value)">
-            <input type="text" class="input" style="flex:2" value="${cls.skillDesc}" onchange="window.updateClass(${i}, 'skillDesc', this.value)">
-            <input type="number" class="input" style="width:80px" step="0.1" value="${cls.skillMulti}" onchange="window.updateClass(${i}, 'skillMulti', this.value)" title="Skill Multiplier">
+            <input type="number" class="form-control" placeholder="HP" value="${cls.base_hp}" onchange="window.updateClass(${i}, 'base_hp', this.value)">
+            <input type="number" class="form-control" placeholder="ATK" value="${cls.base_atk}" onchange="window.updateClass(${i}, 'base_atk', this.value)">
+            <input type="number" class="form-control" placeholder="DEF" value="${cls.base_def}" onchange="window.updateClass(${i}, 'base_def', this.value)">
+            <input type="number" class="form-control" placeholder="MAG" value="${cls.base_magic_atk}" onchange="window.updateClass(${i}, 'base_magic_atk', this.value)">
+          </div>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Growth (HP / ATK / DEF / Magic) per level</label>
+          <div style="display:flex;gap:10px">
+            <input type="number" class="form-control" placeholder="HP+" step="0.1" value="${cls.growth.hp}" onchange="window.updateClass(${i}, 'growth.hp', this.value)">
+            <input type="number" class="form-control" placeholder="ATK+" step="0.1" value="${cls.growth.atk}" onchange="window.updateClass(${i}, 'growth.atk', this.value)">
+            <input type="number" class="form-control" placeholder="DEF+" step="0.1" value="${cls.growth.def}" onchange="window.updateClass(${i}, 'growth.def', this.value)">
+            <input type="number" class="form-control" placeholder="MAG+" step="0.1" value="${cls.growth.magic_atk}" onchange="window.updateClass(${i}, 'growth.magic_atk', this.value)">
+          </div>
+        </div>
+        <div class="form-group" style="grid-column:1 / -1;border-top:2px solid var(--border-dark);padding-top:15px;margin:0">
+          <label class="form-label">Skill Name, Description & Multiplier</label>
+          <div style="display:flex;gap:15px">
+            <input type="text" class="form-control" style="flex:1" placeholder="Skill Name" value="${cls.skillName}" onchange="window.updateClass(${i}, 'skillName', this.value)">
+            <input type="text" class="form-control" style="flex:2" placeholder="Description" value="${cls.skillDesc}" onchange="window.updateClass(${i}, 'skillDesc', this.value)">
+            <input type="number" class="form-control" style="width:100px" step="0.1" placeholder="Mult" value="${cls.skillMulti}" onchange="window.updateClass(${i}, 'skillMulti', this.value)" title="Skill Multiplier">
           </div>
         </div>
       </div>

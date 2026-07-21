@@ -1,4 +1,4 @@
-import{a as e,c as t,i as n,l as r,r as i,s as a,t as o,u as s}from"./index-DUqRozNy.js";async function c(t){t.innerHTML=`<div class="page-enter"><div class="card">
+import{a as e,c as t,i as n,l as r,r as i,s as a,t as o,u as s}from"./index-CQ80I5cs.js";async function c(t){t.innerHTML=`<div class="page-enter"><div class="card">
     <div class="card-header">
       <div class="card-title">${m(`swords`)} RPG Players</div>
       <button class="btn btn-outline btn-sm" id="rpg-refresh">${m(`refresh-cw`)}</button>

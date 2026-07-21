@@ -20,30 +20,30 @@ export async function render(container) {
             <span style="font-size:12px;color:var(--muted)">Live config without restarting bot</span>
           </div>
           <div class="card-body">
-            <form id="settingsForm" style="display:flex;flex-direction:column;gap:20px;max-width:500px">
+            <form id="settingsForm" style="display:flex;flex-direction:column;gap:15px;max-width:500px">
               
-              <div>
-                <label style="display:block;margin-bottom:8px;font-weight:bold">EXP Multiplier (x)</label>
-                <input type="number" id="exp_multiplier" step="0.1" class="input" value="${settings.exp_multiplier}" required>
-                <div style="font-size:12px;color:var(--muted);margin-top:4px">Contoh: 2.0 untuk Double EXP event.</div>
+              <div class="form-group">
+                <label class="form-label">EXP Multiplier (x)</label>
+                <input type="number" id="exp_multiplier" step="0.1" class="form-control" value="${settings.exp_multiplier}" required>
+                <div style="font-size:12px;color:var(--muted);margin-top:6px">Contoh: 2.0 untuk Double EXP event.</div>
               </div>
               
-              <div>
-                <label style="display:block;margin-bottom:8px;font-weight:bold">Gold Multiplier (x)</label>
-                <input type="number" id="gold_multiplier" step="0.1" class="input" value="${settings.gold_multiplier}" required>
-                <div style="font-size:12px;color:var(--muted);margin-top:4px">Mempengaruhi reward /hunt, /mine, /dungeon.</div>
+              <div class="form-group">
+                <label class="form-label">Gold Multiplier (x)</label>
+                <input type="number" id="gold_multiplier" step="0.1" class="form-control" value="${settings.gold_multiplier}" required>
+                <div style="font-size:12px;color:var(--muted);margin-top:6px">Mempengaruhi reward /hunt, /mine, /dungeon.</div>
               </div>
               
-              <div>
-                <label style="display:block;margin-bottom:8px;font-weight:bold">Drop Rate Multiplier (x)</label>
-                <input type="number" id="drop_rate_multiplier" step="0.1" class="input" value="${settings.drop_rate_multiplier}" required>
-                <div style="font-size:12px;color:var(--muted);margin-top:4px">Meningkatkan peluang item langka. 1.0 = Normal.</div>
+              <div class="form-group">
+                <label class="form-label">Drop Rate Multiplier (x)</label>
+                <input type="number" id="drop_rate_multiplier" step="0.1" class="form-control" value="${settings.drop_rate_multiplier}" required>
+                <div style="font-size:12px;color:var(--muted);margin-top:6px">Meningkatkan peluang item langka. 1.0 = Normal.</div>
               </div>
 
-              <div>
-                <label style="display:block;margin-bottom:8px;font-weight:bold">Grind Cooldown (Minutes)</label>
-                <input type="number" id="grind_cooldown_minutes" class="input" value="${settings.grind_cooldown_minutes}" required>
-                <div style="font-size:12px;color:var(--muted);margin-top:4px">Waktu cooldown untuk regenerasi energi atau limit hunt.</div>
+              <div class="form-group">
+                <label class="form-label">Grind Cooldown (Minutes)</label>
+                <input type="number" id="grind_cooldown_minutes" class="form-control" value="${settings.grind_cooldown_minutes}" required>
+                <div style="font-size:12px;color:var(--muted);margin-top:6px">Waktu cooldown untuk regenerasi energi atau limit hunt.</div>
               </div>
 
               <div style="margin-top:10px">
