@@ -1,15 +1,4 @@
-/**
- * settings.js — Dynamic Game Settings
- */
-import API from '../api.js';
-
-export async function render(container) {
-  container.innerHTML = `<div class="page-enter"><div class="skeleton" style="height:300px"></div></div>`;
-  
-  try {
-    const settings = await API.get('/api/settings');
-    
-    container.innerHTML = `
+import{c as e,l as t,u as n}from"./index-B39UAyRg.js";async function r(t){t.innerHTML=`<div class="page-enter"><div class="skeleton" style="height:300px"></div></div>`;try{let n=await e.get(`/api/settings`);t.innerHTML=`
       <div class="page-enter">
         <div class="card">
           <div class="card-header">
@@ -24,25 +13,25 @@ export async function render(container) {
               
               <div class="form-group">
                 <label class="form-label">EXP Multiplier (x)</label>
-                <input type="number" id="exp_multiplier" step="0.1" class="form-control" value="${settings.exp_multiplier}" required>
+                <input type="number" id="exp_multiplier" step="0.1" class="form-control" value="${n.exp_multiplier}" required>
                 <div style="font-size:12px;color:var(--muted);margin-top:6px">Contoh: 2.0 untuk Double EXP event.</div>
               </div>
               
               <div class="form-group">
                 <label class="form-label">Gold Multiplier (x)</label>
-                <input type="number" id="gold_multiplier" step="0.1" class="form-control" value="${settings.gold_multiplier}" required>
+                <input type="number" id="gold_multiplier" step="0.1" class="form-control" value="${n.gold_multiplier}" required>
                 <div style="font-size:12px;color:var(--muted);margin-top:6px">Mempengaruhi reward /hunt, /mine, /dungeon.</div>
               </div>
               
               <div class="form-group">
                 <label class="form-label">Drop Rate Multiplier (x)</label>
-                <input type="number" id="drop_rate_multiplier" step="0.1" class="form-control" value="${settings.drop_rate_multiplier}" required>
+                <input type="number" id="drop_rate_multiplier" step="0.1" class="form-control" value="${n.drop_rate_multiplier}" required>
                 <div style="font-size:12px;color:var(--muted);margin-top:6px">Meningkatkan peluang item langka. 1.0 = Normal.</div>
               </div>
 
               <div class="form-group">
                 <label class="form-label">Grind Cooldown (Minutes)</label>
-                <input type="number" id="grind_cooldown_minutes" class="form-control" value="${settings.grind_cooldown_minutes}" required>
+                <input type="number" id="grind_cooldown_minutes" class="form-control" value="${n.grind_cooldown_minutes}" required>
                 <div style="font-size:12px;color:var(--muted);margin-top:6px">Waktu cooldown untuk regenerasi energi atau limit hunt.</div>
               </div>
 
@@ -51,15 +40,15 @@ export async function render(container) {
                 <div style="display:flex; gap:10px;">
                   <div class="form-group" style="flex:1">
                     <label class="form-label">Gold</label>
-                    <input type="number" id="daily_gold" class="form-control" value="${settings.daily_reward?.gold || 80}" required>
+                    <input type="number" id="daily_gold" class="form-control" value="${n.daily_reward?.gold||80}" required>
                   </div>
                   <div class="form-group" style="flex:1">
                     <label class="form-label">EXP</label>
-                    <input type="number" id="daily_xp" class="form-control" value="${settings.daily_reward?.xp || 25}" required>
+                    <input type="number" id="daily_xp" class="form-control" value="${n.daily_reward?.xp||25}" required>
                   </div>
                   <div class="form-group" style="flex:1.5">
                     <label class="form-label">Item Drop</label>
-                    <input type="text" id="daily_item" class="form-control" value="${settings.daily_reward?.item || ''}" placeholder="e.g. ramuan_kecil">
+                    <input type="text" id="daily_item" class="form-control" value="${n.daily_reward?.item||``}" placeholder="e.g. ramuan_kecil">
                   </div>
                 </div>
               </div>
@@ -69,16 +58,16 @@ export async function render(container) {
                 <div style="display:flex; gap:10px;">
                   <div class="form-group" style="flex:1">
                     <label class="form-label">Base Gold Cost</label>
-                    <input type="number" id="upg_gold" class="form-control" value="${settings.upgrade_settings?.base_gold_cost || 100}" required>
+                    <input type="number" id="upg_gold" class="form-control" value="${n.upgrade_settings?.base_gold_cost||100}" required>
                   </div>
                   <div class="form-group" style="flex:1">
                     <label class="form-label">Base Ore Cost</label>
-                    <input type="number" id="upg_ore" class="form-control" value="${settings.upgrade_settings?.base_ore_cost || 3}" required>
+                    <input type="number" id="upg_ore" class="form-control" value="${n.upgrade_settings?.base_ore_cost||3}" required>
                   </div>
                 </div>
                 <div class="form-group" style="margin-top:10px">
                   <label class="form-label">Allowed Ores (Comma separated IDs)</label>
-                  <input type="text" id="upg_ores" class="form-control" value="${(settings.upgrade_settings?.allowed_ores || []).join(',')}" required>
+                  <input type="text" id="upg_ores" class="form-control" value="${(n.upgrade_settings?.allowed_ores||[]).join(`,`)}" required>
                   <div style="font-size:12px;color:var(--muted);margin-top:6px">ID item material yang bisa dipakai untuk upgrade. Pisahkan dengan koma.</div>
                 </div>
               </div>
@@ -93,43 +82,4 @@ export async function render(container) {
           </div>
         </div>
       </div>
-    `;
-
-    document.getElementById('settingsForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = e.target.querySelector('button');
-      btn.disabled = true;
-      btn.innerHTML = 'Saving...';
-      
-      const payload = {
-        exp_multiplier: parseFloat(document.getElementById('exp_multiplier').value),
-        gold_multiplier: parseFloat(document.getElementById('gold_multiplier').value),
-        drop_rate_multiplier: parseFloat(document.getElementById('drop_rate_multiplier').value),
-        grind_cooldown_minutes: parseInt(document.getElementById('grind_cooldown_minutes').value),
-        daily_reward: {
-          gold: parseInt(document.getElementById('daily_gold').value),
-          xp: parseInt(document.getElementById('daily_xp').value),
-          item: document.getElementById('daily_item').value.trim() || null
-        },
-        upgrade_settings: {
-          base_gold_cost: parseInt(document.getElementById('upg_gold').value),
-          base_ore_cost: parseInt(document.getElementById('upg_ore').value),
-          allowed_ores: document.getElementById('upg_ores').value.split(',').map(s => s.trim()).filter(Boolean)
-        }
-      };
-
-      try {
-        await API.post('/api/settings', payload);
-        window.showToast('Game Settings updated successfully!', 'success');
-      } catch (err) {
-        window.showToast(err.message, 'error');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save Settings`;
-      }
-    });
-
-  } catch (err) {
-    container.innerHTML = `<div class="card"><div class="card-body"><p style="color:var(--red)">Failed to load settings: ${err.message}</p></div></div>`;
-  }
-}
+    `,document.getElementById(`settingsForm`).addEventListener(`submit`,async t=>{t.preventDefault();let n=t.target.querySelector(`button`);n.disabled=!0,n.innerHTML=`Saving...`;let r={exp_multiplier:parseFloat(document.getElementById(`exp_multiplier`).value),gold_multiplier:parseFloat(document.getElementById(`gold_multiplier`).value),drop_rate_multiplier:parseFloat(document.getElementById(`drop_rate_multiplier`).value),grind_cooldown_minutes:parseInt(document.getElementById(`grind_cooldown_minutes`).value),daily_reward:{gold:parseInt(document.getElementById(`daily_gold`).value),xp:parseInt(document.getElementById(`daily_xp`).value),item:document.getElementById(`daily_item`).value.trim()||null},upgrade_settings:{base_gold_cost:parseInt(document.getElementById(`upg_gold`).value),base_ore_cost:parseInt(document.getElementById(`upg_ore`).value),allowed_ores:document.getElementById(`upg_ores`).value.split(`,`).map(e=>e.trim()).filter(Boolean)}};try{await e.post(`/api/settings`,r),window.showToast(`Game Settings updated successfully!`,`success`)}catch(e){window.showToast(e.message,`error`)}finally{n.disabled=!1,n.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save Settings`}})}catch(e){t.innerHTML=`<div class="card"><div class="card-body"><p style="color:var(--red)">Failed to load settings: ${e.message}</p></div></div>`}}n((()=>{t()}))();export{r as render};

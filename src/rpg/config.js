@@ -7,7 +7,17 @@ const DEFAULT_SETTINGS = {
   exp_multiplier: 1.0,
   gold_multiplier: 1.0,
   drop_rate_multiplier: 1.0,
-  grind_cooldown_minutes: 60
+  grind_cooldown_minutes: 60,
+  daily_reward: {
+    gold: 80,
+    xp: 25,
+    item: "ramuan_kecil"
+  },
+  upgrade_settings: {
+    base_gold_cost: 100,
+    base_ore_cost: 3,
+    allowed_ores: ["besi_rongsok", "tembaga", "batu_bara", "besi", "perak", "emas_ore"]
+  }
 };
 
 function getGameSettings() {

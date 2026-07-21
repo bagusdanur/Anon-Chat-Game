@@ -451,18 +451,28 @@ function getSpecialShopConfig() {
       return ctx.reply(`⏳ Hadiah harian sudah diambil! Kembali dalam *${hours}j ${mins}m*.`, { parse_mode: 'Markdown' });
     }
 
-    // Claim daily — balance: 80g + 25xp + 1 ramuan = wajar untuk casual
-    addGold(userId, 80);
-    addXp(userId, 25);
-    addItem(userId, 'ramuan_kecil');
+    const settings = getGameSettings();
+    const dailyConfig = settings.daily_reward;
+    
+    // Claim daily
+    addGold(userId, dailyConfig.gold);
+    addXp(userId, dailyConfig.xp);
+    if (dailyConfig.item) {
+      addItem(userId, dailyConfig.item);
+    }
     db.prepare('UPDATE rpg_users SET last_daily_claim_at = ? WHERE telegram_user_id = ?').run(now, userId.toString());
+
+    let rewardText = `💰 +<b>${dailyConfig.gold}</b> Gold\n✨ +<b>${dailyConfig.xp}</b> XP\n`;
+    if (dailyConfig.item) {
+      const itemData = getCatalogItem(dailyConfig.item);
+      const itemName = itemData ? itemData.display_name : dailyConfig.item.replace(/_/g, ' ');
+      rewardText += `📦 +<b>1</b> ${itemName}\n`;
+    }
 
     ctx.reply(
       `<b>🎁 HADIAH HARIAN!</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `💰 +<b>80</b> Gold\n` +
-      `✨ +<b>25</b> XP\n` +
-      `🧪 +<b>1</b> Ramuan Kecil\n\n` +
+      `${rewardText}\n` +
       `<i>Kembali lagi dalam 20 jam!</i>`,
       { parse_mode: 'HTML' }
     );
@@ -489,12 +499,16 @@ function getSpecialShopConfig() {
 
     const currentTier = invItem.upgrade_tier;
     const nextTier = currentTier + 1;
-    const oreNeeded = nextTier <= 3 ? nextTier * 3 : nextTier * 2;
-    const goldNeeded = nextTier <= 3 ? nextTier * 100 : nextTier * 80;
+    
+    const settings = getGameSettings();
+    const upgConfig = settings.upgrade_settings;
+    
+    const oreNeeded = nextTier <= 3 ? nextTier * upgConfig.base_ore_cost : nextTier * (upgConfig.base_ore_cost - 1);
+    const goldNeeded = nextTier <= 3 ? nextTier * upgConfig.base_gold_cost : nextTier * (upgConfig.base_gold_cost * 0.8);
     const statType = invItem.category === 'weapon' || invItem.category === 'staff' ? 'ATK/Magic' : 'DEF';
 
     // Hitung total ore yang dimiliki
-    const oreTypes = ['besi_rongsok', 'tembaga', 'batu_bara', 'besi', 'perak', 'emas_ore'];
+    const oreTypes = upgConfig.allowed_ores || [];
     let totalOre = 0;
     for (const oreId of oreTypes) {
       const oreItem = getItem(userId, oreId);
@@ -545,9 +559,13 @@ function getSpecialShopConfig() {
     }
 
     const nextTier = currentTier + 1;
-    const oreNeeded = nextTier <= 3 ? nextTier * 3 : nextTier * 2;
-    const goldNeeded = nextTier <= 3 ? nextTier * 100 : nextTier * 80;
-    const oreTypes = ['besi_rongsok', 'tembaga', 'batu_bara', 'besi', 'perak', 'emas_ore'];
+    
+    const settings = getGameSettings();
+    const upgConfig = settings.upgrade_settings;
+    
+    const oreNeeded = nextTier <= 3 ? nextTier * upgConfig.base_ore_cost : nextTier * (upgConfig.base_ore_cost - 1);
+    const goldNeeded = nextTier <= 3 ? nextTier * upgConfig.base_gold_cost : nextTier * (upgConfig.base_gold_cost * 0.8);
+    const oreTypes = upgConfig.allowed_ores || [];
     let totalOre = 0;
     for (const oreId of oreTypes) {
       const oreItem = getItem(userId, oreId);
