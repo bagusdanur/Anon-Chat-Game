@@ -136,7 +136,8 @@ const HELP_PAGES = [
       `  /sell [item/no]   — Jual item\n` +
       `  /use [item/no]    — Pakai item\n` +
       `  /craft            — Craft equipment\n` +
-      `  /give [jumlah]    — Kirim gold (pajak 5%)\n\n` +
+      `  /give gold [jumlah]  — Kirim gold (pajak 5%)
+  /give item [nomor]  — Kirim item (pajak 0%)\n\n` +
       `<b>🌟 Rarity:</b>\n` +
       `  ⚪ Common → 🟢 Uncommon → 🔵 Rare\n` +
       `  🟣 Epic → 🟠 Legendary\n\n` +
