@@ -215,26 +215,45 @@ function resolveTurn(raid, actions) {
 // ===== SEND COMBAT UI =====
 function sendCombatUI(bot, raid, extraLogs = []) {
   const { chatIdA, chatIdB, pairKey, boss, players, turnNumber } = raid;
-  const allLogs = [...extraLogs, ...raid.pendingLogs].join('\n');
+  const allLogs = [...extraLogs, ...raid.pendingLogs];
   raid.pendingLogs = [];
 
-  let msg = `⚔️ <b>RAID: ${boss.name}</b> ⚔️\n\n`;
-  msg += `👹 <b>${boss.name}</b>: ${renderHpBar(boss.hp, boss.maxHp, 10)}`;
-  msg += `\n🛡️ Phys Res: ${Math.round((boss.physResist||0)*100)}% | 🔮 Magic Res: ${Math.round((boss.magicResist||0)*100)}%\n\n`;
+  // === HEADER ===
+  let msg = `━━━━━━━━━━━━━━━━━━━━\n`;
+  msg += `⚔️ <b>TURN ${turnNumber}</b> — ${boss.name}\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-  msg += `🛡️ <b>PARTY STATUS:</b>\n`;
+  // === BOSS STATUS ===
+  msg += `👹 <b>${boss.name}</b>\n`;
+  msg += `${renderHpBar(boss.hp, boss.maxHp, 12)}\n`;
+  msg += `🛡️ Phys ${Math.round((boss.physResist||0)*100)}% | 🔮 Magic ${Math.round((boss.magicResist||0)*100)}%\n\n`;
+
+  // === PARTY STATUS ===
+  msg += `👥 <b>PARTY:</b>\n`;
   for (const [uid, p] of Object.entries(players)) {
     if (p.alive) {
       const cls = CLASS_DEFS[p.classId];
       const dmgType = cls.damageType === 'magic' ? '🔮' : '⚔️';
       const critPct = Math.round((p.critRate || 0.05) * 100);
-      msg += `${p.icon} ${p.className} ${dmgType} ${renderHpBar(p.hp, p.maxHp, 6)} (CD: ${p.skillCooldown} | Crit: ${critPct}%)\n`;
+      msg += `${p.icon} <b>${p.className}</b> ${dmgType}\n`;
+      msg += `   ${renderHpBar(p.hp, p.maxHp, 8)}\n`;
+      msg += `   ⚡ CD: ${p.skillCooldown} | 💥 Crit: ${critPct}%\n`;
     } else {
-      msg += `${p.icon} ${p.className}: 💀 Tumbang\n`;
+      msg += `${p.icon} <b>${p.className}</b>: 💀 Tumbang\n`;
     }
   }
 
-  if (allLogs) msg += `\n📝 <b>LOG:</b>\n${allLogs}\n`;
+  // === TURN LOG ===
+  if (allLogs.length > 0) {
+    msg += `\n━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `📝 <b>TURN LOG:</b>\n`;
+    allLogs.forEach((log, i) => {
+      const prefix = i === allLogs.length - 1 ? '└─' : '├─';
+      msg += `${prefix} ${log}\n`;
+    });
+  }
+
+  msg += `━━━━━━━━━━━━━━━━━━━━`;
 
   const buttons = [
     [Markup.button.callback('🗡️ Serang', `raid:${pairKey}:${turnNumber}:attack`)],
@@ -247,7 +266,7 @@ function sendCombatUI(bot, raid, extraLogs = []) {
   const sendToPlayer = (chatId) => {
     const p = players[chatId];
     if (p && p.alive) {
-      bot.telegram.sendMessage(chatId, msg + `\n_Pilih aksi Turn ${turnNumber}:_`, {
+      bot.telegram.sendMessage(chatId, msg + `\n\n_Pilih aksi Turn ${turnNumber}:_`, {
         parse_mode: 'HTML',
         ...Markup.inlineKeyboard(buttons)
       }).catch(() => {});
@@ -307,9 +326,16 @@ function checkRaidResolve(bot, pairKey) {
     const levelUpB = xpResultB.leveled && xpResultB.leveled.length > 0 ? `\n🎉 <b>${players[chatIdB].className} LEVEL UP!</b> → Lv <b>${xpResultB.newLevel}</b>!` : '';
 
     const winMsgBase =
-      logs.join('\n') + `\n\n🎉 <b>BOSS DIKALAHKAN!</b>\n` +
-      `✨ +${xpReward} XP | 💰 +${goldReward}g untuk KEDUA pemain!\n` +
-      `🟠 Drop Legendary: <b>${raid.boss.legendaryDrop.replace(/_/g, ' ')}</b> → ${players[lootWinner].className}!`;
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `🎉 <b>VICTORY!</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `👹 <b>${raid.boss.name}</b> — <b>DEFEATED!</b>\n\n` +
+      logs.join('\n') + `\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `✨ +<b>${xpReward}</b> XP | 💰 +<b>${goldReward}g</b> untuk KEDUA pemain!\n\n` +
+      `🎁 <b>LEGENDARY DROP:</b>\n` +
+      `🟠 <b>${raid.boss.legendaryDrop.replace(/_/g, ' ')}</b> → ${players[lootWinner].className}!` +
+      `\n━━━━━━━━━━━━━━━━━━━━`;
 
     bot.telegram.sendMessage(chatIdA, winMsgBase + levelUpA, { parse_mode: 'HTML' }).catch(() => {});
     bot.telegram.sendMessage(chatIdB, winMsgBase + levelUpB, { parse_mode: 'HTML' }).catch(() => {});
@@ -330,8 +356,15 @@ function checkRaidResolve(bot, pairKey) {
     raidSessions.delete(pairKey);
 
     const loseMsg =
-      logs.join('\n') + `\n\n💀 <b>PARTY TUMBANG...</b>\n` +
-      `HP kalian dipulihkan ke 20% max HP.\nCooldown dungeon 10 menit, setelah itu bisa raid lagi!`;
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `💀 <b>DEFEATED</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      logs.join('\n') + `\n\n` +
+      `Party tumbang melawan <b>${raid.boss.name}</b>.\n\n` +
+      `❤️ HP dipulihkan ke 20%\n` +
+      `⏳ Cooldown dungeon 10 menit, setelah itu bisa raid lagi!\n\n` +
+      `💡 <i>Gunakan /heal sebelum raid untuk persiapan</i>` +
+      `\n━━━━━━━━━━━━━━━━━━━━`;
     bot.telegram.sendMessage(chatIdA, loseMsg, { parse_mode: 'HTML' }).catch(() => {});
     bot.telegram.sendMessage(chatIdB, loseMsg, { parse_mode: 'HTML' }).catch(() => {});
     return;
