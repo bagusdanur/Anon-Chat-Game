@@ -23,46 +23,98 @@ export async function render(container) {
 
 export function cleanup() {}
 
+let allItems = [];
+
 async function load(container) {
   const el = document.getElementById('items-table');
   if (!el) return;
   el.innerHTML = skeletonRows(6);
   try {
-    const items = await API.get('/api/items');
-    container.querySelector('.card-title').innerHTML = `${ic('package')} Items Catalog (${items.length})`;
+    allItems = await API.get('/api/items');
+    container.querySelector('.card-title').innerHTML = `${ic('package')} Items Catalog (${allItems.length})`;
 
-    if (!items.length) {
+    if (!allItems.length) {
       el.innerHTML = `<div class="empty-state">${ic48('package')}<p>Belum ada item</p></div>`;
       return;
     }
 
-    const catBadge = c => c === 'weapon' ? 'badge-red' : c === 'armor' ? 'badge-blue' : c === 'staff' ? 'badge-accent' : c === 'consumable' ? 'badge-green' : 'badge-gray';
-    const rarBadge = r => r === 'legendary' ? 'badge-orange' : r === 'epic' ? 'badge-accent' : r === 'rare' ? 'badge-blue' : r === 'uncommon' ? 'badge-green' : 'badge-gray';
-
-    const rows = items.map(i => `
-      <tr>
-        <td><code style="color:var(--accent);font-size:12px">${i.item_id}</code></td>
-        <td><strong>${i.display_name}</strong></td>
-        <td><span class="badge ${catBadge(i.category)}">${i.category}</span></td>
-        <td><span class="badge ${rarBadge(i.rarity)}">${i.rarity}</span></td>
-        <td>${i.sell_price}g</td>
-        <td>
-          <button class="btn btn-danger btn-sm" data-del="${i.item_id}">${ic('trash-2')}</button>
-        </td>
-      </tr>`).join('');
-
-    el.innerHTML = `<div class="table-wrap"><table>
-      <thead><tr><th>Item ID</th><th>Nama</th><th>Kategori</th><th>Rarity</th><th>Harga</th><th>Aksi</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table></div>`;
-
-    el.querySelectorAll('[data-del]').forEach(btn => {
-      btn.onclick = () => confirm(`Hapus item <code>${btn.dataset.del}</code>?`, async () => {
-        await API.del(`/api/items/${btn.dataset.del}`);
-        toast('Item dihapus'); load(container);
+    const filterUI = `
+      <div class="form-row" style="background:var(--surface-2);border-bottom:2px solid var(--border-dark)">
+        <input type="text" id="filter-search" class="form-control" placeholder="Cari nama/ID item..." style="flex:2">
+        <select id="filter-cat" class="form-control" style="flex:1">
+          <option value="">Semua Kategori</option>
+          <option value="consumable">Consumable</option>
+          <option value="material">Material</option>
+          <option value="weapon">Weapon</option>
+          <option value="staff">Staff</option>
+          <option value="armor">Armor</option>
+          <option value="accessory">Accessory</option>
+        </select>
+        <select id="filter-rarity" class="form-control" style="flex:1">
+          <option value="">Semua Rarity</option>
+          <option value="common">Common</option>
+          <option value="uncommon">Uncommon</option>
+          <option value="rare">Rare</option>
+          <option value="epic">Epic</option>
+          <option value="legendary">Legendary</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Item ID</th><th>Nama</th><th>Kategori</th><th>Rarity</th><th>Harga</th><th>Aksi</th></tr></thead>
+          <tbody id="items-tbody"></tbody>
+        </table>
+      </div>
+    `;
+    
+    el.innerHTML = filterUI;
+    
+    const searchInput = document.getElementById('filter-search');
+    const catSelect = document.getElementById('filter-cat');
+    const raritySelect = document.getElementById('filter-rarity');
+    
+    const renderTable = () => {
+      const q = searchInput.value.toLowerCase();
+      const c = catSelect.value;
+      const r = raritySelect.value;
+      
+      const filtered = allItems.filter(i => {
+        if (q && !i.item_id.toLowerCase().includes(q) && !i.display_name.toLowerCase().includes(q)) return false;
+        if (c && i.category !== c) return false;
+        if (r && i.rarity !== r) return false;
+        return true;
       });
-    });
-    if (window.lucide) lucide.createIcons({ scope: container });
+      
+      const catBadge = cat => cat === 'weapon' ? 'badge-red' : cat === 'armor' ? 'badge-blue' : cat === 'staff' ? 'badge-accent' : cat === 'consumable' ? 'badge-green' : 'badge-gray';
+      const rarBadge = rar => rar === 'legendary' ? 'badge-orange' : rar === 'epic' ? 'badge-accent' : rar === 'rare' ? 'badge-blue' : rar === 'uncommon' ? 'badge-green' : 'badge-gray';
+      
+      document.getElementById('items-tbody').innerHTML = filtered.map(i => `
+        <tr>
+          <td><code style="color:var(--accent);font-size:12px">${i.item_id}</code></td>
+          <td><strong>${i.display_name}</strong></td>
+          <td><span class="badge ${catBadge(i.category)}">${i.category}</span></td>
+          <td><span class="badge ${rarBadge(i.rarity)}">${i.rarity}</span></td>
+          <td>${i.sell_price}g</td>
+          <td>
+            <button class="btn btn-danger btn-sm" data-del="${i.item_id}">${ic('trash-2')}</button>
+          </td>
+        </tr>`).join('');
+        
+      document.querySelectorAll('#items-tbody [data-del]').forEach(btn => {
+        btn.onclick = () => confirm(`Hapus item <code>${btn.dataset.del}</code>?`, async () => {
+          await API.del(`/api/items/${btn.dataset.del}`);
+          toast('Item dihapus'); load(container);
+        });
+      });
+      if (window.lucide) lucide.createIcons({ scope: document.getElementById('items-tbody') });
+    };
+
+    searchInput.oninput = renderTable;
+    catSelect.onchange = renderTable;
+    raritySelect.onchange = renderTable;
+    
+    renderTable(); // initial render
+
   } catch(e) {
     el.innerHTML = `<div class="card-body" style="color:var(--red)">Gagal: ${e.message}</div>`;
   }
