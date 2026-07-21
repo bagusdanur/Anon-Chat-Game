@@ -707,7 +707,7 @@ const botCommands = [
   { command: 'sell',     description: '💰 Jual item' },
   { command: 'use',      description: '🧪 Pakai item' },
   { command: 'daily',    description: '🎁 Hadiah harian' },
-  { command: 'give',     description: '💰 Kirim gold ke partner' },
+  { command: 'give',     description: '💰 Kirim gold/item ke partner' },
   { command: 'trade',    description: '📦 Kirim item ke partner' },
 ];
 
