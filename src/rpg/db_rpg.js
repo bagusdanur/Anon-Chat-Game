@@ -216,7 +216,6 @@ const SEED_ITEMS = [
   { item_id: 'kalung_naga',     display_name: '🐉 Kalung Naga',     category: 'accessory', rarity: 'legendary', sell_price: 0, effect_json: JSON.stringify({ atk_bonus: 4, magic_atk_bonus: 4, crit_rate: 0.10, phys_resist: 0.05 }) },
   // shop exclusives (bisa dibeli langsung)
   { item_id: 'ramuan_energi',    display_name: '⚡ Ramuan Energi',    category: 'consumable', rarity: 'uncommon', sell_price: 30, effect_json: JSON.stringify({ energy_restore: 3 }) },
-  { item_id: 'amulet_pertahanan',display_name:'🛡️ Amulet Pertahanan',category: 'accessory', rarity: 'rare',    sell_price: 80, effect_json: JSON.stringify({ def_bonus: 3, phys_resist: 0.05, magic_resist: 0.05 }) },
   // SPECIAL SHOP (Lv20+, gold sink)
   { item_id: 'ramuan_kehidupan',  display_name: '💖 Ramuan Kehidupan',  category: 'consumable', rarity: 'epic',     sell_price: 100, effect_json: JSON.stringify({ heal_pct: 80 }) },
   { item_id: 'ramuan_energi_besars', display_name: '⚡ Ramuan Energi Besar', category: 'consumable', rarity: 'epic', sell_price: 150, effect_json: JSON.stringify({ energy_restore: 10 }) },
