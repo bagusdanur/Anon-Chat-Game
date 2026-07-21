@@ -40,11 +40,11 @@ perlu di-refactor untuk mendukung fitur baru:
 2. Ada mekanisme dasar untuk mencegah penyalahgunaan (spam, konten ilegal, harassment).
 3. Bot bisa di-deploy ke server produksi dengan webhook, bukan polling.
 4. Kode tetap simpel dan mudah dirawat — hindari over-engineering untuk skala kecil-menengah (ratusan–ribuan user aktif).
+5. Menyediakan web dashboard untuk mempermudah operasional admin (Manajemen laporan, user, dan statistik).
 
 ### Non-Tujuan (di luar scope versi ini)
 - Fitur matching berbasis minat/lokasi/gender (bisa jadi fase berikutnya)
 - Voice/video call langsung di dalam bot
-- Aplikasi web/dashboard admin dengan UI (cukup command admin via Telegram dulu)
 - Monetisasi (ads, premium tier)
 
 ## 4. User Stories
@@ -128,6 +128,16 @@ fitur baseline yang sudah jalan.
 - User bisa set preferensi bahasa (`/lang id` / `/lang en`) sebelum `/search`,
   dan matching mengutamakan partner dengan preferensi bahasa sama (fallback
   ke siapa saja kalau tidak ada yang cocok dalam waktu tertentu).
+
+### P3 — Admin Web Dashboard (Ekspansi)
+
+**5.9 Web Dashboard Dasar**
+- Membangun server web internal (misal dengan Express.js + EJS untuk render server-side sederhana agar tidak over-engineering).
+- **Autentikasi**: Wajib ada sistem login sederhana menggunakan username dan password untuk admin.
+- **Statistik**: Menampilkan data real-time jumlah user, antrean, dan chat aktif.
+- **Manajemen Report & User**: UI berupa tabel untuk melihat user yang dilaporkan, dengan tombol klik cepat untuk `Ban` atau `Unban` tanpa perlu copy-paste command di Telegram.
+- **Broadcast**: Form untuk admin mengirim pengumuman ke semua user aktif.
+- **Privasi**: Dashboard dilarang keras menampilkan isi chat atau detail pribadi user.
 
 ## 6. Technical Constraints
 

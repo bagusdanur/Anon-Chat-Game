@@ -2,6 +2,7 @@
 // Definisi class RPG yang AKTIF dipakai ada di src/rpg/db_rpg.js (CLASS_DEFS).
 // Jangan hapus dulu kalau ingin dijadikan referensi desain awal, tapi jangan edit.
 
+const classes = {
   ksatria: {
     name: 'Ksatria',
     icon: '⚔️',

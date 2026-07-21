@@ -18,9 +18,18 @@ function checkAuth(req) {
   return password === PASSWORD;
 }
 
-// Static files — serve login page TANPA auth
+// Static files — serve dist if exists, else dashboard
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'dashboard')));
+const staticDir = fs.existsSync(path.join(__dirname, 'dist')) ? 'dist' : 'dashboard';
+app.use(express.static(path.join(__dirname, staticDir)));
+
+// Basic Security Headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
 
 // Auth middleware
 function auth(req, res, next) {
@@ -316,9 +325,9 @@ app.get('/api/backup', auth, (req, res) => {
   res.download(dbPath, `bot-backup-${new Date().toISOString().slice(0,10)}.db`);
 });
 
-// Fallback
+// Fallback for SPA routing
 app.get('/{*splat}', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dashboard', 'index.html'));
+  res.sendFile(path.join(__dirname, staticDir, 'index.html'));
 });
 
 app.listen(PORT, () => {

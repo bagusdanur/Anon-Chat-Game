@@ -48,6 +48,16 @@ belum lulus acceptance criteria di PRD §8.
 - [x] Command `/lang id` / `/lang en`, simpan preferensi ke tabel `users`
 - [x] Prioritaskan pairing dengan preferensi bahasa sama, fallback ke siapa saja setelah timeout tertentu
 
+## P3.1 — Admin Web Dashboard (Ekspansi)
+- [ ] Install library tambahan (`express`, `ejs`, `express-session` untuk autentikasi)
+- [ ] Buat file `src/dashboard/server.js` untuk setup server Express
+- [ ] Buat rute login (`/login`) dengan hardcoded kredensial dari `.env` (`DASHBOARD_USER`, `DASHBOARD_PASS`)
+- [ ] Buat halaman utama (`/`) untuk menampilkan statistik (total user, antrian, chat aktif)
+- [ ] Buat halaman moderasi (`/reports`) untuk melihat daftar user yang dilaporkan dari database SQLite
+- [ ] Tambahkan tombol/API endpoint di dashboard untuk melakukan Ban/Unban via UI
+- [ ] Buat halaman broadcast (`/broadcast`) untuk kirim pesan massal
+- [ ] Pastikan akses dashboard diamankan middleware autentikasi dan tidak ada data privasi (chat) terekspos
+
 ## Definition of Done (semua task)
 - [x] Command baseline (`/start /search /stop /next`) tetap berjalan normal
 - [x] `README.md` diperbarui kalau ada command/env var baru
