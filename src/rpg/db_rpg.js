@@ -322,12 +322,12 @@ function spendEnergy(userId, cost) {
   return true;
 }
 
-// Lazy regen HP (+10% max_hp per 10 menit)
+// Lazy regen HP (+15% max_hp per 5 menit — lebih cepat untuk anon chat)
 function getCurrentHp(user) {
   const now = Math.floor(Date.now() / 1000);
   const elapsedMin = Math.floor((now - user.updated_at) / 60);
-  const regenTicks = Math.floor(elapsedMin / 10);
-  const regenAmount = Math.floor(user.max_hp * 0.1) * regenTicks;
+  const regenTicks = Math.floor(elapsedMin / 5);
+  const regenAmount = Math.floor(user.max_hp * 0.15) * regenTicks;
   return Math.min(user.max_hp, user.hp + regenAmount);
 }
 

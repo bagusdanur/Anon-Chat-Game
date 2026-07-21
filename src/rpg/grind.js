@@ -120,7 +120,7 @@ function setupGrind(bot, { rateLimitCommand }) {
       return ctx.reply(
         `❤️ <b>HP habis!</b>\n\n` +
         `Pakai /inv → /use ramuan untuk pulih\n` +
-        `atau tunggu regen otomatis (+10% per 10 menit)`,
+        `atau tunggu regen otomatis (+15% per 5 menit)`,
         { parse_mode: 'HTML' }
       );
     }

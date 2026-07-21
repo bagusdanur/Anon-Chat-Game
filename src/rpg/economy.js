@@ -116,6 +116,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
 
     let msg = `🛒 <b>TOKO (SHOP)</b>\n`;
+    msg += `💰 Saldo: <b>${user.gold}g</b>\n`;
     msg += `<i>Beli item dengan gold. Ketik /buy &lt;ID/Nama&gt;</i>\n\n`;
 
     const shopItems = getShopConfig();
