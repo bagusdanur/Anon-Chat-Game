@@ -130,6 +130,8 @@ try { db.exec('ALTER TABLE rpg_users ADD COLUMN win_streak INTEGER DEFAULT 0'); 
 try { db.exec('ALTER TABLE rpg_inventory ADD COLUMN equipped BOOLEAN DEFAULT 0'); } catch(e) {}
 // BUG-01 FIX: last_duel_at dibutuhkan oleh getDuelCooldown() tapi tidak ada di schema awal
 try { db.exec('ALTER TABLE rpg_users ADD COLUMN last_duel_at INTEGER DEFAULT NULL'); } catch(e) {}
+try { db.exec('ALTER TABLE rpg_users ADD COLUMN last_dungeon_at INTEGER DEFAULT NULL'); } catch(e) {}
+try { db.exec('ALTER TABLE rpg_users ADD COLUMN last_daily_claim_at INTEGER DEFAULT NULL'); } catch(e) {}
 
 // ===== MIGRATE CLASS CONSTRAINT =====
 // Hapus CHECK constraint agar bisa tambah custom class dari dashboard
