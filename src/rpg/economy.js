@@ -659,12 +659,19 @@ function getSpecialShopConfig() {
       if (!partner) return ctx.reply('❌ Partnermu belum punya karakter RPG.');
 
       // Resolve item (support numeric ID atau string)
+      // Pakai invCache yang sama dengan /inv agar urutan konsisten
       let itemId;
       const inputNum = parseInt(itemInput);
       if (!isNaN(inputNum) && inputNum > 0) {
-        const items = getInventory(userId);
-        const item = items[inputNum - 1];
-        itemId = item ? item.item_id : null;
+        const cache = invCache.get(userId.toString());
+        if (cache && cache[inputNum - 1]) {
+          itemId = cache[inputNum - 1];
+        } else {
+          // Fallback: gunakan urutan dari getInventory
+          const items = getInventory(userId);
+          const item = items[inputNum - 1];
+          itemId = item ? item.item_id : null;
+        }
       } else {
         itemId = itemInput.toLowerCase();
       }
