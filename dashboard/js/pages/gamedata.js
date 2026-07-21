@@ -68,52 +68,60 @@ export async function render(container) {
       } else {
         // FORM MODE
         const keys = Object.keys(config.data);
-        if (keys.length !== 1 || !Array.isArray(config.data[keys[0]])) {
-          return headerHtml + `<div class="card"><div class="card-body">Struktur data ini kompleks. Silakan gunakan <b>JSON Mode</b>.</div></div>`;
-        }
         
-        const mainKey = keys[0];
-        const arrayData = config.data[mainKey] || [];
+        let formHtml = `<div class="card" style="background:transparent;border:none"><div class="card-body" style="padding:0"><div id="formEditorContainer" style="display:flex;flex-direction:column;gap:30px;">`;
         
-        let formHtml = `<div class="card" style="background:transparent;border:none"><div class="card-body" style="padding:0"><div id="formEditorContainer" style="display:flex;flex-direction:column;gap:15px;">`;
-        
-        arrayData.forEach((item, index) => {
-          formHtml += `<div class="card" style="border:2px solid var(--border); box-shadow:none">
-            <div class="card-header" style="display:flex;justify-content:space-between;padding:10px 15px;">
-              <strong>Item #${index + 1}</strong>
-              <button class="btn btn-danger btn-sm remove-item-btn" data-index="${index}"><i data-lucide="trash-2"></i></button>
-            </div>
-            <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">`;
-            
-          for (const [k, v] of Object.entries(item)) {
-            const valType = typeof v;
-            if (v !== null && valType === 'object') {
-              formHtml += `<div class="form-group" style="grid-column: span 2">
-                <label class="form-label">${k} <span style="color:var(--muted);font-weight:normal">(JSON Object/Array)</span></label>
-                <textarea class="form-control form-field-input" data-index="${index}" data-key="${k}" data-type="object" style="font-family:monospace" rows="3">${JSON.stringify(v)}</textarea>
-              </div>`;
-            } else if (valType === 'boolean') {
-               formHtml += `<div class="form-group">
-                <label class="form-label">${k}</label>
-                <select class="form-control form-field-input" data-index="${index}" data-key="${k}" data-type="boolean">
-                  <option value="true" ${v === true ? 'selected' : ''}>True</option>
-                  <option value="false" ${v === false ? 'selected' : ''}>False</option>
-                </select>
-              </div>`;
-            } else {
-              formHtml += `<div class="form-group">
-                <label class="form-label">${k}</label>
-                <input type="${valType === 'number' ? 'number' : 'text'}" class="form-control form-field-input" data-index="${index}" data-key="${k}" data-type="${valType}" value="${v !== null ? v : ''}">
-              </div>`;
+        keys.forEach(mainKey => {
+          const arrayData = config.data[mainKey];
+          if (!Array.isArray(arrayData)) return; // Skip non-arrays
+          
+          formHtml += `<div style="padding:15px; background:var(--bg); border:1px solid var(--border); border-radius:8px;">`;
+          formHtml += `<h4 style="margin-top:0;margin-bottom:15px;color:var(--primary);text-transform:capitalize;">${mainKey.replace(/_/g, ' ')}</h4>`;
+          formHtml += `<div style="display:flex;flex-direction:column;gap:15px;">`;
+
+          arrayData.forEach((item, index) => {
+            formHtml += `<div class="card" style="border:2px solid var(--border); box-shadow:none">
+              <div class="card-header" style="display:flex;justify-content:space-between;padding:10px 15px;">
+                <strong>Item #${index + 1}</strong>
+                <button class="btn btn-danger btn-sm remove-item-btn" data-key="${mainKey}" data-index="${index}"><i data-lucide="trash-2"></i></button>
+              </div>
+              <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">`;
+              
+            for (const [k, v] of Object.entries(item)) {
+              const valType = typeof v;
+              if (v !== null && valType === 'object') {
+                formHtml += `<div class="form-group" style="grid-column: span 2">
+                  <label class="form-label">${k} <span style="color:var(--muted);font-weight:normal">(JSON Object/Array)</span></label>
+                  <textarea class="form-control form-field-input" data-main="${mainKey}" data-index="${index}" data-key="${k}" data-type="object" style="font-family:monospace" rows="3">${JSON.stringify(v)}</textarea>
+                </div>`;
+              } else if (valType === 'boolean') {
+                 formHtml += `<div class="form-group">
+                  <label class="form-label">${k}</label>
+                  <select class="form-control form-field-input" data-main="${mainKey}" data-index="${index}" data-key="${k}" data-type="boolean">
+                    <option value="true" ${v === true ? 'selected' : ''}>True</option>
+                    <option value="false" ${v === false ? 'selected' : ''}>False</option>
+                  </select>
+                </div>`;
+              } else {
+                formHtml += `<div class="form-group">
+                  <label class="form-label">${k}</label>
+                  <input type="${valType === 'number' ? 'number' : 'text'}" class="form-control form-field-input" data-main="${mainKey}" data-index="${index}" data-key="${k}" data-type="${valType}" value="${v !== null ? v : ''}">
+                </div>`;
+              }
             }
-          }
-          formHtml += `</div></div>`;
+            formHtml += `</div></div>`;
+          });
+          
+          formHtml += `</div>
+            <div style="margin-top:15px;display:flex;gap:10px;">
+              <button class="btn btn-outline add-form-btn" data-key="${mainKey}"><i data-lucide="plus"></i> Tambah Item ${mainKey}</button>
+            </div>
+          </div>`;
         });
         
         formHtml += `</div>
-          <div style="margin-top:15px;display:flex;gap:10px;">
-            <button id="addFormBtn" class="btn btn-outline"><i data-lucide="plus"></i> Tambah Item Baru</button>
-            <button id="saveFormBtn" class="btn btn-primary"><i data-lucide="save"></i> Save ${config.title}</button>
+          <div style="margin-top:20px;display:flex;gap:10px;">
+            <button id="saveFormBtn" class="btn btn-primary btn-lg"><i data-lucide="save"></i> Save ${config.title}</button>
           </div>
           <div id="formErrorMsg" style="color:var(--red);margin-top:10px;font-size:14px;font-weight:bold;display:none;"></div>
         </div></div>`;
@@ -207,9 +215,6 @@ export async function render(container) {
       } 
       // FORM MODE BINDINGS
       else {
-        const mainKey = Object.keys(configs[activeTab].data)[0];
-        const arrayData = configs[activeTab].data[mainKey];
-
         const saveFormBtn = document.getElementById('saveFormBtn');
         if (saveFormBtn) {
           saveFormBtn.addEventListener('click', async (e) => {
@@ -217,17 +222,23 @@ export async function render(container) {
             const errDiv = document.getElementById('formErrorMsg');
             errDiv.style.display = 'none';
             
-            // Reconstruct arrayData from DOM
-            const newArray = [];
+            // Clone the existing data structure
+            const payload = JSON.parse(JSON.stringify(configs[activeTab].data));
+            Object.keys(payload).forEach(k => {
+              if (Array.isArray(payload[k])) payload[k] = []; // Clear array for rebuild
+            });
+            
             const inputs = document.querySelectorAll('.form-field-input');
             let hasError = false;
 
             inputs.forEach(input => {
+              const main = input.dataset.main;
               const idx = parseInt(input.dataset.index);
               const key = input.dataset.key;
               const type = input.dataset.type;
               
-              if (!newArray[idx]) newArray[idx] = {};
+              if (!payload[main]) payload[main] = [];
+              if (!payload[main][idx]) payload[main][idx] = {};
               
               let val = input.value;
               
@@ -243,18 +254,16 @@ export async function render(container) {
                     val = JSON.parse(val);
                   } catch(err) {
                     hasError = true;
-                    errDiv.textContent = "Invalid JSON in Item #" + (idx + 1) + ", field '" + key + "': " + err.message;
+                    errDiv.textContent = "Invalid JSON in " + main + " Item #" + (idx + 1) + ", field '" + key + "': " + err.message;
                     errDiv.style.display = 'block';
                   }
                 }
               }
               
-              newArray[idx][key] = val;
+              payload[main][idx][key] = val;
             });
 
             if (hasError) return;
-
-            const payload = { ...configs[activeTab].data, [mainKey]: newArray };
 
             btn.disabled = true;
             btn.innerHTML = 'Saving...';
@@ -274,23 +283,26 @@ export async function render(container) {
           });
         }
 
-        const addBtn = document.getElementById('addFormBtn');
-        if (addBtn) {
-          addBtn.addEventListener('click', () => {
+        container.querySelectorAll('.add-form-btn').forEach(addBtn => {
+          addBtn.addEventListener('click', (e) => {
+            const mainKey = e.currentTarget.dataset.key;
+            const arrayData = configs[activeTab].data[mainKey];
+
             // Reconstruct current DOM state before appending so we don't lose unsaved typing
             const inputs = document.querySelectorAll('.form-field-input');
             inputs.forEach(input => {
+              const main = input.dataset.main;
               const idx = parseInt(input.dataset.index);
               const key = input.dataset.key;
               let val = input.value;
               if (input.dataset.type === 'object') {
-                try { val = JSON.parse(val); } catch(e) {}
+                try { val = JSON.parse(val); } catch(err) {}
               } else if (input.dataset.type === 'number') {
                  val = Number(val);
               } else if (input.dataset.type === 'boolean') {
                  val = val === 'true';
               }
-              if (arrayData[idx]) arrayData[idx][key] = val;
+              if (configs[activeTab].data[main][idx]) configs[activeTab].data[main][idx][key] = val;
             });
 
             // Create new template item based on the first item keys
@@ -308,13 +320,14 @@ export async function render(container) {
             arrayData.push(template);
             mountUI();
           });
-        }
+        });
 
         container.querySelectorAll('.remove-item-btn').forEach(btn => {
           btn.addEventListener('click', (e) => {
             if (!confirm('Hapus item ini?')) return;
+            const mainKey = e.currentTarget.dataset.key;
             const idx = parseInt(e.currentTarget.dataset.index);
-            arrayData.splice(idx, 1);
+            configs[activeTab].data[mainKey].splice(idx, 1);
             mountUI();
           });
         });
