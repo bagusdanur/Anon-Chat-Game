@@ -33,7 +33,7 @@ const {
 const { rateLimitMessage, rateLimitCommand, rateLimitSearch } = require('./src/middleware/rateLimit');
 const { containsBadWord } = require('./src/moderation/wordFilter');
 const { getRandomTopic } = require('./src/icebreakers');
-const { setupRpg, clearRaidSession } = require('./src/rpg/controller');
+const { setupRpg, clearRaidSession, resolveInvInput } = require('./src/rpg/controller');
 const { progressBar } = require('./src/format');
 const { CLASS_DEFS, xpToNextLevel, getCurrentHp, getCurrentEnergy, getEquipmentBonus, getInventory, getOrCreateUser, getEquippedBonus, getEquipped, equipItem, unequipSlot, CLASS_EQUIP_SLOTS } = require('./src/rpg/db_rpg');
 const { RARITY_EMOJI } = require('./src/rpg/profile');
@@ -580,14 +580,9 @@ bot.command('equip', rateLimitCommand, (ctx) => {
 
   // Support numeric ID (dari /inv) atau item_id string
   let invItem;
-  const inputNum = parseInt(input);
-  if (!isNaN(inputNum) && inputNum > 0) {
-    // Numeric ID — resolve dari inventory
-    const items = getInventory(userId);
-    invItem = items[inputNum - 1]; // 1-indexed
-  } else {
-    // String — cari berdasarkan item_id
-    invItem = getInventory(userId).find(i => i.item_id === input);
+  const resolvedId = resolveInvInput(userId, input);
+  if (resolvedId) {
+    invItem = getInventory(userId).find(i => i.item_id === resolvedId);
   }
   if (!invItem) return ctx.reply(`❌ Item "<code>${input}</code>" tidak ada di inventory.\nKetik /inv untuk lihat nomor item.`, { parse_mode: 'HTML' });
   const result = equipItem(userId, invItem.item_id);

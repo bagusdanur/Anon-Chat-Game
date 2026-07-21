@@ -4,7 +4,7 @@
 
 const { setupProfile } = require('./profile');
 const { setupGrind } = require('./grind');
-const { setupEconomy } = require('./economy');
+const { setupEconomy, resolveInvInput } = require('./economy');
 const { setupCoop, clearRaidSession } = require('./coop');
 const { setupHelp } = require('./help');
 const { setupDuel } = require('./duel');
@@ -29,4 +29,4 @@ function setupRpg(bot, { getPartnerId, rateLimitCommand }) {
   setupHelp(bot, { rateLimitCommand });
 }
 
-module.exports = { setupRpg, clearRaidSession };
+module.exports = { setupRpg, clearRaidSession, resolveInvInput };

@@ -825,7 +825,7 @@ function getSpecialShopConfig() {
 }
 
 const SHOP_ITEMS = getShopConfig();
-module.exports = { setupEconomy, SHOP_ITEMS };
+module.exports = { setupEconomy, SHOP_ITEMS, resolveInvInput };
 
 
 
