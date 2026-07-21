@@ -578,8 +578,18 @@ bot.command('equip', rateLimitCommand, (ctx) => {
     return ctx.reply(msg, { parse_mode: 'HTML' });
   }
 
-  const invItem = getInventory(userId).find(i => i.item_id === input);
-  if (!invItem) return ctx.reply(`❌ Item "<code>${input}</code>" tidak ada di inventory.`, { parse_mode: 'HTML' });
+  // Support numeric ID (dari /inv) atau item_id string
+  let invItem;
+  const inputNum = parseInt(input);
+  if (!isNaN(inputNum) && inputNum > 0) {
+    // Numeric ID — resolve dari inventory
+    const items = getInventory(userId);
+    invItem = items[inputNum - 1]; // 1-indexed
+  } else {
+    // String — cari berdasarkan item_id
+    invItem = getInventory(userId).find(i => i.item_id === input);
+  }
+  if (!invItem) return ctx.reply(`❌ Item "<code>${input}</code>" tidak ada di inventory.\nKetik /inv untuk lihat nomor item.`, { parse_mode: 'HTML' });
   const result = equipItem(userId, invItem.item_id);
   if (!result.success) return ctx.reply(`❌ ${result.reason}`);
   ctx.reply(`✅ <b>${result.item}</b> terpasang di slot <b>${result.slot}</b>!`, { parse_mode: 'HTML' });
