@@ -20,6 +20,7 @@ const pages = {
   logs:         () => import('./pages/logs.js'),
   settings:     () => import('./pages/settings.js'),
   classes:      () => import('./pages/classes.js'),
+  gamedata:     () => import('./pages/gamedata.js'),
   maintenance:  () => import('./pages/maintenance.js'),
 };
 

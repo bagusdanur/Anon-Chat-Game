@@ -552,25 +552,30 @@ function clearStatusEffects(userId) {
 }
 
 // ===== QUEST SYSTEM =====
-const DAILY_QUESTS = [
-  { quest_id: 'daily_hunt_3',    name: '🗡️ Pemburu Pemula',       description: 'Hunt monster 3 kali',       type: 'daily', action_type: 'hunt',     target_count: 3,  xp_reward: 50,  gold_reward: 30, item_reward: null },
-  { quest_id: 'daily_fish_3',    name: '🎣 Pemancing Ulung',       description: 'Mancing 3 kali',            type: 'daily', action_type: 'fish',     target_count: 3,  xp_reward: 40,  gold_reward: 25, item_reward: null },
-  { quest_id: 'daily_mine_2',    name: '⛏️ Penambang Rajin',      description: 'Menambang 2 kali',          type: 'daily', action_type: 'mine',     target_count: 2,  xp_reward: 60,  gold_reward: 35, item_reward: null },
-  { quest_id: 'daily_craft_1',   name: '⚒️ Tukang Crafts',        description: 'Craft 1 item apapun',        type: 'daily', action_type: 'craft',    target_count: 1,  xp_reward: 40,  gold_reward: 20, item_reward: null },
-  { quest_id: 'daily_sell_3',    name: '💰 Pedagang Kecil',        description: 'Jual 3 item',               type: 'daily', action_type: 'sell',     target_count: 3,  xp_reward: 30,  gold_reward: 40, item_reward: null },
-  { quest_id: 'daily_dungeon_1', name: '🏰 Penjelajah Dungeon',   description: 'Selesaikan 1 dungeon raid',  type: 'daily', action_type: 'dungeon',  target_count: 1,  xp_reward: 100, gold_reward: 50, item_reward: 'ramuan_kecil' },
-  { quest_id: 'daily_give_1',    name: '🤝 Dermawan',             description: 'Kirim gold ke partner 1 kali',type: 'daily', action_type: 'give',     target_count: 1,  xp_reward: 30,  gold_reward: 15, item_reward: null },
-  { quest_id: 'daily_upgrade_1', name: '⬆️ Upgrade Master',       description: 'Upgrade equipment 1 kali',   type: 'daily', action_type: 'upgrade',  target_count: 1,  xp_reward: 50,  gold_reward: 25, item_reward: null },
-  { quest_id: 'daily_use_1',     name: '🧪 Apoteker',             description: 'Pakai item 1 kali',          type: 'daily', action_type: 'use',      target_count: 1,  xp_reward: 20,  gold_reward: 10, item_reward: null },
-  { quest_id: 'daily_chat_10',   name: '💬 Social Butterfly',     description: 'Kirim 10 pesan ke partner',  type: 'daily', action_type: 'message',  target_count: 10, xp_reward: 30,  gold_reward: 20, item_reward: null },
-];
+const fs = require('fs');
+const path = require('path');
+
+function getQuestConfig() {
+  try {
+    const configPath = path.join(__dirname, '../../data/rpg_quests.json');
+    if (fs.existsSync(configPath)) {
+      return JSON.parse(fs.readFileSync(configPath, 'utf8')).daily_quests || [];
+    }
+  } catch (e) {
+    console.error('Failed to load rpg_quests.json:', e);
+  }
+  return [];
+}
 
 // Seed quests ke database
 const insertQuest = db.prepare(`
   INSERT OR IGNORE INTO quests (quest_id, name, description, type, action_type, target_count, xp_reward, gold_reward, item_reward, created_at)
   VALUES (@quest_id, @name, @description, @type, @action_type, @target_count, @xp_reward, @gold_reward, @item_reward, 0)
 `);
-const seedQuests = db.transaction(() => { DAILY_QUESTS.forEach(q => insertQuest.run(q)); });
+const seedQuests = db.transaction(() => { 
+  const DAILY_QUESTS = getQuestConfig();
+  DAILY_QUESTS.forEach(q => insertQuest.run(q)); 
+});
 seedQuests();
 
 function getTodayReset() {
@@ -630,6 +635,7 @@ function claimQuest(userId, questId) {
 
 function getAllDailyQuests(userId) {
   const resetAt = getTodayReset();
+  const DAILY_QUESTS = getQuestConfig();
   return DAILY_QUESTS.map(q => {
     const progress = getQuestProgress(userId, q.quest_id);
     return {

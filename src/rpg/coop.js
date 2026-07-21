@@ -20,32 +20,31 @@ function getPairKey(a, b) {
   return [a.toString(), b.toString()].sort().join(':');
 }
 
-// ===== BOSS TABLES (rebalanced with resistances) =====
-// BAL-03: Boss HP gap antar tier dikurangi agar transisi lebih smooth
-//   Sebelum: 55 → 280 → 550 → 900 (terlalu ekstrem)
-//   Sesudah: 80 → 200 → 400 → 700 (gradual, masih menantang)
-const BOSS_TIERS = [
-  { tier: 1, minAvgLv: 1,  maxAvgLv: 15, id: 'kepala_goblin',  name: 'Kepala Goblin',     baseHp: 80,   baseAtk: [3,6],   baseDef: 2,  physResist: 0.20, magicResist: 0.50, xpReward: 200,  goldReward: 120, legendaryDrop: 'pedang_goblin'   },
-  { tier: 2, minAvgLv: 16, maxAvgLv: 35, id: 'ratu_laba',      name: 'Ratu Laba-laba',    baseHp: 200,  baseAtk: [10,16], baseDef: 5,  physResist: 0.40, magicResist: 0.20, xpReward: 500,  goldReward: 300, legendaryDrop: 'jaring_sutra'    },
-  { tier: 3, minAvgLv: 36, maxAvgLv: 60, id: 'naga_bayangan',  name: 'Naga Bayangan',     baseHp: 400,  baseAtk: [18,26], baseDef: 9,  physResist: 0.30, magicResist: 0.30, xpReward: 1200, goldReward: 700, legendaryDrop: 'sisik_naga'      },
-  { tier: 4, minAvgLv: 61, maxAvgLv: 999,id: 'raja_terkutuk',  name: 'Raja Terkutuk',     baseHp: 700,  baseAtk: [26,38], baseDef: 13, physResist: 0.25, magicResist: 0.25, xpReward: 2500, goldReward: 1500,legendaryDrop: 'mahkota_terkutuk' },
-];
+const fs = require('fs');
+const path = require('path');
 
-
-// Label & emoji per tier untuk tampilan menu
-const TIER_LABELS = [
-  { tier: 1, emoji: '🌿', label: 'Gua Goblin',        minLv: 1,  desc: 'Boss: Kepala Goblin',      reward: '150-280 XP · 75-140g' },
-  { tier: 2, emoji: '🕸️', label: 'Sarang Laba-laba',  minLv: 16, desc: 'Boss: Ratu Laba-laba',     reward: '256-512 XP · 160g' },
-  { tier: 3, emoji: '🔥', label: 'Gua Naga Bayangan', minLv: 36, desc: 'Boss: Naga Bayangan',      reward: '480-960 XP · 300g' },
-  { tier: 4, emoji: '💀', label: 'Istana Terkutuk',   minLv: 61, desc: 'Boss: Raja Terkutuk',      reward: '800-1600 XP · 500g' },
-];
+function getBossConfig() {
+  try {
+    const configPath = path.join(__dirname, '../../data/rpg_bosses.json');
+    if (fs.existsSync(configPath)) {
+      return JSON.parse(fs.readFileSync(configPath, 'utf8')).bosses;
+    }
+  } catch (e) {
+    console.error('Failed to load rpg_bosses.json:', e);
+  }
+  return []; // Fallback empty if config deleted
+}
 
 function getBossTier(avgLevel) {
-  return BOSS_TIERS.find(t => avgLevel >= t.minAvgLv && avgLevel <= t.maxAvgLv) || BOSS_TIERS[0];
+  const bosses = getBossConfig();
+  if (!bosses.length) return null;
+  return bosses.find(t => avgLevel >= t.minAvgLv && avgLevel <= t.maxAvgLv) || bosses[0];
 }
 
 function getBossTierById(tierId) {
-  return BOSS_TIERS.find(t => t.tier === tierId) || BOSS_TIERS[0];
+  const bosses = getBossConfig();
+  if (!bosses.length) return null;
+  return bosses.find(t => t.tier === tierId) || bosses[0];
 }
 
 function randInt(min, max) {
@@ -391,28 +390,29 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
 
     // Tampilkan menu pilih kategori dungeon
     const avgLv = Math.floor((user.level + partner.level) / 2);
-    const unlockedTiers = TIER_LABELS.filter(t => avgLv >= t.minLv);
-    const lockedTiers = TIER_LABELS.filter(t => avgLv < t.minLv);
+    const bosses = getBossConfig();
+    const unlockedTiers = bosses.filter(t => avgLv >= t.minAvgLv);
+    const lockedTiers = bosses.filter(t => avgLv < t.minAvgLv);
 
     let msg = `🏰 *Pilih Dungeon* 🏰\n\n`;
     msg += `📊 Rata-rata level party: *${avgLv}*\n`;
     msg += `⏳ Status: Siap raid!\n\n`;
     msg += `*Dungeon Tersedia:*\n`;
     for (const t of unlockedTiers) {
-      msg += `${t.emoji} <b>${t.label}</b> <i>(Min. Lv ${t.minLv})</i>\n`;
-      msg += `   ${t.desc}\n`;
-      msg += `   💰 ${t.reward}\n\n`;
+      msg += `${t.ui_emoji} <b>${t.ui_label}</b> <i>(Min. Lv ${t.minAvgLv})</i>\n`;
+      msg += `   ${t.ui_desc}\n`;
+      msg += `   💰 ${t.ui_reward}\n\n`;
     }
     if (lockedTiers.length > 0) {
       msg += `*🔒 Belum Terbuka:*\n`;
       for (const t of lockedTiers) {
-        msg += `🔒 ~~${t.label}~~ _(Min. Lv ${t.minLv})_\n`;
+        msg += `🔒 ~~${t.ui_label}~~ _(Min. Lv ${t.minAvgLv})_\n`;
       }
     }
     msg += `\n_Pilih dungeon di bawah:_`;
 
     const buttons = unlockedTiers.map(t => [
-      Markup.button.callback(`${t.emoji} ${t.label}`, `dungeon:pick:${t.tier}`)
+      Markup.button.callback(`${t.ui_emoji} ${t.ui_label}`, `dungeon:pick:${t.tier}`)
     ]);
     buttons.push([Markup.button.callback('❌ Batal', 'dungeon:cancel')]);
 
@@ -426,17 +426,17 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
     if (!partnerId) return ctx.answerCbQuery('Kamu tidak punya partner aktif.', { show_alert: true });
 
     const tierId = parseInt(ctx.match[1]);
-    const tierLabel = TIER_LABELS.find(t => t.tier === tierId);
-    const bossTierDef = getBossTierById(tierId);
-    if (!tierLabel || !bossTierDef) return ctx.answerCbQuery('Tier tidak valid.', { show_alert: true });
+    const bosses = getBossConfig();
+    const bossTierDef = bosses.find(t => t.tier === tierId);
+    if (!bossTierDef) return ctx.answerCbQuery('Tier tidak valid.', { show_alert: true });
 
     const user = getOrCreateUser(userId);
     const partner = getOrCreateUser(partnerId);
     if (!user || !partner) return ctx.answerCbQuery('Data karakter tidak ditemukan.', { show_alert: true });
 
     const avgLv = Math.floor((user.level + partner.level) / 2);
-    if (avgLv < tierLabel.minLv) {
-      return ctx.answerCbQuery(`❌ Belum terbuka! Butuh rata-rata Lv ${tierLabel.minLv}.`, { show_alert: true });
+    if (avgLv < bossTierDef.minAvgLv) {
+      return ctx.answerCbQuery(`❌ Belum terbuka! Butuh rata-rata Lv ${bossTierDef.minAvgLv}.`, { show_alert: true });
     }
 
     const pairKey = getPairKey(userId, partnerId);
@@ -445,17 +445,17 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
     }
 
     dungeonInvites.set(pairKey, { inviter: userId, invitee: partnerId, tierId });
-    ctx.answerCbQuery(`Undangan ${tierLabel.label} dikirim!`);
+    ctx.answerCbQuery(`Undangan ${bossTierDef.ui_label} dikirim!`);
     ctx.editMessageText(
-      `${tierLabel.emoji} Kamu memilih <b>${tierLabel.label}</b>!\n\nMenunggu konfirmasi partner...`,
+      `${bossTierDef.ui_emoji} Kamu memilih <b>${bossTierDef.ui_label}</b>!\n\nMenunggu konfirmasi partner...`,
       { parse_mode: 'HTML' }
     );
 
     bot.telegram.sendMessage(partnerId,
       `⚔️ <b>Undangan Dungeon Raid!</b>\n\n` +
-      `Partnermu mengajak masuk ke <b>${tierLabel.emoji} ${tierLabel.label}</b>!\n\n` +
-      `👹 ${tierLabel.desc}\n` +
-      `💰 Reward: ${tierLabel.reward}\n` +
+      `Partnermu mengajak masuk ke <b>${bossTierDef.ui_emoji} ${bossTierDef.ui_label}</b>!\n\n` +
+      `👹 ${bossTierDef.ui_desc}\n` +
+      `💰 Reward: ${bossTierDef.ui_reward}\n` +
       `📊 Rata-rata level party: ${avgLv}\n\n` +
       `_Cooldown 10 menit aktif setelah raid selesai._`,
       {

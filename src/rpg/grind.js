@@ -3,48 +3,41 @@
 const {
   getOrCreateUser, getCurrentEnergy, spendEnergy, getCurrentHp,
   addXp, addGold, addItem, updateHp, CLASS_DEFS,
-  incrementQuestProgress
+  incrementQuestProgress, getEquippedItem
 } = require('./db_rpg');
 const { RARITY_EMOJI } = require('./profile');
 const { getGameSettings } = require('./config');
 
-// ===== MONSTER TABLES =====
-const MONSTERS = [
-  { tier: 1, minLv: 1,  maxLv: 10, list: ['🟢 Slime Hijau','👺 Goblin Kecil','🐗 Babi Hutan'],   hp: [15,25], atk: [2,4],  xp: [12,20], gold: [5,15]  },
-  { tier: 2, minLv: 11, maxLv: 25, list: ['👹 Orc Perampok','🕷️ Laba-laba Raksasa','🗡️ Bandit'], hp: [30,50], atk: [5,9],  xp: [30,55], gold: [20,45] },
-  { tier: 3, minLv: 26, maxLv: 50, list: ['🌲 Troll Hutan','🐉 Wyvern Muda','👤 Kultis Gelap'], hp: [60,100],atk: [10,16],xp: [70,130],gold: [50,100]},
-  { tier: 4, minLv: 51, maxLv: 999,list: ['🐲 Naga Muda','💀 Lich Tua','⚔️ Ksatria Terkutuk'], hp: [120,200],atk:[18,28], xp:[180,320],gold:[120,250]},
-];
+const fs = require('fs');
+const path = require('path');
 
-const HUNT_LOOT = {
-  common:    ['daging_mentah', 'kulit_kasar'],
-  uncommon:  ['ramuan_kecil', 'besi_rongsok'],
-  rare:      ['pedang_karatan'],
-  epic:      ['jubah_terkutuk'],
-  legendary: ['fragmen_naga'],
-};
-const FISH_LOOT_T1 = { common: ['ikan_teri','ikan_mujair','sepatu_rusak'], uncommon: ['ikan_teri'], rare: [], epic: [], legendary: [] };
-const FISH_LOOT_T2 = { common: ['ikan_mujair'], uncommon: ['ikan_salmon','kepiting'], rare: ['ikan_salmon'], epic: [], legendary: [] };
-const FISH_LOOT_T3 = { common: ['ikan_mujair'], uncommon: ['kepiting'], rare: ['kepiting'], epic: ['mutiara'], legendary: ['mutiara'] };
-const MINE_LOOT_T1 = { common: ['tembaga','batu_bara'], uncommon: ['tembaga', 'besi_rongsok'], rare: ['besi_rongsok'], epic: [], legendary: [] };
-const MINE_LOOT_T2 = { common: ['batu_bara'], uncommon: ['besi'], rare: ['perak'], epic: [], legendary: [] };
-const MINE_LOOT_T3 = { common: ['besi'], uncommon: ['perak'], rare: ['emas_ore'], epic: ['emas_ore'], legendary: ['berlian'] };
-
-const RARITY_ROLLS = [
-  { rarity: 'legendary', threshold: 0.005 },
-  { rarity: 'epic',      threshold: 0.02  },
-  { rarity: 'rare',      threshold: 0.10  },
-  { rarity: 'uncommon',  threshold: 0.30  },
-  { rarity: 'common',    threshold: 1.00  },
-];
+function getGrindConfig() {
+  try {
+    const configPath = path.join(__dirname, '../../data/rpg_monsters.json');
+    if (fs.existsSync(configPath)) {
+      return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    }
+  } catch (e) {
+    console.error('Failed to load rpg_monsters.json:', e);
+  }
+  // Fallback defaults if file deleted
+  return {
+    monsters: [],
+    hunt_loot: { common: [], uncommon: [], rare: [], epic: [], legendary: [] },
+    fish_loot: { t1: {}, t2: {}, t3: {} },
+    mine_loot: { t1: {}, t2: {}, t3: {} },
+    rarity_rolls: [ { rarity: 'common', threshold: 1.0 } ]
+  };
+}
 
 function rollRarity(boost = 0) {
   const settings = getGameSettings();
+  const config = getGrindConfig();
   const globalDropBoost = settings.drop_rate_multiplier - 1.0;
   const totalBoost = boost + globalDropBoost;
   
   const r = Math.random();
-  for (const entry of RARITY_ROLLS) {
+  for (const entry of config.rarity_rolls) {
     const adj = Math.min(entry.threshold * (1 + totalBoost * 0.5), 1);
     if (r < adj) return entry.rarity;
   }
@@ -61,21 +54,23 @@ function randInt(min, max) {
 }
 
 function getMonsterTier(level) {
-  return MONSTERS.find(m => level >= m.minLv && level <= m.maxLv) || MONSTERS[0];
+  const config = getGrindConfig();
+  return config.monsters.find(m => level >= m.minLv && level <= m.maxLv) || config.monsters[0];
 }
 
-function getLootTable(activity, level) {
+function getLootTable(activity, user) {
+  const config = getGrindConfig();
   if (activity === 'fish') {
-    if (level <= 15) return FISH_LOOT_T1;
-    if (level <= 35) return FISH_LOOT_T2;
-    return FISH_LOOT_T3;
+    if (user.level <= 15) return config.fish_loot.t1;
+    if (user.level <= 35) return config.fish_loot.t2;
+    return config.fish_loot.t3;
   }
   if (activity === 'mine') {
-    if (level <= 20) return MINE_LOOT_T1;
-    if (level <= 45) return MINE_LOOT_T2;
-    return MINE_LOOT_T3;
+    if (user.level <= 20) return config.mine_loot.t1;
+    if (user.level <= 45) return config.mine_loot.t2;
+    return config.mine_loot.t3;
   }
-  return HUNT_LOOT;
+  return config.hunt_loot;
 }
 
 function simulateBattle(playerAtk, playerDef, playerHp, monsterHp, monsterAtk, monsterDef, className) {
@@ -154,7 +149,7 @@ function setupGrind(bot, { rateLimitCommand }) {
       }
 
       const rarity    = rollRarity();
-      const lootTable = getLootTable('hunt', user.level);
+      const lootTable = getLootTable('hunt', user);
       const itemOpts  = lootTable[rarity] || lootTable.common;
       const item      = pickRandom(itemOpts);
 
@@ -209,10 +204,10 @@ function setupGrind(bot, { rateLimitCommand }) {
 
     spendEnergy(userId, energyCost);
 
-    const lootTable = getLootTable('fish', user.level);
+    const lootTable = getLootTable('fish', user);
     const rarity    = rollRarity();
     const itemOpts  = lootTable[rarity];
-    const item      = pickRandom(itemOpts.length ? itemOpts : lootTable.common);
+    const item      = pickRandom(itemOpts && itemOpts.length ? itemOpts : lootTable.common);
 
     const settings = getGameSettings();
     let xpGain = Math.floor(randInt(5, 15) * settings.exp_multiplier);

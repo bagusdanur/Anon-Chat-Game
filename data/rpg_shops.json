@@ -1,0 +1,14 @@
+{
+  "shop_items": [
+    { "id": 1, "item_id": "ramuan_kecil",  "buy_price": 15  },
+    { "id": 2, "item_id": "ramuan_besar",  "buy_price": 50  },
+    { "id": 3, "item_id": "ramuan_energi", "buy_price": 75  },
+    { "id": 4, "item_id": "kail_plus",     "buy_price": 200 },
+    { "id": 5, "item_id": "beliung_plus",  "buy_price": 300 },
+    { "id": 6, "item_id": "pedang_karatan","buy_price": 150 },
+    { "id": 7, "item_id": "tongkat_ranting","buy_price": 80 },
+    { "id": 8, "item_id": "jubah_terkutuk","buy_price": 200 },
+    { "id": 9, "item_id": "cincin_perak",  "buy_price": 100 },
+    { "id": 10, "item_id": "amulet_pertahanan", "buy_price": 150 }
+  ]
+}

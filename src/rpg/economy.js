@@ -11,56 +11,32 @@ const {
 } = require('./db_rpg');
 const { RARITY_EMOJI } = require('./profile');
 
-// ID numerik statis untuk shop (1-indexed, tidak berubah)
-const SHOP_ITEMS = [
-  { id: 1, item_id: 'ramuan_kecil',  buy_price: 15  },
-  { id: 2, item_id: 'ramuan_besar',  buy_price: 50  },
-  { id: 3, item_id: 'ramuan_energi', buy_price: 75  },
-  { id: 4, item_id: 'kail_plus',     buy_price: 200 },
-  { id: 5, item_id: 'beliung_plus',  buy_price: 300 },
-  { id: 6, item_id: 'pedang_karatan',buy_price: 150 },
-  { id: 7, item_id: 'tongkat_ranting',buy_price: 80 },
-  { id: 8, item_id: 'jubah_terkutuk',buy_price: 200 },
-  { id: 9, item_id: 'cincin_perak',  buy_price: 100 },
-  { id: 10, item_id: 'amulet_pertahanan', buy_price: 150 },
-];
+const fs = require('fs');
+const path = require('path');
 
-// ===== CRAFTING RECIPES =====
-const CRAFT_RECIPES = [
-  // Weapons
-  { id: 1, result: 'pedang_besi', name: '🗡️ Pedang Besi', gold: 100,
-    materials: [{ item: 'besi', qty: 3 }, { item: 'tembaga', qty: 3 }] },
-  { id: 2, result: 'pedang_naga', name: '🐉 Pedang Naga', gold: 500,
-    materials: [{ item: 'besi', qty: 10 }, { item: 'fragmen_naga', qty: 5 }, { item: 'sisik_naga', qty: 3 }] },
-  // Staffs
-  { id: 3, result: 'tongkat_ranting', name: '🪄 Tongkat Ranting', gold: 50,
-    materials: [{ item: 'batu_bara', qty: 3 }, { item: 'tembaga', qty: 2 }] },
-  { id: 4, result: 'tongkat_api', name: '🔥 Tongkat Api', gold: 150,
-    materials: [{ item: 'batu_bara', qty: 8 }, { item: 'perak', qty: 3 }] },
-  { id: 5, result: 'tongkat_es', name: '❄️ Tongkat Es', gold: 400,
-    materials: [{ item: 'perak', qty: 8 }, { item: 'berlian', qty: 5 }] },
-  // Armor
-  { id: 6, result: 'perisai_besi', name: '🛡️ Perisai Besi', gold: 120,
-    materials: [{ item: 'besi', qty: 5 }, { item: 'kulit_kasar', qty: 5 }] },
-  { id: 7, result: 'jubah_terkutuk', name: '🧥 Jubah Terkutuk', gold: 300,
-    materials: [{ item: 'perak', qty: 5 }, { item: 'emas_ore', qty: 2 }] },
-  { id: 8, result: 'armor_naga', name: '🐉 Armor Naga', gold: 600,
-    materials: [{ item: 'emas_ore', qty: 5 }, { item: 'fragmen_naga', qty: 8 }, { item: 'sisik_naga', qty: 5 }] },
-  // Accessories
-  { id: 9, result: 'cincin_perak', name: '💍 Cincin Perak', gold: 60,
-    materials: [{ item: 'perak', qty: 3 }, { item: 'mutiara', qty: 1 }] },
-  { id: 10, result: 'cincin_keberuntungan', name: '💍 Cincin Keberuntungan', gold: 200,
-    materials: [{ item: 'perak', qty: 5 }, { item: 'mutiara', qty: 3 }] },
-  { id: 11, result: 'kalung_kekuatan', name: '📿 Kalung Kekuatan', gold: 180,
-    materials: [{ item: 'emas_ore', qty: 2 }, { item: 'perak', qty: 4 }] },
-  { id: 12, result: 'kalung_naga', name: '🐉 Kalung Naga', gold: 500,
-    materials: [{ item: 'emas_ore', qty: 5 }, { item: 'fragmen_naga', qty: 3 }, { item: 'berlian', qty: 2 }] },
-  // Consumables
-  { id: 13, result: 'ramuan_kecil', name: '🧪 Ramuan Kecil', gold: 5,
-    materials: [{ item: 'daging_mentah', qty: 3 }] },
-  { id: 14, result: 'ramuan_besar', name: '🧪 Ramuan Besar', gold: 20,
-    materials: [{ item: 'daging_mentah', qty: 8 }, { item: 'ikan_salmon', qty: 2 }] },
-];
+function getShopConfig() {
+  try {
+    const configPath = path.join(__dirname, '../../data/rpg_shops.json');
+    if (fs.existsSync(configPath)) {
+      return JSON.parse(fs.readFileSync(configPath, 'utf8')).shop_items || [];
+    }
+  } catch (e) {
+    console.error('Failed to load rpg_shops.json:', e);
+  }
+  return [];
+}
+
+function getCraftingConfig() {
+  try {
+    const configPath = path.join(__dirname, '../../data/rpg_crafting.json');
+    if (fs.existsSync(configPath)) {
+      return JSON.parse(fs.readFileSync(configPath, 'utf8')).recipes || [];
+    }
+  } catch (e) {
+    console.error('Failed to load rpg_crafting.json:', e);
+  }
+  return [];
+}
 
 // Cache inventory per user (session, bukan persisten) untuk resolusi ID numerik
 // key: userId, value: [item_id, ...] berurutan sesuai tampilan /inv
@@ -75,8 +51,9 @@ const sellConfirmCache = new Map();
 function resolveShopInput(input) {
   // Bisa angka (ID) atau string (item_id)
   const num = parseInt(input);
-  if (!isNaN(num)) return SHOP_ITEMS.find(s => s.id === num) || null;
-  return SHOP_ITEMS.find(s => s.item_id === input.toLowerCase()) || null;
+  const shopItems = getShopConfig();
+  if (!isNaN(num)) return shopItems.find(s => s.id === num) || null;
+  return shopItems.find(s => s.item_id === input.toLowerCase()) || null;
 }
 
 function resolveInvInput(userId, input) {
@@ -137,11 +114,14 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const user = getOrCreateUser(userId);
     if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
 
-    let msg = `🏪 <b>Toko Petualang</b> — Saldo: 💰 ${user.gold}g\n\n`;
-    for (const shopItem of SHOP_ITEMS) {
-      const catalog = getCatalogItem(shopItem.item_id);
+    let msg = `🛒 <b>TOKO (SHOP)</b>\n`;
+    msg += `<i>Beli item dengan gold. Ketik /buy &lt;ID/Nama&gt;</i>\n\n`;
+
+    const shopItems = getShopConfig();
+    for (const s of shopItems) {
+      const catalog = getCatalogItem(s.item_id);
       if (catalog) {
-        msg += `<code>[${shopItem.id}]</code> ${RARITY_EMOJI[catalog.rarity]} <b>${catalog.display_name}</b> — ${shopItem.buy_price}g\n`;
+        msg += `<code>[${s.id}]</code> ${RARITY_EMOJI[catalog.rarity]} <b>${catalog.display_name}</b> — ${s.buy_price}g\n`;
       }
     }
     msg += `\n<i>Ketik /buy [nomor atau nama] untuk membeli</i>\n`;
@@ -316,10 +296,13 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const user = getOrCreateUser(userId);
     if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
 
+    const CRAFT_RECIPES = getCraftingConfig();
+
     // Tanpa argumen → tampilkan daftar resep
     if (!input) {
-      let msg = `⚒️ <b>Tukang Crafts — Resep Crafting</b>\n\n`;
-      msg += `Gunakan: <code>/craft [nama]</code> atau <code>/craft [nomor]</code>\n\n`;
+      let msg = `🛠️ <b>CRAFTING</b>\n`;
+      msg += `<i>Gabungkan material menjadi item langka!</i>\n`;
+      msg += `<i>Gunakan: /craft &lt;ID&gt;</i>\n\n`;
 
       // Group by category
       const categories = {
@@ -641,10 +624,6 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
         return ctx.reply(`❌ Gold tidak cukup! Butuh ${amount}g. Saldo: ${user.gold}g.`);
       }
       return ctx.reply('❌ Partnermu belum punya karakter RPG. Minta dia ketik /profile dulu!');
-
-
-
-
     }
 
     logTransaction(userId, partnerId, received, 'give_transfer');

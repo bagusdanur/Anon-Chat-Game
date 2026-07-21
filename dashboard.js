@@ -236,6 +236,67 @@ app.post('/api/wordfilter', auth, (req, res) => {
   res.json({ success: true });
 });
 
+// ===== BOSSES CONFIG =====
+app.get('/api/bosses', auth, (req, res) => {
+  const p = path.join(__dirname, 'data/rpg_bosses.json');
+  if (fs.existsSync(p)) return res.json(JSON.parse(fs.readFileSync(p, 'utf8')));
+  res.json({ bosses: [] });
+});
+
+app.post('/api/bosses', auth, (req, res) => {
+  const p = path.join(__dirname, 'data/rpg_bosses.json');
+  fs.writeFileSync(p, JSON.stringify(req.body, null, 2));
+  res.json({ success: true });
+});
+
+// ===== MONSTERS CONFIG =====
+app.get('/api/monsters', auth, (req, res) => {
+  const p = path.join(__dirname, 'data/rpg_monsters.json');
+  if (fs.existsSync(p)) return res.json(JSON.parse(fs.readFileSync(p, 'utf8')));
+  res.json({});
+});
+app.post('/api/monsters', auth, (req, res) => {
+  const p = path.join(__dirname, 'data/rpg_monsters.json');
+  fs.writeFileSync(p, JSON.stringify(req.body, null, 2));
+  res.json({ success: true });
+});
+
+// ===== SHOPS CONFIG =====
+app.get('/api/shops', auth, (req, res) => {
+  const p = path.join(__dirname, 'data/rpg_shops.json');
+  if (fs.existsSync(p)) return res.json(JSON.parse(fs.readFileSync(p, 'utf8')));
+  res.json({});
+});
+app.post('/api/shops', auth, (req, res) => {
+  const p = path.join(__dirname, 'data/rpg_shops.json');
+  fs.writeFileSync(p, JSON.stringify(req.body, null, 2));
+  res.json({ success: true });
+});
+
+// ===== CRAFTING CONFIG =====
+app.get('/api/crafting', auth, (req, res) => {
+  const p = path.join(__dirname, 'data/rpg_crafting.json');
+  if (fs.existsSync(p)) return res.json(JSON.parse(fs.readFileSync(p, 'utf8')));
+  res.json({});
+});
+app.post('/api/crafting', auth, (req, res) => {
+  const p = path.join(__dirname, 'data/rpg_crafting.json');
+  fs.writeFileSync(p, JSON.stringify(req.body, null, 2));
+  res.json({ success: true });
+});
+
+// ===== QUESTS CONFIG =====
+app.get('/api/quests', auth, (req, res) => {
+  const p = path.join(__dirname, 'data/rpg_quests.json');
+  if (fs.existsSync(p)) return res.json(JSON.parse(fs.readFileSync(p, 'utf8')));
+  res.json({});
+});
+app.post('/api/quests', auth, (req, res) => {
+  const p = path.join(__dirname, 'data/rpg_quests.json');
+  fs.writeFileSync(p, JSON.stringify(req.body, null, 2));
+  res.json({ success: true });
+});
+
 // ===== ICEBREAKERS =====
 app.get('/api/icebreakers', auth, (req, res) => {
   const content = fs.readFileSync(path.join(__dirname, 'src/icebreakers.js'), 'utf8');

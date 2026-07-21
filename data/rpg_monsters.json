@@ -1,0 +1,32 @@
+{
+  "monsters": [
+    { "tier": 1, "minLv": 1,  "maxLv": 10, "list": ["🟢 Slime Hijau","👺 Goblin Kecil","🐗 Babi Hutan"],   "hp": [15,25], "atk": [2,4],  "xp": [12,20], "gold": [5,15]  },
+    { "tier": 2, "minLv": 11, "maxLv": 25, "list": ["👹 Orc Perampok","🕷️ Laba-laba Raksasa","🗡️ Bandit"], "hp": [30,50], "atk": [5,9],  "xp": [30,55], "gold": [20,45] },
+    { "tier": 3, "minLv": 26, "maxLv": 50, "list": ["🌲 Troll Hutan","🐉 Wyvern Muda","👤 Kultis Gelap"], "hp": [60,100],"atk": [10,16],"xp": [70,130],"gold": [50,100]},
+    { "tier": 4, "minLv": 51, "maxLv": 999,"list": ["🐲 Naga Muda","💀 Lich Tua","⚔️ Ksatria Terkutuk"], "hp": [120,200],"atk":[18,28], "xp":[180,320],"gold":[120,250]}
+  ],
+  "hunt_loot": {
+    "common":    ["daging_mentah", "kulit_kasar"],
+    "uncommon":  ["ramuan_kecil", "besi_rongsok"],
+    "rare":      ["pedang_karatan"],
+    "epic":      ["jubah_terkutuk"],
+    "legendary": ["fragmen_naga"]
+  },
+  "fish_loot": {
+    "t1": { "common": ["ikan_teri","ikan_mujair","sepatu_rusak"], "uncommon": ["ikan_teri"], "rare": [], "epic": [], "legendary": [] },
+    "t2": { "common": ["ikan_mujair"], "uncommon": ["ikan_salmon","kepiting"], "rare": ["ikan_salmon"], "epic": [], "legendary": [] },
+    "t3": { "common": ["ikan_mujair"], "uncommon": ["kepiting"], "rare": ["kepiting"], "epic": ["mutiara"], "legendary": ["mutiara"] }
+  },
+  "mine_loot": {
+    "t1": { "common": ["tembaga","batu_bara"], "uncommon": ["tembaga", "besi_rongsok"], "rare": ["besi_rongsok"], "epic": [], "legendary": [] },
+    "t2": { "common": ["batu_bara"], "uncommon": ["besi"], "rare": ["perak"], "epic": [], "legendary": [] },
+    "t3": { "common": ["besi"], "uncommon": ["perak"], "rare": ["emas_ore"], "epic": ["emas_ore"], "legendary": ["berlian"] }
+  },
+  "rarity_rolls": [
+    { "rarity": "legendary", "threshold": 0.005 },
+    { "rarity": "epic",      "threshold": 0.02  },
+    { "rarity": "rare",      "threshold": 0.10  },
+    { "rarity": "uncommon",  "threshold": 0.30  },
+    { "rarity": "common",    "threshold": 1.00  }
+  ]
+}
