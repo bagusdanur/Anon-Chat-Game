@@ -206,7 +206,7 @@ function setupDuel(bot, { getPartnerId, rateLimitCommand }) {
     const clsA = CLASS_DEFS[user.class_name];
     const clsB = CLASS_DEFS[partner.class_name];
 
-    ctx.reply(`⚔️ Kamu mengundang **${partner.name || partnerId}** untuk duel!`, { parse_mode: 'Markdown' });
+    ctx.reply(`⚔️ Kamu mengundang **Partner** untuk duel!`, { parse_mode: 'Markdown' });
 
     bot.telegram.sendMessage(partnerId,
       `⚔️ **Undangan Duel PVP!**\n\n` +
