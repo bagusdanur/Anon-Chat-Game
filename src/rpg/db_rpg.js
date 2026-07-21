@@ -552,8 +552,6 @@ function clearStatusEffects(userId) {
 }
 
 // ===== QUEST SYSTEM =====
-const fs = require('fs');
-const path = require('path');
 
 function getQuestConfig() {
   try {
