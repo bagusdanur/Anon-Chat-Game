@@ -622,6 +622,22 @@ function getSpecialShopConfig() {
     const args = ctx.message.text.split(' ').slice(1);
     const subCommand = args[0];
 
+    // /give tanpa argumen → tampilkan help
+    if (!subCommand) return ctx.reply(
+      `<b>📦 GIVE — Kirim ke Partner</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `<b>Gold:</b>\n` +
+      `<code>/give gold [jumlah]</code>\n` +
+      `Contoh: <code>/give gold 100</code>\n` +
+      `Pajak: 5%\n\n` +
+      `<b>Item:</b>\n` +
+      `<code>/give item [nomor/nama] [jumlah]</code>\n` +
+      `Contoh: <code>/give item 1</code> atau <code>/give item daging_mentah 5</code>\n` +
+      `Pajak: 0%\n\n` +
+      `<i>Hanya bisa ke partner yang sedang paired.</i>`,
+      { parse_mode: 'HTML' }
+    );
+
     // /give item [nomor/jumlah] — kirim item ke partner
     if (subCommand === 'item') {
       const itemInput = args[1];
@@ -679,15 +695,14 @@ function getSpecialShopConfig() {
       return;
     }
 
-    // /give [jumlah] — kirim gold (existing)
-    const amount = parseInt(args[0]);
+    // /give gold [jumlah] — kirim gold
+    if (subCommand === 'gold') {
+      const amount = parseInt(args[1]);
 
-    if (!amount || amount <= 0) return ctx.reply(
-      `Penggunaan:\n` +
-      `• <code>/give [jumlah]</code> — Kirim gold (pajak 5%)\n` +
-      `• <code>/give item [nomor] [jumlah]</code> — Kirim item (tanpa pajak)`,
-      { parse_mode: 'HTML' }
-    );
+      if (!amount || amount <= 0) return ctx.reply(
+        `Penggunaan: <code>/give gold [jumlah]</code>\nContoh: <code>/give gold 100</code>`,
+        { parse_mode: 'HTML' }
+      );
 
     const partnerId = getPartnerId(userId);
     if (!partnerId) return ctx.reply('❌ Kamu harus sedang terhubung dengan partner dulu (/search).');
@@ -717,10 +732,15 @@ function getSpecialShopConfig() {
       return ctx.reply('❌ Partnermu belum punya karakter RPG. Minta dia ketik /profile dulu!');
     }
 
-    logTransaction(userId, partnerId, received, 'give_transfer');
-    logTransaction(userId, null, tax, 'give_tax');
+      logTransaction(userId, partnerId, received, 'give_transfer');
+      logTransaction(userId, null, tax, 'give_tax');
 
-    ctx.reply(`✅ Berhasil mengirim <b>${received}g</b> ke partner <i>(pajak 5% = ${tax}g)</i>.`, { parse_mode: 'HTML' });
+      ctx.reply(`✅ Berhasil mengirim <b>${received}g</b> ke partner <i>(pajak 5% = ${tax}g)</i>.`, { parse_mode: 'HTML' });
+      return;
+    }
+
+    // Fallback: tidak dikenali
+    return ctx.reply('Gunakan <code>/give gold [jumlah]</code> atau <code>/give item [nomor]</code>.', { parse_mode: 'HTML' });
     incrementQuestProgress(userId, 'give');
     bot.telegram.sendMessage(partnerId, `💰 Kamu menerima <b>${received}g</b> dari partner!`, { parse_mode: 'HTML' }).catch(() => {});
   });
