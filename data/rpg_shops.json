@@ -10,5 +10,11 @@
     { "id": 8, "item_id": "jubah_terkutuk","buy_price": 200 },
     { "id": 9, "item_id": "cincin_perak",  "buy_price": 100 },
     { "id": 10, "item_id": "amulet_pertahanan", "buy_price": 150 }
+  ],
+  "special_shop": [
+    { "id": 1, "item_id": "ramuan_kehidupan",      "buy_price": 2000 },
+    { "id": 2, "item_id": "ramuan_energi_besars",   "buy_price": 3000 },
+    { "id": 3, "item_id": "amulet_keabadian",       "buy_price": 10000 },
+    { "id": 4, "item_id": "cincin_kekuatan_raksasa", "buy_price": 15000 }
   ]
 }

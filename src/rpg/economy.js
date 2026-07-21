@@ -130,12 +130,17 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
   });
 
   // ===== /shop2 — Special Shop (Lv20+, gold sink) =====
-  const SPECIAL_SHOP = [
-    { id: 1, item_id: 'ramuan_kehidupan',      buy_price: 2000 },
-    { id: 2, item_id: 'ramuan_energi_besars',   buy_price: 3000 },
-    { id: 3, item_id: 'amulet_keabadian',       buy_price: 10000 },
-    { id: 4, item_id: 'cincin_kekuatan_raksasa', buy_price: 15000 },
-  ];
+function getSpecialShopConfig() {
+  try {
+    const configPath = path.join(__dirname, '../../data/rpg_shops.json');
+    if (fs.existsSync(configPath)) {
+      return JSON.parse(fs.readFileSync(configPath, 'utf8')).special_shop || [];
+    }
+  } catch (e) {
+    console.error('Failed to load rpg_shops.json (special_shop):', e);
+  }
+  return [];
+}
 
   bot.command('shop2', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
@@ -146,7 +151,9 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     let msg = `<b>🏪 SPECIAL SHOP</b> — Lv20+ Only\n`;
     msg += `━━━━━━━━━━━━━━━━━━━━\n`;
     msg += `Saldo: 💰 <b>${user.gold}g</b> / <code>${GOLD_CAP}g</code>\n\n`;
-    for (const item of SPECIAL_SHOP) {
+    
+    const specialShopItems = getSpecialShopConfig();
+    for (const item of specialShopItems) {
       const catalog = getCatalogItem(item.item_id);
       if (catalog) {
         msg += `<code>[${item.id}]</code> ${RARITY_EMOJI[catalog.rarity]} <b>${catalog.display_name}</b> — ${item.buy_price.toLocaleString()}g\n`;
@@ -169,7 +176,8 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     if (user.level < 20) return ctx.reply('🔒 Special Shop unlock di <b>Lv 20</b>!', { parse_mode: 'HTML' });
 
     const num = parseInt(input);
-    const shopEntry = SPECIAL_SHOP.find(s => s.id === num);
+    const specialShopItems = getSpecialShopConfig();
+    const shopEntry = specialShopItems.find(s => s.id === num);
     if (!shopEntry) return ctx.reply('❌ Nomor tidak valid. Cek /shop2.', { parse_mode: 'HTML' });
 
     const catalog = getCatalogItem(shopEntry.item_id);
