@@ -1,4 +1,4 @@
-import{a as e,c as t,l as n,r,u as i}from"./index-CS_7gALt.js";async function a(t){t.innerHTML=`<div class="page-enter"><div class="card">
+import{a as e,c as t,l as n,r,u as i}from"./index-BzmntqLX.js";async function a(t){t.innerHTML=`<div class="page-enter"><div class="card">
     <div class="card-header">
       <div class="card-title">${l(`coins`)} Transactions</div>
       <button class="btn btn-outline btn-sm" id="tx-refresh">${l(`refresh-cw`)}</button>
