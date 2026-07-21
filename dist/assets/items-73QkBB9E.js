@@ -1,4 +1,4 @@
-import{a as e,c as t,i as n,l as r,n as i,r as a,s as o,t as s,u as c}from"./index-B39UAyRg.js";async function l(t){t.innerHTML=`<div class="page-enter"><div class="card">
+import{a as e,c as t,i as n,l as r,n as i,r as a,s as o,t as s,u as c}from"./index-25s4ACC6.js";async function l(t){t.innerHTML=`<div class="page-enter"><div class="card">
     <div class="card-header">
       <div class="card-title">${p(`package`)} Items Catalog</div>
       <div style="display:flex;gap:8px">

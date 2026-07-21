@@ -1,4 +1,4 @@
-import{c as e,l as t,r as n,s as r,u as i}from"./index-B39UAyRg.js";async function a(e){e.innerHTML=`<div class="page-enter"><div class="card">
+import{c as e,l as t,r as n,s as r,u as i}from"./index-25s4ACC6.js";async function a(e){e.innerHTML=`<div class="page-enter"><div class="card">
     <div class="card-header">
       <div class="card-title">${f(`shield-ban`)} Word Filter</div>
       <span id="wf-count" class="badge badge-gray">-</span>

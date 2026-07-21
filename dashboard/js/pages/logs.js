@@ -41,11 +41,30 @@ async function loadLogs() {
     }
 
     el.innerHTML = d.logs.map(line => {
-      const cls = line.includes('ERROR') || line.includes('error') ? 'error'
-                : line.includes('WARN')  || line.includes('warn')  ? 'warn'
-                : line.includes('INFO')  || line.includes('info')  ? 'info'
-                : '';
-      return `<div class="log-line ${cls}">${escHtml(line)}</div>`;
+      try {
+        const obj = JSON.parse(line);
+        const date = new Date(obj.time || Date.now());
+        const timeStr = date.toLocaleTimeString('id-ID', { hour12: false });
+        
+        let levelStr = 'INFO';
+        let cls = 'info';
+        if (obj.level >= 50) { levelStr = 'ERROR'; cls = 'error'; }
+        else if (obj.level >= 40) { levelStr = 'WARN'; cls = 'warn'; }
+        
+        let msgStr = obj.msg || '';
+        if (obj.event === 'message_relayed') {
+          msgStr = `[message_relayed] from ${obj.from} to ${obj.to}`;
+        }
+        
+        return `<div class="log-line ${cls}"><span style="color:var(--muted)">[${timeStr}]</span> <strong>${levelStr}:</strong> ${escHtml(msgStr)}</div>`;
+      } catch (e) {
+        // Fallback for non-JSON logs
+        const cls = line.includes('ERROR') || line.includes('error') ? 'error'
+                  : line.includes('WARN')  || line.includes('warn')  ? 'warn'
+                  : line.includes('INFO')  || line.includes('info')  ? 'info'
+                  : '';
+        return `<div class="log-line ${cls}">${escHtml(line)}</div>`;
+      }
     }).join('');
 
     // Scroll to bottom
