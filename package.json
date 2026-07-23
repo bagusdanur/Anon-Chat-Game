@@ -8,7 +8,8 @@
     "start": "node index.js",
     "test": "node --test test/*.test.js",
     "dashboard:dev": "cd dashboard && npx vite",
-    "dashboard:build": "cd dashboard && npx vite build"
+    "dashboard:build": "cd dashboard && npx vite build",
+    "simulate:economy": "node scripts/economySimulation.js"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",

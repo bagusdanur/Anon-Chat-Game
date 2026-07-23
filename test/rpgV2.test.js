@@ -61,6 +61,7 @@ const {
   createDirectTradeService,
 } = require('../src/rpg/services/directTrade');
 const { collectRpgTelemetry } = require('../src/rpg/services/telemetry');
+const { simulateEconomy } = require('../src/rpg/services/economySimulation');
 
 function createTestDb() {
   const db = new Database(':memory:');
@@ -836,4 +837,18 @@ test('RPG operations telemetry reports economy and invariant anomalies without u
   assert.equal(Array.isArray(telemetry.featureFlags), true);
   assert.equal(JSON.stringify(telemetry).includes('telegram_user_id'), false);
   db.close();
+});
+
+test('economy simulation preserves non-negative balances across thousands of players', () => {
+  let seed = 123456789;
+  const random = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 0x100000000;
+  };
+  const result = simulateEconomy({ playerCount: 3000, days: 70, random });
+  assert.equal(result.negativeBalances, 0);
+  assert.equal(result.itemsDestroyed <= result.itemsCreated, true);
+  assert.equal(result.totalGold, result.sources - result.sinks);
+  assert.equal(result.p90Gold >= result.p50Gold, true);
+  assert.equal(result.sourceSinkRatio < 2.5, true);
 });

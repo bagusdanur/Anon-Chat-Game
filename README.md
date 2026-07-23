@@ -28,6 +28,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Bonus equipment v2 aktif pada dungeon, duel, tower, bounty, world boss, dan raid
 - Direct trade dua tahap dengan snapshot, expiry, settlement atomik, pajak, dan ledger
 - Dungeon panjang duo dengan checkpoint bersama, optimistic version, dan reward individual
+- Simulasi ekonomi deterministik untuk ribuan pemain virtual (`npm run simulate:economy`)
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
