@@ -61,6 +61,7 @@ const HELP_PAGES = [
     title: '🛡 EQUIPMENT V2',
     text:
       '/gear — daftar Equipment V2 bernomor\n' +
+      '/gear help — arti IP, Quality, affix, socket, binding\n' +
       '/gear forge [nomor /inv] — konversi equipment lama\n' +
       '/gear equip [nomor gear] — pasang dan bind\n' +
       '/gear socket [gear] [slot] [nomor gem /inv]\n' +
