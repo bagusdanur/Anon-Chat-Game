@@ -441,6 +441,40 @@ const MIGRATIONS = [
       );
     `,
   },
+  {
+    version: 11,
+    name: 'guild_roles_and_weekly_quests',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_guild_quest_progress (
+        guild_id INTEGER NOT NULL REFERENCES rpg_guilds(id),
+        period_key TEXT NOT NULL,
+        quest_id TEXT NOT NULL,
+        current INTEGER NOT NULL DEFAULT 0 CHECK (current >= 0),
+        target INTEGER NOT NULL CHECK (target > 0),
+        status TEXT NOT NULL DEFAULT 'active'
+          CHECK (status IN ('active','completed','claimed')),
+        updated_at INTEGER NOT NULL,
+        claimed_at INTEGER,
+        PRIMARY KEY (guild_id, period_key, quest_id)
+      );
+      CREATE TABLE IF NOT EXISTS rpg_guild_quest_events (
+        event_key TEXT PRIMARY KEY,
+        guild_id INTEGER NOT NULL,
+        period_key TEXT NOT NULL,
+        quest_id TEXT NOT NULL,
+        amount INTEGER NOT NULL CHECK (amount > 0),
+        created_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS rpg_guild_role_audit (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        guild_id INTEGER NOT NULL,
+        actor_id TEXT NOT NULL,
+        target_id TEXT NOT NULL,
+        action TEXT NOT NULL CHECK (action IN ('promote','demote','kick')),
+        created_at INTEGER NOT NULL
+      );
+    `,
+  },
 ];
 
 function quoteSql(value) {

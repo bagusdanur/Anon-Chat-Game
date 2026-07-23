@@ -70,6 +70,26 @@ function setupSocial(bot, { getPartnerId, rateLimitCommand }) {
       const result = social.contribute(ctx.chat.id, Number(args[1]));
       return ctx.reply(result.success ? '✅ Kontribusi masuk treasury guild.' : `❌ ${result.reason}`);
     }
+    if (action === 'quest') {
+      const result = args[1]?.toLowerCase() === 'claim'
+        ? social.claimGuildQuest(ctx.chat.id)
+        : social.getGuildQuest(ctx.chat.id);
+      if (!result.success) return ctx.reply(`❌ ${result.reason}`);
+      if (result.newLevel) return ctx.reply(`🏛 Quest guild selesai! Guild naik ke level ${result.newLevel}.`);
+      return ctx.reply(
+        `<b>📜 WEEKLY GUILD QUEST</b>\n\n` +
+        `Kumpulkan kontribusi treasury: <b>${result.quest.current}/${result.quest.target}g</b>\n` +
+        `Status: <b>${result.quest.status}</b>\n\n` +
+        `<i>Owner/officer: /guild quest claim</i>`,
+        { parse_mode: 'HTML' },
+      );
+    }
+    if (['promote', 'demote', 'kick'].includes(action)) {
+      const result = social.changeGuildRole(ctx.chat.id, args[1], action);
+      return ctx.reply(result.success
+        ? `✅ ${result.alias}: ${result.action} berhasil.`
+        : `❌ ${result.reason}`);
+    }
     if (action === 'leave') {
       const result = social.leaveGuild(ctx.chat.id);
       return ctx.reply(result.success ? '✅ Keluar dari guild.' : `❌ ${result.reason}`);
@@ -88,7 +108,7 @@ function setupSocial(bot, { getPartnerId, rateLimitCommand }) {
     return ctx.reply(
       `<b>🏛 [${guild.tag}] ${guild.name}</b>\n` +
       `Level ${guild.level} · Treasury ${guild.treasury}g\n\n${members.join('\n')}\n\n` +
-      `<i>/guild contribute [gold] · /guild leave</i>`,
+      `<i>/guild contribute [gold] · /guild quest · /guild promote|demote|kick [alias] · /guild leave</i>`,
       { parse_mode: 'HTML' },
     );
   });

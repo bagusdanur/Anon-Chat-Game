@@ -114,6 +114,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 8 },
     { version: 9 },
     { version: 10 },
+    { version: 11 },
   ]);
   db.close();
 });
@@ -551,5 +552,38 @@ test('weekly party raid requires a duo and rewards can only be claimed once', ()
   assert.equal(raids.claim('1', 'party').success, false);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_raid_reward_claims').get().count, 1);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 1);
+  db.close();
+});
+
+test('guild owner manages officer role with a persistent audit trail', () => {
+  const db = createTestDb();
+  const social = createSocialService(db, { now: () => 2_000_000_000 });
+  social.setAlias('1', 'GuildOwner');
+  social.setAlias('2', 'GuildMate');
+  social.createGuild('1', 'TST', 'Test Guild');
+  social.joinGuild('2', 'TST');
+  assert.equal(social.changeGuildRole('2', 'GuildOwner', 'promote').success, false);
+  assert.equal(social.changeGuildRole('1', 'GuildMate', 'promote').success, true);
+  assert.equal(social.getGuild('2').role, 'officer');
+  assert.equal(social.changeGuildRole('1', 'GuildMate', 'demote').success, true);
+  assert.equal(social.getGuild('2').role, 'member');
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_guild_role_audit').get().count, 2);
+  db.close();
+});
+
+test('weekly guild quest follows contributions and can only level the guild once', () => {
+  const db = createTestDb();
+  const social = createSocialService(db, { now: () => 2_000_000_000 });
+  social.createGuild('1', 'QST', 'Quest Guild');
+  social.joinGuild('2', 'QST');
+  assert.equal(social.contribute('2', 1000).success, true);
+  const quest = social.getGuildQuest('1');
+  assert.equal(quest.quest.current, 1000);
+  assert.equal(quest.quest.status, 'completed');
+  const claim = social.claimGuildQuest('1');
+  assert.equal(claim.success, true);
+  assert.equal(claim.newLevel, 2);
+  assert.equal(social.claimGuildQuest('1').success, false);
+  assert.equal(social.getGuild('1').level, 2);
   db.close();
 });

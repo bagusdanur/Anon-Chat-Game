@@ -5,6 +5,14 @@ const PARTY_CAPACITY = 4;
 const PARTY_INVITE_TTL_SECONDS = 10 * 60;
 const GUILD_CAPACITY = 20;
 const GUILD_CREATE_COST = 1000;
+const GUILD_QUEST_TARGET = 1000;
+
+function weeklyPeriod(timestamp) {
+  const date = new Date(timestamp * 1000);
+  const day = date.getUTCDay() || 7;
+  const monday = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - day + 1));
+  return monday.toISOString().slice(0, 10);
+}
 
 function createSocialService(db, options = {}) {
   const now = options.now || (() => Math.floor(Date.now() / 1000));
@@ -26,6 +34,35 @@ function createSocialService(db, options = {}) {
       SELECT * FROM rpg_party_members WHERE party_id = ? ORDER BY role DESC, joined_at
     `).all(party.id).map(member => ({ ...member, alias: getAlias(member.user_id) }));
     return { ...party, members };
+  }
+
+  function resolveGuildMember(guildId, alias) {
+    const wanted = String(alias || '').toLowerCase();
+    return db.prepare('SELECT * FROM rpg_guild_members WHERE guild_id=?')
+      .all(guildId)
+      .find(member => getAlias(member.user_id).toLowerCase() === wanted);
+  }
+
+  function recordGuildQuest(guildId, amount, eventKey) {
+    const period = weeklyPeriod(now());
+    return db.transaction(() => {
+      const receipt = db.prepare(`
+        INSERT OR IGNORE INTO rpg_guild_quest_events
+          (event_key,guild_id,period_key,quest_id,amount,created_at)
+        VALUES (?,?,?,'weekly_treasury',?,?)
+      `).run(String(eventKey), guildId, period, amount, now());
+      if (receipt.changes === 0) return false;
+      db.prepare(`
+        INSERT INTO rpg_guild_quest_progress
+          (guild_id,period_key,quest_id,current,target,status,updated_at)
+        VALUES (?,?,'weekly_treasury',?,?,CASE WHEN ?>=? THEN 'completed' ELSE 'active' END,?)
+        ON CONFLICT(guild_id,period_key,quest_id) DO UPDATE SET
+          current=current+excluded.current,
+          status=CASE WHEN current+excluded.current>=target THEN 'completed' ELSE status END,
+          updated_at=excluded.updated_at
+      `).run(guildId, period, amount, GUILD_QUEST_TARGET, amount, GUILD_QUEST_TARGET, now());
+      return true;
+    })();
   }
 
   return {
@@ -217,6 +254,7 @@ function createSocialService(db, options = {}) {
           INSERT INTO rpg_guild_contributions (guild_id, user_id, amount, created_at)
           VALUES (?, ?, ?, ?)
         `).run(guild.id, String(userId), amount, timestamp).lastInsertRowid;
+        recordGuildQuest(guild.id, amount, `guild_contribution:${contributionId}`);
         ledger.record({
           entryKey: `guild_contribution:${contributionId}`, userId, amount: -amount,
           balanceAfter: user.gold - amount, reason: 'guild_contribution',
@@ -225,10 +263,77 @@ function createSocialService(db, options = {}) {
       })();
       return { success: true, guildId: guild.id };
     },
+    getGuildQuest(userId) {
+      const guild = this.getGuild(userId);
+      if (!guild) return { success: false, reason: 'Kamu belum memiliki guild.' };
+      const period = weeklyPeriod(now());
+      db.prepare(`
+        INSERT OR IGNORE INTO rpg_guild_quest_progress
+          (guild_id,period_key,quest_id,current,target,status,updated_at)
+        VALUES (?,?,'weekly_treasury',0,?,'active',?)
+      `).run(guild.id, period, GUILD_QUEST_TARGET, now());
+      const quest = db.prepare(`
+        SELECT * FROM rpg_guild_quest_progress
+        WHERE guild_id=? AND period_key=? AND quest_id='weekly_treasury'
+      `).get(guild.id, period);
+      return { success: true, guild, quest };
+    },
+    claimGuildQuest(userId) {
+      const state = this.getGuildQuest(userId);
+      if (!state.success) return state;
+      if (!['owner', 'officer'].includes(state.guild.role)) {
+        return { success: false, reason: 'Hanya owner atau officer yang dapat klaim.' };
+      }
+      if (state.quest.status === 'claimed') return { success: false, reason: 'Quest sudah diklaim.' };
+      if (state.quest.current < state.quest.target) return { success: false, reason: 'Target quest belum tercapai.' };
+      return db.transaction(() => {
+        const changed = db.prepare(`
+          UPDATE rpg_guild_quest_progress SET status='claimed', claimed_at=?, updated_at=?
+          WHERE guild_id=? AND period_key=? AND quest_id='weekly_treasury' AND status='completed'
+        `).run(now(), now(), state.guild.id, state.quest.period_key);
+        if (changed.changes === 0) return { success: false, reason: 'Quest sudah diklaim.' };
+        db.prepare('UPDATE rpg_guilds SET level=level+1, updated_at=? WHERE id=?')
+          .run(now(), state.guild.id);
+        return { success: true, newLevel: state.guild.level + 1 };
+      })();
+    },
+    changeGuildRole(actorId, targetAlias, action) {
+      const guild = this.getGuild(actorId);
+      if (!guild) return { success: false, reason: 'Kamu belum memiliki guild.' };
+      if (!['promote', 'demote', 'kick'].includes(action)) return { success: false, reason: 'Aksi tidak valid.' };
+      const target = resolveGuildMember(guild.id, targetAlias);
+      if (!target) return { success: false, reason: 'Anggota dengan alias itu tidak ditemukan.' };
+      if (target.user_id === String(actorId)) return { success: false, reason: 'Tidak dapat menargetkan diri sendiri.' };
+      if (target.role === 'owner') return { success: false, reason: 'Owner tidak dapat diubah melalui command ini.' };
+      if (action !== 'kick' && guild.role !== 'owner') return { success: false, reason: 'Hanya owner yang dapat mengubah role.' };
+      if (action === 'kick' && !['owner', 'officer'].includes(guild.role)) {
+        return { success: false, reason: 'Hanya owner atau officer yang dapat kick.' };
+      }
+      if (guild.role === 'officer' && target.role !== 'member') {
+        return { success: false, reason: 'Officer hanya dapat kick member.' };
+      }
+      if (action === 'promote' && target.role !== 'member') return { success: false, reason: 'Target bukan member.' };
+      if (action === 'demote' && target.role !== 'officer') return { success: false, reason: 'Target bukan officer.' };
+      db.transaction(() => {
+        if (action === 'kick') {
+          db.prepare('DELETE FROM rpg_guild_members WHERE guild_id=? AND user_id=?')
+            .run(guild.id, target.user_id);
+        } else {
+          db.prepare('UPDATE rpg_guild_members SET role=? WHERE guild_id=? AND user_id=?')
+            .run(action === 'promote' ? 'officer' : 'member', guild.id, target.user_id);
+        }
+        db.prepare(`
+          INSERT INTO rpg_guild_role_audit (guild_id,actor_id,target_id,action,created_at)
+          VALUES (?,?,?,?,?)
+        `).run(guild.id, String(actorId), target.user_id, action, now());
+      })();
+      return { success: true, alias: getAlias(target.user_id), action };
+    },
   };
 }
 
 module.exports = {
   PARTY_CAPACITY, PARTY_INVITE_TTL_SECONDS, GUILD_CAPACITY, GUILD_CREATE_COST,
+  GUILD_QUEST_TARGET, weeklyPeriod,
   createSocialService,
 };

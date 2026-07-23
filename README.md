@@ -21,6 +21,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Preseason, leaderboard anonim, Endless Tower, achievement, dan collection
 - Party persisten dan guild dengan alias karakter anonim
 - World boss asynchronous harian dan weekly party raid dengan kontribusi persisten
+- Guild quest mingguan serta role owner/officer/member dengan audit perubahan
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
@@ -102,6 +103,7 @@ pm2 save && pm2 startup
 | `/party create`   | Membuat party persisten                               |
 | `/party invite`   | Mengundang partner chat ke party                      |
 | `/guild`          | Membuat, bergabung, dan berkontribusi ke guild        |
+| `/guild quest`    | Melihat atau mengklaim guild quest mingguan           |
 | `/worldboss`      | Melihat, menyerang, dan mengklaim hadiah world boss   |
 | `/raid`           | Weekly raid asynchronous untuk party minimal 2 pemain |
 | `/next`           | Putus chat dan langsung cari partner baru          |
