@@ -569,7 +569,7 @@ bot.command('equip', rateLimitCommand, (ctx) => {
     msg += `💥 Crit <b>${totalCrit}%</b>\n`;
     if (equip.physResist > 0) msg += `🛡 Phys Resist <b>${Math.round(equip.physResist * 100)}%</b>\n`;
     if (equip.magicResist > 0) msg += `✨ Magic Resist <b>${Math.round(equip.magicResist * 100)}%</b>\n`;
-    msg += `\n<i>/equip [nama_item] — Pasang\n/unequip [slot] — Lepas</i>`;
+    msg += `\n<i>/equip [nomor] — Pasang\n/unequip [slot] — Lepas</i>`;
     return ctx.reply(msg, { parse_mode: 'HTML' });
   }
 

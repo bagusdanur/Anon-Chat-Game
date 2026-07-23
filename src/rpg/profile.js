@@ -8,8 +8,13 @@ const {
   getCurrentHp, getEquippedBonus, getEquipped, CLASS_EQUIP_SLOTS
 } = require('./db_rpg');
 const { progressBar, hpBar, statLine, divider, kvPair, footer, sectionHeader } = require('../format');
+const { db } = require('../db');
+const { createSkillService } = require('./services/skills');
+const { createEquipmentService } = require('./services/equipment');
 
 const RARITY_EMOJI = { common: '⚪', uncommon: '🟢', rare: '🔵', epic: '🟣', legendary: '🟠' };
+const skillService = createSkillService(db);
+const equipmentV2 = createEquipmentService(db);
 
 function renderHpBar(hp, maxHp, len = 8) {
   return progressBar(hp, maxHp, len) + ` ${Math.max(0, hp)}/${maxHp}`;
@@ -30,11 +35,20 @@ function renderProfile(user) {
   const hp = getCurrentHp(user);
   const equip = getEquippedBonus(user.telegram_user_id);
   const equipped = getEquipped(user.telegram_user_id);
+  const v2Bonus = equipmentV2.bonuses(user.telegram_user_id);
+  const v2Equipped = equipmentV2.list(user.telegram_user_id)
+    .filter(item => item.equipped_slot);
+  const skillLoadout = skillService.getCombatLoadout(user.telegram_user_id);
 
-  const effectiveAtk    = user.atk + equip.atkBonus;
-  const effectiveDef    = user.def + equip.defBonus;
-  const effectiveMagic  = (user.magic_atk || 0) + equip.magicAtkBonus;
-  const totalCrit       = Math.min(95, Math.round(((user.crit_rate || 0.05) + equip.critRate) * 100));
+  const totalAtkBonus = equip.atkBonus + (v2Bonus.atk || 0);
+  const totalDefBonus = equip.defBonus + (v2Bonus.def || 0);
+  const totalMagicBonus = equip.magicAtkBonus + (v2Bonus.magic_atk || 0);
+  const effectiveMaxHp = user.max_hp + (v2Bonus.max_hp || 0);
+  const effectiveHp = Math.min(effectiveMaxHp, hp + (v2Bonus.max_hp || 0));
+  const effectiveAtk    = user.atk + totalAtkBonus;
+  const effectiveDef    = user.def + totalDefBonus;
+  const effectiveMagic  = (user.magic_atk || 0) + totalMagicBonus;
+  const totalCrit       = Math.min(95, Math.round(((user.crit_rate || 0.05) + equip.critRate + (v2Bonus.crit_rate || 0)) * 100));
   const totalCritMulti  = Math.round(((user.crit_multi || 1.5) + equip.critMulti) * 100);
 
   const dungeonStatus = cooldownSecs > 0
@@ -54,11 +68,11 @@ function renderProfile(user) {
   msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 
   // ── Bars ────────────────────────────────────
-  const hpFilled  = Math.min(10, Math.round((Math.max(0, hp) / user.max_hp) * 10));
+  const hpFilled  = Math.min(10, Math.round((Math.max(0, effectiveHp) / effectiveMaxHp) * 10));
   const xpFilled  = Math.min(10, Math.round((user.xp / nextXp) * 10));
   const enFilled  = Math.min(10, Math.round((energy / 10) * 10));
 
-  msg += `❤️ <b>HP</b>  ${'█'.repeat(hpFilled)}${'░'.repeat(10 - hpFilled)} <code>${hp}/${user.max_hp}</code>\n`;
+  msg += `❤️ <b>HP</b>  ${'█'.repeat(hpFilled)}${'░'.repeat(10 - hpFilled)} <code>${effectiveHp}/${effectiveMaxHp}</code>\n`;
   msg += `✨ <b>XP</b>  ${'█'.repeat(xpFilled)}${'░'.repeat(10 - xpFilled)} <code>${user.xp}/${nextXp}</code>\n`;
   msg += `⚡ <b>EN</b>  ${'█'.repeat(enFilled)}${'░'.repeat(10 - enFilled)} <code>${energy}/10</code>`;
   if (energy < 10) msg += `  <i>(+1 ~${nextEMin}m)</i>`;
@@ -67,9 +81,9 @@ function renderProfile(user) {
 
   // ── Stats ────────────────────────────────────
   msg += `<b>📊 Stats</b>\n`;
-  msg += `⚔️ ATK <b>${effectiveAtk}</b>${equip.atkBonus > 0 ? `  <i>(+${equip.atkBonus} eq)</i>` : ''}   `;
-  msg += `🛡️ DEF <b>${effectiveDef}</b>${equip.defBonus > 0 ? `  <i>(+${equip.defBonus} eq)</i>` : ''}\n`;
-  if (effectiveMagic > 0) msg += `🔮 Magic <b>${effectiveMagic}</b>${equip.magicAtkBonus > 0 ? `  <i>(+${equip.magicAtkBonus} eq)</i>` : ''}\n`;
+  msg += `⚔️ ATK <b>${effectiveAtk}</b>${totalAtkBonus > 0 ? `  <i>(+${totalAtkBonus} eq)</i>` : ''}   `;
+  msg += `🛡️ DEF <b>${effectiveDef}</b>${totalDefBonus > 0 ? `  <i>(+${totalDefBonus} eq)</i>` : ''}\n`;
+  if (effectiveMagic > 0) msg += `🔮 Magic <b>${effectiveMagic}</b>${totalMagicBonus > 0 ? `  <i>(+${totalMagicBonus} eq)</i>` : ''}\n`;
   msg += `💥 Crit <b>${totalCrit}%</b> × <b>${totalCritMulti}%</b>   🎯 ${dmgType}\n`;
   if ((user.phys_resist || 0) > 0 || (user.magic_resist || 0) > 0) {
     msg += `🛡 Resist  Phys <b>${Math.round((user.phys_resist||0)*100)}%</b>  Magic <b>${Math.round((user.magic_resist||0)*100)}%</b>\n`;
@@ -97,7 +111,20 @@ function renderProfile(user) {
     msg += `<i>Bonus: ${bonusParts.join(' · ')}</i>\n`;
   }
 
-  msg += `\n<i>/equip [item] • /unequip [slot] • /inv</i>`;
+  if (v2Equipped.length > 0) {
+    msg += `\n<b>💠 Equipment V2</b>\n`;
+    for (const item of v2Equipped) {
+      msg += `✅ ${item.equipped_slot}: <b>#${item.id} ${item.display_name}</b> · IP ${item.item_power}\n`;
+    }
+  }
+
+  msg += `\n<b>🌟 Skill Loadout</b>\n`;
+  for (let slot = 1; slot <= 3; slot++) {
+    const skill = skillLoadout.find(item => item.slot === slot);
+    msg += `${slot}️⃣ ${skill ? `<b>${skill.name}</b> · Rank ${skill.rank}` : '<i>(Kosong)</i>'}\n`;
+  }
+
+  msg += `\n<i>/skill • /gear • /inv</i>`;
   return msg;
 }
 

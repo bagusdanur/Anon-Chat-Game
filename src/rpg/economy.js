@@ -13,6 +13,10 @@ const { RARITY_EMOJI } = require('./profile');
 const { getGameSettings } = require('./config');
 const { createProfessionService } = require('./services/professions');
 const { createDirectTradeService } = require('./services/directTrade');
+const {
+  INVENTORY_CATEGORY_ORDER,
+  orderInventory,
+} = require('./inputResolvers');
 
 const fs = require('fs');
 const path = require('path');
@@ -66,7 +70,7 @@ function resolveInvInput(userId, input) {
   // Auto-populate cache jika kosong (biar /equip 1 tanpa /inv dulu tetep work)
   let cache = invCache.get(userId.toString());
   if (!cache) {
-    const items = getInventory(userId);
+    const items = orderInventory(getInventory(userId));
     cache = items.map(i => i.item_id);
     invCache.set(userId.toString(), cache);
   }
@@ -86,14 +90,14 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const user = getOrCreateUser(userId);
     if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
 
-    const items = getInventory(userId);
+    const items = orderInventory(getInventory(userId));
     if (items.length === 0) {
       return ctx.reply('🎒 <b>Inventaris kosong.</b>\n<i>Coba /hunt, /fish, atau /mine untuk mendapatkan item!</i>', { parse_mode: 'HTML' });
     }
 
     // Simpan urutan ke cache untuk resolusi ID numerik
     const orderedIds = [];
-    const categories = { weapon: '⚔️ Senjata', armor: '🛡️ Armor', consumable: '🧪 Konsumable', material: '📦 Material' };
+    const categories = Object.fromEntries(INVENTORY_CATEGORY_ORDER);
     const grouped = {};
     for (const item of items) {
       if (!grouped[item.category]) grouped[item.category] = [];
@@ -887,7 +891,13 @@ function getSpecialShopConfig() {
 }
 
 const SHOP_ITEMS = getShopConfig();
-module.exports = { setupEconomy, SHOP_ITEMS, resolveInvInput };
+module.exports = {
+  setupEconomy,
+  SHOP_ITEMS,
+  resolveInvInput,
+  orderInventory,
+  INVENTORY_CATEGORY_ORDER,
+};
 
 
 

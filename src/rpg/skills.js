@@ -7,11 +7,18 @@ const {
   publishSkills,
   createSkillService,
 } = require('./services/skills');
+const { resolveNumberedId } = require('./inputResolvers');
 
 function setupSkills(bot, { rateLimitCommand }) {
   const flags = createFeatureFlagService(db);
   publishSkills(db, loadSkills());
   const service = createSkillService(db);
+
+  function resolveSkillInput(userId, input) {
+    const tree = service.getTree(userId);
+    if (!tree) return input;
+    return resolveNumberedId(tree.skills, input);
+  }
 
   function requireCharacter(ctx) {
     if (!flags.isEnabled('character_builds_v2')) {
@@ -29,18 +36,18 @@ function setupSkills(bot, { rateLimitCommand }) {
   function renderTree(userId) {
     const tree = service.getTree(userId);
     if (!tree) return 'Karakter tidak ditemukan.';
-    const lines = tree.skills.map(skill => {
+    const lines = tree.skills.map((skill, index) => {
       const rank = `${skill.rank}/${skill.max_rank}`;
       const equipped = skill.equipped_slot ? ` · Slot ${skill.equipped_slot}` : '';
       const lock = tree.user.level < skill.min_level ? ` 🔒 Lv.${skill.min_level}` : '';
-      const requirement = skill.requires && skill.rank === 0 ? ` · butuh ${skill.requires}` : '';
-      return `<b>${skill.name}</b> <code>${rank}</code>${equipped}${lock}\n` +
-        `<i>${skill.description}${requirement}</i>\n` +
-        `<code>${skill.id}</code>`;
+      const requiredSkill = tree.skills.find(item => item.id === skill.requires);
+      const requirement = requiredSkill && skill.rank === 0 ? ` · butuh ${requiredSkill.name}` : '';
+      return `<code>[${index + 1}]</code> <b>${skill.name}</b> <code>${rank}</code>${equipped}${lock}\n` +
+        `<i>${skill.description}${requirement}</i>`;
     });
     return `<b>🌟 SKILL TREE — ${tree.user.class_name.toUpperCase()}</b>\n` +
       `Skill point tersedia: <b>${tree.availablePoints}</b>\n\n${lines.join('\n\n')}\n\n` +
-      `<i>/skill learn [id]\n/skill equip [id] [slot]\n/skill respec</i>`;
+      `<i>/skill learn [nomor]\n/skill equip [nomor] [slot]\n/skill respec</i>`;
   }
 
   function showSkills(ctx) {
@@ -54,8 +61,10 @@ function setupSkills(bot, { rateLimitCommand }) {
     if (args.length === 0) return showSkills(ctx);
 
     if (args[0] === 'learn') {
-      if (!args[1]) return ctx.reply('Gunakan: /skill learn [skill_id]');
-      const result = service.learn(ctx.chat.id, args[1]);
+      if (!args[1]) return ctx.reply('Gunakan: /skill learn [nomor]');
+      const skillId = resolveSkillInput(ctx.chat.id, args[1]);
+      if (!skillId) return ctx.reply('❌ Nomor skill tidak valid. Ketik /skill untuk melihat daftar.');
+      const result = service.learn(ctx.chat.id, skillId);
       if (!result.success) return ctx.reply(`❌ ${result.reason}`);
       return ctx.reply(
         `✅ <b>${result.skill.name}</b> sekarang Rank <b>${result.rank}</b>.`,
@@ -66,9 +75,11 @@ function setupSkills(bot, { rateLimitCommand }) {
     if (args[0] === 'equip') {
       const slot = Number(args[2]);
       if (!args[1] || !Number.isInteger(slot)) {
-        return ctx.reply('Gunakan: /skill equip [skill_id] [slot 1-3]');
+        return ctx.reply('Gunakan: /skill equip [nomor] [slot 1-3]');
       }
-      const result = service.equip(ctx.chat.id, args[1], slot);
+      const skillId = resolveSkillInput(ctx.chat.id, args[1]);
+      if (!skillId) return ctx.reply('❌ Nomor skill tidak valid. Ketik /skill untuk melihat daftar.');
+      const result = service.equip(ctx.chat.id, skillId, slot);
       if (!result.success) return ctx.reply(`❌ ${result.reason}`);
       return ctx.reply(`✅ ${result.skill} dipasang di slot ${result.slot}.`);
     }
@@ -126,4 +137,4 @@ function setupSkills(bot, { rateLimitCommand }) {
   });
 }
 
-module.exports = { setupSkills };
+module.exports = { setupSkills, resolveNumberedId };
