@@ -89,6 +89,7 @@ pm2 save && pm2 startup
 | `/start`          | Pesan selamat datang & bantuan                     |
 | `/search`         | Mulai cari partner                                 |
 | `/rpg`            | Membuka menu dunia dan campaign RPG                 |
+| `/profile`        | Ringkasan alias, progres, sosial, build, dan status |
 | `/world`          | Melihat region dan progress campaign RPG            |
 | `/explore`        | Menjelajahi region aktif                             |
 | `/travel [region]`| Berpindah ke region yang sudah terbuka               |

@@ -22,6 +22,9 @@ repo ini. Baca file ini SEBELUM mulai edit kode.
 - **Sinkronkan command.** Setiap menambah, menghapus, atau mengubah command bot,
   wajib pada perubahan yang sama memperbarui daftar `botCommands` Telegram,
   panduan `/helprpg`, dan tabel command di `README.md` bila relevan.
+- **Jaga `/profile` sebagai pusat ringkasan pemain.** Saat menambah sistem
+  player-facing yang memiliki status/progres penting, tampilkan ringkasan
+  singkatnya di `/profile` tanpa membuat pesan melewati batas Telegram.
 
 ## Aturan Keamanan & Privasi (non-negotiable)
 - Jangan pernah kirim `username`, `first_name`, `last_name`, atau foto profil

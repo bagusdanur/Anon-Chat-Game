@@ -30,6 +30,7 @@ function renderSlot(item) {
 }
 
 function renderProfile(user) {
+  const userId = String(user.telegram_user_id);
   const cls = CLASS_DEFS[user.class_name];
   const nextXp = xpToNextLevel(user.level);
   const energy = getCurrentEnergy(user);
@@ -41,6 +42,33 @@ function renderProfile(user) {
   const v2Equipped = equipmentV2.list(user.telegram_user_id)
     .filter(item => item.equipped_slot);
   const skillLoadout = skillService.getCombatLoadout(user.telegram_user_id);
+  const alias = socialService.getAlias(userId);
+  const guild = socialService.getGuild(userId);
+  const party = socialService.getParty(userId);
+  const world = db.prepare(`
+    SELECT p.current_region_id,p.campaign_chapter,p.exploration_points,r.name AS region_name
+    FROM rpg_world_progress p
+    LEFT JOIN rpg_regions r ON r.region_id=p.current_region_id
+    WHERE p.user_id=?
+  `).get(userId);
+  const campaign = db.prepare(`
+    SELECT d.title,p.status FROM rpg_campaign_progress_v2 p
+    JOIN rpg_campaign_definitions d ON d.quest_id=p.quest_id
+    WHERE p.user_id=? AND p.status!='claimed'
+    ORDER BY d.chapter,d.sort_order LIMIT 1
+  `).get(userId);
+  const profession = db.prepare(`
+    SELECT profession_id,level FROM rpg_professions
+    WHERE user_id=? ORDER BY level DESC,xp DESC LIMIT 1
+  `).get(userId);
+  const season = db.prepare(`
+    SELECT s.name,p.points,p.currency FROM rpg_season_progress p
+    JOIN rpg_seasons s ON s.season_id=p.season_id
+    WHERE p.user_id=? AND s.status='active' ORDER BY s.ends_at LIMIT 1
+  `).get(userId);
+  const inventoryCount = db.prepare(
+    'SELECT COALESCE(SUM(quantity),0) count FROM rpg_inventory WHERE telegram_user_id=?',
+  ).get(userId).count;
 
   const totalAtkBonus = equip.atkBonus + (v2Bonus.atk || 0);
   const totalDefBonus = equip.defBonus + (v2Bonus.def || 0);
@@ -65,8 +93,25 @@ function renderProfile(user) {
 
   // ── Header ──────────────────────────────────
   let msg = ``;
-  msg += `<b>${cls.name}</b>  <code>Lv.${user.level}</code>  💰 <b>${user.gold}g</b>\n`;
+  msg += `<b>🎭 ${alias}</b>\n`;
+  msg += `${cls.name}  <code>Lv.${user.level}</code>  💰 <b>${user.gold}g</b>\n`;
   if (streak > 0) msg += `🔥 Win Streak: <b>${streak}x</b>\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+
+  // ── Ringkasan progres & sosial ─────────────────
+  msg += `<b>🧭 Ringkasan</b>\n`;
+  msg += `🌍 ${world?.region_name || 'Pinggiran Aldenmoor'} · Chapter ${world?.campaign_chapter || 1}`;
+  if (world?.exploration_points) msg += ` · Jelajah ${world.exploration_points}`;
+  msg += `\n`;
+  msg += `📜 ${campaign ? `${campaign.title} (${campaign.status})` : 'Campaign siap dilanjutkan'}\n`;
+  msg += `🎒 ${inventoryCount} item`;
+  if (profession) msg += ` · 🧰 ${profession.profession_id} Lv.${profession.level}`;
+  msg += `\n`;
+  msg += `🏛 ${guild ? `[${guild.tag}] ${guild.name} · ${guild.role}` : 'Belum bergabung guild'}`;
+  msg += ` · 👥 ${party ? `${party.members.length} anggota` : 'Solo'}\n`;
+  if (season) {
+    msg += `🏆 ${season.name}: ${season.points} pts · 🪙 ${season.currency}\n`;
+  }
   msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 
   // ── Bars ────────────────────────────────────
@@ -126,7 +171,7 @@ function renderProfile(user) {
     msg += `${slot}️⃣ ${skill ? `<b>${skill.name}</b> · Rank ${skill.rank}` : '<i>(Kosong)</i>'}\n`;
   }
 
-  msg += `\n<i>/skill • /gear • /inv</i>`;
+  msg += `\n<i>/alias • /world • /campaign • /guild • /party\n/skill • /gear • /inv • /helprpg</i>`;
   return msg;
 }
 
