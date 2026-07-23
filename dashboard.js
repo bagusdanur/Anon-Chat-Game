@@ -5,10 +5,12 @@ const fs = require('fs');
 const { db } = require('./src/db');
 const { getWords, FILTER_PATH } = require('./src/moderation/wordFilter');
 const { getGameSettings, saveGameSettings } = require('./src/rpg/config');
+const { createFeatureFlagService } = require('./src/rpg/services/featureFlags');
 
 const app = express();
 const PORT = process.env.DASHBOARD_PORT || 3001;
 const PASSWORD = process.env.DASHBOARD_PASS || 'ryudev2024';
+const featureFlags = createFeatureFlagService(db);
 
 // Password check helper
 function checkAuth(req) {
@@ -332,6 +334,23 @@ app.get('/api/settings', auth, (req, res) => {
 app.post('/api/settings', auth, (req, res) => {
   const newSettings = saveGameSettings(req.body);
   res.json({ success: true, settings: newSettings });
+});
+
+// ===== RPG V2 FEATURE FLAGS =====
+app.get('/api/rpg-feature-flags', auth, (req, res) => {
+  res.json(featureFlags.list());
+});
+
+app.post('/api/rpg-feature-flags/:key', auth, (req, res) => {
+  if (typeof req.body.enabled !== 'boolean') {
+    return res.status(400).json({ error: 'enabled must be a boolean' });
+  }
+  try {
+    featureFlags.set(req.params.key, req.body.enabled);
+    return res.json({ success: true, flags: featureFlags.list() });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
 });
 
 // ===== DYNAMIC RPG CLASSES =====

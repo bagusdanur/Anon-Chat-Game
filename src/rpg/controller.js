@@ -8,8 +8,12 @@ const { setupEconomy } = require('./economy');
 const { setupCoop, clearRaidSession } = require('./coop');
 const { setupHelp } = require('./help');
 const { setupDuel } = require('./duel');
+const { setupWorld } = require('./world');
 
 function setupRpg(bot, { getPartnerId, rateLimitCommand }) {
+  // RPG v2: menu utama, region, campaign, dan eksplorasi.
+  setupWorld(bot, { rateLimitCommand });
+
   // Fase 1: Profile & Character Creation
   setupProfile(bot, { rateLimitCommand });
 

@@ -1,0 +1,45 @@
+[
+  {
+    "id": "aldenmoor_outskirts",
+    "name": "🌲 Pinggiran Aldenmoor",
+    "description": "Perbatasan kerajaan yang diselimuti kabut. Goblin mulai menyerang jalur dagang dan jejak mereka mengarah ke reruntuhan tua.",
+    "min_level": 1,
+    "travel_cost": 0,
+    "published": true,
+    "version": 1,
+    "encounters": [
+      {
+        "id": "misty_trail",
+        "name": "Jalur Berkabut",
+        "type": "combat",
+        "weight": 50,
+        "enemy": "goblin",
+        "xp": [8, 14],
+        "gold": [4, 10]
+      },
+      {
+        "id": "abandoned_cart",
+        "name": "Kereta Terbengkalai",
+        "type": "treasure",
+        "weight": 25,
+        "gold": [6, 16]
+      },
+      {
+        "id": "wounded_scout",
+        "name": "Pengintai Terluka",
+        "type": "event",
+        "weight": 25,
+        "exploration_points": 2
+      }
+    ],
+    "campaign": {
+      "chapter": 1,
+      "title": "Kabut di Perbatasan",
+      "steps": [
+        "Temukan sumber gangguan di Jalur Berkabut.",
+        "Kumpulkan tiga petunjuk dari eksplorasi.",
+        "Buka akses menuju Reruntuhan Goblin."
+      ]
+    }
+  }
+]

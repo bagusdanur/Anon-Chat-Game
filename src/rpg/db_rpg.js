@@ -1,6 +1,7 @@
 // src/rpg/db_rpg.js
 // Layer database khusus untuk sistem RPG persistent
 const { db } = require('../db');
+const { runRpgMigrations } = require('./migrations');
 
 // ===== SCHEMA =====
 db.exec(`
@@ -160,6 +161,15 @@ if (tableSql.includes("CHECK (class_name IN ('ksatria','penyihir','pencuri'))"))
     PRAGMA foreign_keys=on;
   `);
   console.log('[RPG DB] Migration complete.');
+}
+
+// Migrasi v2 dijalankan setelah schema legacy tersedia. Migrasi ini hanya
+// additive dan membuat backup SQLite sebelum versi baru diterapkan.
+const migrationResult = runRpgMigrations(db, {
+  dbPath: process.env.DATABASE_PATH || db.name,
+});
+if (migrationResult.applied.length > 0) {
+  console.log(`[RPG DB] Applied migrations: ${migrationResult.applied.join(', ')}`);
 }
 
 // ===== SEED ITEMS CATALOG =====

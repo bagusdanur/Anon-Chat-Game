@@ -6,6 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node index.js",
+    "test": "node --test test/*.test.js",
     "dashboard:dev": "cd dashboard && npx vite",
     "dashboard:build": "cd dashboard && npx vite build"
   },

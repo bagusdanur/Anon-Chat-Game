@@ -11,6 +11,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Moderasi kata dasar
 - Preferensi Bahasa (`/lang id` atau `/lang en`)
 - Sistem *Report* dan *Ban* untuk menangani penyalahgunaan
+- Dunia RPG persisten dengan region, campaign, dan eksplorasi (`/rpg`, `/world`, `/explore`)
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
@@ -69,7 +70,10 @@ pm2 save && pm2 startup
 |-------------------|----------------------------------------------------|
 | `/start`          | Pesan selamat datang & bantuan                     |
 | `/search`         | Mulai cari partner                                 |
-| `/rpg`            | Memulai game mini (Co-op RPG) bersama partner      |
+| `/rpg`            | Membuka menu dunia dan campaign RPG                 |
+| `/world`          | Melihat region dan progress campaign RPG            |
+| `/explore`        | Menjelajahi region aktif                             |
+| `/travel [region]`| Berpindah ke region yang sudah terbuka               |
 | `/next`           | Putus chat dan langsung cari partner baru          |
 | `/stop`           | Mengakhiri chat atau batal antri                   |
 | `/lang [id/en]`   | Memilih preferensi bahasa (prioritas matching)     |
