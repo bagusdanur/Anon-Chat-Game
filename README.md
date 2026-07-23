@@ -26,6 +26,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Equipment instance dengan quality, item power, affix, binding, dan socket/gem
 - Upgrade hingga +15, reforge affix, dan bonus equipment set
 - Bonus equipment v2 aktif pada dungeon, duel, tower, bounty, world boss, dan raid
+- Direct trade dua tahap dengan snapshot, expiry, settlement atomik, pajak, dan ledger
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
@@ -113,6 +114,7 @@ pm2 save && pm2 startup
 | `/bounty`         | Duo bounty harian dengan kontribusi bersama            |
 | `/coopcampaign`   | Melihat dan menjalankan campaign bersama party          |
 | `/gear`           | Mengelola equipment instance, affix, equip, dan gem      |
+| `/trade`          | Penawaran trade dua tahap dengan konfirmasi partner      |
 | `/next`           | Putus chat dan langsung cari partner baru          |
 | `/stop`           | Mengakhiri chat atau batal antri                   |
 | `/lang [id/en]`   | Memilih preferensi bahasa (prioritas matching)     |

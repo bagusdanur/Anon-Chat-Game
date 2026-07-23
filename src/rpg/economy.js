@@ -12,6 +12,7 @@ const {
 const { RARITY_EMOJI } = require('./profile');
 const { getGameSettings } = require('./config');
 const { createProfessionService } = require('./services/professions');
+const { createDirectTradeService } = require('./services/directTrade');
 
 const fs = require('fs');
 const path = require('path');
@@ -78,6 +79,7 @@ function resolveInvInput(userId, input) {
 }
 
 function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
+  const directTrade = createDirectTradeService(db);
   // ===== /inv =====
   bot.command('inv', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
@@ -770,6 +772,54 @@ function getSpecialShopConfig() {
     const args = ctx.message.text.split(' ').slice(1);
     const input = args[0];
     const qty = parseInt(args[1]) || 1;
+
+    const action = args[0]?.toLowerCase() || 'status';
+    if (action === 'offer') {
+      const partnerId = getPartnerId(userId);
+      if (!partnerId) return ctx.reply('❌ Kamu harus terhubung dengan partner chat.');
+      const type = args[1]?.toLowerCase();
+      const offer = type === 'gold'
+        ? { type, amount: Number(args[2]) }
+        : { type, itemId: args[2]?.toLowerCase(), quantity: Number(args[3] || 1) };
+      const result = directTrade.createOffer(userId, partnerId, offer);
+      if (!result.success) return ctx.reply(`❌ ${result.reason}`);
+      bot.telegram.sendMessage(
+        partnerId,
+        `🤝 Partner mengirim penawaran trade #${result.tradeId}.\n` +
+        `Gunakan /trade untuk melihat snapshot lalu /trade accept ${result.tradeId}.`,
+      ).catch(() => {});
+      return ctx.reply(`✅ Penawaran trade #${result.tradeId} dikirim dan berlaku 10 menit.`);
+    }
+    if (action === 'accept') {
+      const result = directTrade.accept(userId, Number(args[1]));
+      if (!result.success) return ctx.reply(`❌ ${result.reason}`);
+      return ctx.reply(`✅ Trade #${result.tradeId} selesai secara atomik.`);
+    }
+    if (action === 'cancel') {
+      const result = directTrade.cancel(userId, Number(args[1]));
+      return ctx.reply(result.success ? '✅ Trade dibatalkan.' : `❌ ${result.reason}`);
+    }
+    if (action === 'status') {
+      const trade = directTrade.getPending(userId);
+      if (!trade) {
+        return ctx.reply(
+          'Tidak ada trade pending.\n/trade offer gold [jumlah]\n/trade offer item [item_id] [jumlah]',
+        );
+      }
+      const description = trade.offer.type === 'gold'
+        ? `${trade.offer.amount}g`
+        : `${trade.offer.quantity}x ${trade.offer.displayName}`;
+      const role = trade.recipient_id === String(userId) ? 'Penerima' : 'Pengirim';
+      return ctx.reply(
+        `🤝 Trade #${trade.id} · ${role}\nSnapshot: ${description}\n` +
+        `Kedaluwarsa: ${Math.max(0, trade.expires_at - Math.floor(Date.now() / 1000))} detik.\n` +
+        `/trade accept ${trade.id} · /trade cancel ${trade.id}`,
+      );
+    }
+    return ctx.reply(
+      'Format trade baru:\n/trade offer gold [jumlah]\n' +
+      '/trade offer item [item_id] [jumlah]\n/trade accept [id]\n/trade cancel [id]',
+    );
 
     if (!input) return ctx.reply(
       `Penggunaan: <code>/trade [item_id/nomor] [jumlah]</code>\n` +

@@ -57,6 +57,9 @@ const {
   loadEquipmentContent,
   createEquipmentService,
 } = require('../src/rpg/services/equipment');
+const {
+  createDirectTradeService,
+} = require('../src/rpg/services/directTrade');
 
 function createTestDb() {
   const db = new Database(':memory:');
@@ -125,6 +128,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 12 },
     { version: 13 },
     { version: 14 },
+    { version: 15 },
   ]);
   db.close();
 });
@@ -756,5 +760,41 @@ test('equipment v2 bonuses feed tower and asynchronous raid power formulas', () 
   const endgame = createEndgameService(db, { now: () => 2_000_000_000, random: () => 1 });
   const tower = endgame.attemptTower('1');
   assert.equal(tower.playerPower, 24);
+  db.close();
+});
+
+test('direct item trade uses a frozen snapshot and atomic recipient confirmation', () => {
+  const db = createTestDb();
+  db.prepare(`
+    INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
+    VALUES ('1','tembaga',10)
+  `).run();
+  const trades = createDirectTradeService(db, { now: () => 2_000_000_000 });
+  const offered = trades.createOffer('1', '2', { type: 'item', itemId: 'tembaga', quantity: 4 });
+  assert.equal(offered.success, true);
+  assert.deepEqual(trades.getPending('2').offer, {
+    type: 'item', itemId: 'tembaga', displayName: 'Tembaga', quantity: 4,
+  });
+  const accepted = trades.accept('2', offered.tradeId);
+  assert.equal(accepted.success, true);
+  assert.equal(trades.accept('2', offered.tradeId).success, false);
+  assert.equal(db.prepare("SELECT quantity FROM rpg_inventory WHERE telegram_user_id='1' AND item_id='tembaga'").get().quantity, 6);
+  assert.equal(db.prepare("SELECT quantity FROM rpg_inventory WHERE telegram_user_id='2' AND item_id='tembaga'").get().quantity, 4);
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_trade_receipts_v2').get().count, 1);
+  db.close();
+});
+
+test('direct gold trade applies tax with balanced immutable ledger entries', () => {
+  const db = createTestDb();
+  const trades = createDirectTradeService(db, { now: () => 2_000_000_000 });
+  const offered = trades.createOffer('1', '2', { type: 'gold', amount: 100 });
+  const result = trades.accept('2', offered.tradeId);
+  assert.equal(result.success, true);
+  assert.equal(result.settlement.received, 95);
+  assert.equal(result.settlement.tax, 5);
+  assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='1'").get().gold, 900);
+  assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='2'").get().gold, 1095);
+  const sum = db.prepare('SELECT sum(amount) amount FROM rpg_currency_ledger').get().amount;
+  assert.equal(sum, -5);
   db.close();
 });

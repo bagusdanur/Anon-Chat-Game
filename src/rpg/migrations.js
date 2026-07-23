@@ -578,6 +578,35 @@ const MIGRATIONS = [
       );
     `,
   },
+  {
+    version: 15,
+    name: 'confirmed_direct_trades',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_trade_sessions_v2 (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        proposer_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        recipient_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        offer_json TEXT NOT NULL,
+        offer_hash TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending'
+          CHECK (status IN ('pending','completed','cancelled','expired')),
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        completed_at INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS idx_trade_v2_recipient
+        ON rpg_trade_sessions_v2(recipient_id,status,expires_at);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_trade_v2_pair_pending
+        ON rpg_trade_sessions_v2(proposer_id,recipient_id)
+        WHERE status='pending';
+
+      CREATE TABLE IF NOT EXISTS rpg_trade_receipts_v2 (
+        trade_id INTEGER PRIMARY KEY REFERENCES rpg_trade_sessions_v2(id),
+        settlement_json TEXT NOT NULL,
+        settled_at INTEGER NOT NULL
+      );
+    `,
+  },
 ];
 
 function quoteSql(value) {
