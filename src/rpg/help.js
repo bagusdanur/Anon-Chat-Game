@@ -23,7 +23,7 @@ const HELP_PAGES = [
     title: '🌍 WORLD & CAMPAIGN',
     text:
       '/world — region dan progress dunia\n' +
-      '/travel [region_id] — pindah region\n' +
+      '/travel [nomor] — pindah region\n' +
       '/explore — encounter dan progress campaign\n' +
       '/campaign — chapter serta objective utama\n' +
       '/coopcampaign — progress campaign anggota party\n' +
@@ -35,7 +35,7 @@ const HELP_PAGES = [
     title: '⚔️ COMBAT & BUILD',
     text:
       '<b>Combat tactical</b>\n' +
-      'Attack, defend, skill, item, cooldown, status effect, resist, crit, dan boss mechanic tersedia pada duel/raid.\n\n' +
+      'Attack, defend, skill, cooldown, status effect, resist, crit, dan boss mechanic tersedia pada dungeon tactical, duel, dan raid.\n\n' +
       '/skill — skill tree\n' +
       '/build — loadout aktif\n' +
       '/duel — PvP opsional dengan partner\n' +
@@ -48,8 +48,9 @@ const HELP_PAGES = [
     id: 'dungeon',
     title: '🏰 DUNGEON PANJANG',
     text:
-      '/adventure — dungeon solo multi-room\n' +
-      '/adventure duo — dungeon panjang bersama party\n' +
+      '/adventure — panduan dan daftar dungeon\n' +
+      '/adventure solo [nomor] — turn-based dengan companion\n' +
+      '/adventure duo [nomor] — turn-based bersama party\n' +
       '/dungeon solo — alias mode solo\n' +
       '/dungeon duo — mode checkpoint bersama\n' +
       '/dungeon — raid co-op combat lama\n\n' +
@@ -77,7 +78,10 @@ const HELP_PAGES = [
       '/craft — crafting recipe\n' +
       '/salvage [item] — bongkar equipment\n' +
       '/refine [material] — refinement material\n' +
-      '/market — marketplace escrow dan pajak\n\n' +
+      '/market — daftar listing bernomor\n' +
+      '/market sell [nomor /inv] [qty] [harga]\n' +
+      '/market buy [nomor /market]\n' +
+      '/market cancel [nomor /market]\n\n' +
       'Marketplace memiliki expiry, batas harga, listing limit, item binding, transaksi atomik, dan ledger.',
   },
   {

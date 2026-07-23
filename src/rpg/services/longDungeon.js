@@ -192,6 +192,51 @@ function createLongDungeonService(db, options = {}) {
     return success && state.hp > 0 ? room.success : room.failure;
   }
 
+  function resolveTacticalTurn(session, room, user, action) {
+    const state = session.state;
+    const power = calculatePower(user);
+    const maxEnemyHp = Math.max(8, room.enemy.power * (room.type === 'boss' ? 4 : 3));
+    if (!state.combat || state.combat.roomId !== room.id) {
+      state.combat = {
+        roomId: room.id,
+        enemyHp: maxEnemyHp,
+        maxEnemyHp,
+        turn: 1,
+        skillCooldown: 0,
+      };
+    }
+    const combat = state.combat;
+    if (!['attack', 'defend', 'skill'].includes(action)) {
+      return { success: false, reason: 'Pilih Attack, Defend, atau Skill.' };
+    }
+    if (action === 'skill' && combat.skillCooldown > 0) {
+      return { success: false, reason: `Skill masih cooldown ${combat.skillCooldown} turn.` };
+    }
+
+    const multiplier = action === 'skill' ? 0.8 : action === 'defend' ? 0.25 : 0.5;
+    const dealt = Math.max(1, Math.floor(power * multiplier * (0.9 + random() * 0.2)));
+    combat.enemyHp = Math.max(0, combat.enemyHp - dealt);
+    if (action === 'skill') combat.skillCooldown = 2;
+    const defeated = combat.enemyHp <= 0;
+    const incoming = defeated
+      ? 0
+      : Math.max(1, Math.floor(room.enemy.damage * (action === 'defend' ? 0.35 : 1)));
+    state.hp = Math.max(0, state.hp - incoming);
+    if (action !== 'skill' && combat.skillCooldown > 0) combat.skillCooldown--;
+    state.log = `Turn ${combat.turn}: ${action} memberi ${dealt} damage · menerima ${incoming} damage`;
+    combat.turn++;
+
+    if (state.hp <= 0) {
+      delete state.combat;
+      return { success: true, nextRoomId: room.failure, transitioned: true };
+    }
+    if (defeated) {
+      delete state.combat;
+      return { success: true, nextRoomId: room.success, transitioned: true };
+    }
+    return { success: true, nextRoomId: room.id, transitioned: false };
+  }
+
   return {
     list(level) {
       return db.prepare(`
@@ -301,7 +346,15 @@ function createLongDungeonService(db, options = {}) {
         session.state.hp = Math.max(0, session.state.hp - (option.damage || 0));
         nextRoomId = session.state.hp > 0 ? option.next : 'failed';
       } else if (room.type === 'combat' || room.type === 'boss') {
-        nextRoomId = autoResolve(session, room, user);
+        // `fight` dipertahankan untuk callback lama; UI baru selalu memakai
+        // tactical action per turn.
+        if (optionId === 'fight') {
+          nextRoomId = autoResolve(session, room, user);
+        } else {
+          const tactical = resolveTacticalTurn(session, room, user, optionId);
+          if (!tactical.success) return tactical;
+          nextRoomId = tactical.nextRoomId;
+        }
       } else if (room.type === 'treasure') {
         const reward = room.reward || {};
         session.state.collected[room.id] = reward;
@@ -313,7 +366,7 @@ function createLongDungeonService(db, options = {}) {
       } else {
         return { success: false, reason: 'Room terminal tidak dapat dilanjutkan.' };
       }
-      session.state.visited.push(nextRoomId);
+      if (nextRoomId !== room.id) session.state.visited.push(nextRoomId);
       const nextRoom = session.definition.rooms.find(item => item.id === nextRoomId);
       const terminalStatus = nextRoom.type === 'finish'
         ? 'completed'

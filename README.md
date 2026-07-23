@@ -92,11 +92,11 @@ pm2 save && pm2 startup
 | `/profile`        | Ringkasan alias, progres, sosial, build, dan status |
 | `/world`          | Melihat region dan progress campaign RPG            |
 | `/explore`        | Menjelajahi region aktif                             |
-| `/travel [region]`| Berpindah ke region yang sudah terbuka               |
+| `/travel [nomor]` | Berpindah ke region bernomor yang sudah terbuka      |
 | `/skill`          | Melihat, mempelajari, dan memasang skill             |
 | `/build`          | Melihat skill tree dan loadout aktif                 |
-| `/adventure`      | Memulai atau melanjutkan dungeon solo panjang        |
-| `/adventure duo` | Memulai atau melanjutkan dungeon panjang bersama party |
+| `/adventure`      | Panduan dungeon tactical solo/duo                    |
+| `/adventure duo [nomor]` | Dungeon turn-based bersama party              |
 | `/dungeon solo`   | Alias dungeon solo dengan checkpoint persisten       |
 | `/campaign`       | Melihat chapter dan objective campaign               |
 | `/profession`     | Melihat level dan mastery seluruh profession          |

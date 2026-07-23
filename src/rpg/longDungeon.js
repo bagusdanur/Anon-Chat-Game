@@ -20,12 +20,24 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
 
   function renderSession(session) {
     const room = service.getRoom(session);
+    const combat = session.state.combat?.roomId === room.id
+      ? session.state.combat
+      : null;
     let text =
       `<b>${session.definition.name}</b>\n` +
-      `Room ${session.state.visited.length}: <b>${room.name}</b>\n\n` +
+      `📍 Room ${session.state.visited.length}: <b>${room.name}</b> · ${session.mode === 'duo' ? '🤝 DUO' : '🧍 SOLO'}\n\n` +
       `${room.text}\n\n` +
       `❤️ HP <b>${session.state.hp}/${session.state.maxHp}</b>\n` +
       `🤝 Companion: <b>${session.state.companion}</b>`;
+    if (['combat', 'boss'].includes(room.type)) {
+      const maxEnemyHp = combat?.maxEnemyHp || Math.max(8, room.enemy.power * (room.type === 'boss' ? 4 : 3));
+      const enemyHp = combat?.enemyHp ?? maxEnemyHp;
+      text += `\n👹 ${room.enemy.name}: <b>${enemyHp}/${maxEnemyHp} HP</b>`;
+      text += `\n\n💡 <i>Attack stabil · Defend mengurangi damage · Skill kuat dengan cooldown.</i>`;
+      if (session.mode === 'duo') {
+        text += `\n🤝 <i>Kedua anggota party dapat bergantian menekan aksi.</i>`;
+      }
+    }
     if (session.state.log) text += `\n📝 ${session.state.log}`;
 
     const buttons = [];
@@ -37,10 +49,13 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
         )]);
       }
     } else if (['combat', 'boss'].includes(room.type)) {
-      buttons.push([Markup.button.callback(
-        room.type === 'boss' ? '👑 Lawan Boss' : '⚔️ Mulai Pertarungan',
-        `ld:${session.id}:${session.state_version}:fight`,
-      )]);
+      buttons.push([
+        Markup.button.callback('⚔️ Attack', `ld:${session.id}:${session.state_version}:attack`),
+        Markup.button.callback('🛡 Defend', `ld:${session.id}:${session.state_version}:defend`),
+      ]);
+      buttons.push([
+        Markup.button.callback('✨ Skill', `ld:${session.id}:${session.state_version}:skill`),
+      ]);
     } else if (room.type === 'treasure') {
       buttons.push([Markup.button.callback(
         '🎁 Ambil Harta',
@@ -85,11 +100,66 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     return showSession(ctx, result.session);
   }
 
+  function adventureMenu(ctx) {
+    if (!requireEnabled(ctx)) return;
+    const user = getOrCreateUser(ctx.chat.id);
+    if (!user) return ctx.reply('Buat karakter terlebih dahulu dengan /profile.');
+    const active = service.getActive(ctx.chat.id);
+    if (active) {
+      return ctx.reply(
+        `<b>🏰 ADVENTURE</b>\n\n♻️ Ada checkpoint aktif: <b>${active.definition.name}</b>\n` +
+        `Mode: <b>${active.mode === 'duo' ? 'DUO' : 'SOLO'}</b>\n\n` +
+        `<i>Tekan lanjut untuk kembali ke room terakhir.</i>`,
+        {
+          parse_mode: 'HTML',
+          ...Markup.inlineKeyboard([[
+            Markup.button.callback('▶️ Lanjutkan Checkpoint', `adventure:resume:${active.id}`),
+          ]]),
+        },
+      );
+    }
+    const dungeons = service.list(user.level);
+    const list = dungeons.map((item, index) =>
+      `<code>[${index + 1}]</code> <b>${item.name}</b> · Lv.${item.min_level}`,
+    ).join('\n');
+    return ctx.reply(
+      `<b>🏰 ADVENTURE — DUNGEON TURN-BASED</b>\n\n${list}\n\n` +
+      `<b>Pilih mode:</b>\n🧍 Solo memakai companion NPC.\n` +
+      `🤝 Duo direkomendasikan: HP digabung dan kedua pemain bergantian aksi.\n\n` +
+      `<i>Contoh: /adventure solo 1 atau /adventure duo 1</i>`,
+      {
+        parse_mode: 'HTML',
+        ...Markup.inlineKeyboard([
+          [Markup.button.callback('🤝 Mulai Duo (Disarankan)', 'adventure:start:duo:1')],
+          [Markup.button.callback('🧍 Mulai Solo', 'adventure:start:solo:1')],
+        ]),
+      },
+    );
+  }
+
   bot.command('adventure', rateLimitCommand, ctx => {
     const args = ctx.message.text.trim().split(/\s+/).slice(1);
+    if (args.length === 0) return adventureMenu(ctx);
     const mode = args[0]?.toLowerCase() === 'duo' ? 'duo' : 'solo';
-    const dungeonId = mode === 'duo' ? (args[1] || 'goblin_ruins') : (args[0] || 'goblin_ruins');
+    const user = getOrCreateUser(ctx.chat.id);
+    const dungeonNumber = Number(args[1] || (mode === 'solo' && args[0] !== 'solo' ? args[0] : 1));
+    const dungeonId = service.list(user?.level || 1)[dungeonNumber - 1]?.dungeon_id;
+    if (!dungeonId) return ctx.reply('❌ Nomor dungeon tidak valid. Ketik /adventure.');
     return startOrResume(ctx, dungeonId, mode);
+  });
+
+  bot.action(/^adventure:start:(solo|duo):(\d+)$/, async ctx => {
+    await ctx.answerCbQuery();
+    const user = getOrCreateUser(ctx.chat.id);
+    const dungeonId = service.list(user?.level || 1)[Number(ctx.match[2]) - 1]?.dungeon_id;
+    if (!dungeonId) return ctx.reply('❌ Dungeon tidak tersedia.');
+    return startOrResume(ctx, dungeonId, ctx.match[1]);
+  });
+  bot.action(/^adventure:resume:(\d+)$/, async ctx => {
+    await ctx.answerCbQuery();
+    const session = service.get(Number(ctx.match[1]), ctx.chat.id);
+    if (!session || session.status !== 'active') return ctx.reply('Checkpoint tidak tersedia.');
+    return showSession(ctx, session);
   });
 
   // Intercept hanya `/dungeon solo`; command `/dungeon` biasa diteruskan ke

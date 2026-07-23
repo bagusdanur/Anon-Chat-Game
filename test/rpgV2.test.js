@@ -315,6 +315,30 @@ test('long dungeon validates content and persists every room checkpoint', () => 
   db.close();
 });
 
+test('long dungeon combat supports persisted tactical turns', () => {
+  const db = createTestDb();
+  publishDungeons(db, loadDungeons());
+  const dungeon = createLongDungeonService(db, { random: () => 0.5 });
+  let session = dungeon.startSolo('1', 'goblin_ruins').session;
+  session = dungeon.advance('1', session.id, session.state_version, 'left').session;
+  assert.equal(session.current_room_id, 'guard_post');
+
+  const firstTurn = dungeon.advance('1', session.id, session.state_version, 'defend');
+  assert.equal(firstTurn.success, true);
+  assert.equal(firstTurn.session.current_room_id, 'guard_post');
+  assert.equal(firstTurn.session.state.combat.turn, 2);
+  assert.match(firstTurn.session.state.log, /defend/);
+
+  session = firstTurn.session;
+  for (let turn = 0; turn < 10 && session.current_room_id === 'guard_post'; turn++) {
+    const result = dungeon.advance('1', session.id, session.state_version, turn === 0 ? 'skill' : 'attack');
+    assert.equal(result.success, true);
+    session = result.session;
+  }
+  assert.equal(session.current_room_id, 'camp');
+  db.close();
+});
+
 test('long dungeon completion rewards are idempotent and include treasure', () => {
   const db = createTestDb();
   publishDungeons(db, loadDungeons());
