@@ -12,11 +12,25 @@ const { db } = require('../db');
 const { createSkillService } = require('./services/skills');
 const { createEquipmentService } = require('./services/equipment');
 const { createSocialService } = require('./services/social');
+const { formatStat } = require('./equipment');
 
 const RARITY_EMOJI = { common: '⚪', uncommon: '🟢', rare: '🔵', epic: '🟣', legendary: '🟠' };
 const skillService = createSkillService(db);
 const equipmentV2 = createEquipmentService(db);
 const socialService = createSocialService(db);
+const V2_CATEGORY_LABELS = {
+  weapon: 'Senjata',
+  staff: 'Tongkat',
+  armor: 'Armor',
+  accessory: 'Aksesori',
+};
+const V2_RARITY_LABELS = {
+  common: 'Common',
+  uncommon: 'Uncommon',
+  rare: 'Rare',
+  epic: 'Epic',
+  legendary: 'Legendary',
+};
 
 function renderHpBar(hp, maxHp, len = 8) {
   return progressBar(hp, maxHp, len) + ` ${Math.max(0, hp)}/${maxHp}`;
@@ -160,10 +174,26 @@ function renderProfile(user) {
   }
 
   if (v2Equipped.length > 0) {
-    msg += `\n<b>💠 Equipment V2</b>\n`;
+    const totalItemPower = v2Equipped.reduce((sum, item) => sum + item.item_power, 0);
+    msg += `\n<b>💠 Equipment V2</b> · Total <b>${totalItemPower} IP</b>\n`;
     for (const item of v2Equipped) {
       const gearNumber = v2Items.findIndex(candidate => candidate.id === item.id) + 1;
-      msg += `✅ ${item.equipped_slot}: <code>[${gearNumber}]</code> <b>${item.display_name}</b> · IP ${item.item_power}\n`;
+      const bonuses = item.affixes.length
+        ? item.affixes.map(affix => formatStat(affix.stat_key, affix.stat_value)).join(' · ')
+        : 'Tanpa bonus acak';
+      const filledSockets = item.sockets.filter(socket => socket.gem_item_id).length;
+      const socketInfo = item.sockets.length
+        ? `${filledSockets}/${item.sockets.length} terisi`
+        : 'tidak ada';
+      const binding = item.bind_status === 'account_bound' ? 'Terikat' : 'Bisa dijual';
+      msg += `✅ <code>[${gearNumber}]</code> <b>${item.display_name}</b> +${item.upgrade_tier}\n`;
+      msg += `   ${V2_CATEGORY_LABELS[item.category] || item.category} · ` +
+        `${V2_RARITY_LABELS[item.rarity] || item.rarity} · ` +
+        `<b>${item.item_power} IP</b> (skor) · Q${item.quality}/100\n`;
+      msg += `   🎲 ${bonuses}\n`;
+      msg += `   💎 Socket ${socketInfo} · 🔒 ${binding}`;
+      if (item.set_id) msg += ` · 🧩 Set ${item.set_id}`;
+      msg += `\n`;
     }
   }
 
