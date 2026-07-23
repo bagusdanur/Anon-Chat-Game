@@ -212,6 +212,16 @@ function createSkillService(db, options = {}) {
       return { success: true, refundedPoints: quote.points, cost: quote.cost };
     },
     getLearned,
+    getCombatLoadout(userId) {
+      return getLearned(userId)
+        .filter(skill => skill.equipped_slot != null)
+        .sort((a, b) => a.equipped_slot - b.equipped_slot)
+        .map(skill => ({
+          ...JSON.parse(skill.definition_json),
+          rank: skill.rank,
+          slot: skill.equipped_slot,
+        }));
+    },
     availablePoints,
   };
 }

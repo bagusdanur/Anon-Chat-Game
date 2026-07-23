@@ -13,6 +13,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Sistem *Report* dan *Ban* untuk menangani penyalahgunaan
 - Dunia RPG persisten dengan region, campaign, dan eksplorasi (`/rpg`, `/world`, `/explore`)
 - Skill tree dan loadout per class (`/skill`, `/build`)
+- Loadout skill aktif digunakan dalam combat dungeon dan duel, dengan cooldown per skill
 
 ## Keterbatasan Saat Ini (Known Limitations)
 

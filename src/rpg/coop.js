@@ -11,6 +11,13 @@ const {
   incrementQuestProgress
 } = require('./db_rpg');
 const { renderHpBar } = require('./profile');
+const { db } = require('../db');
+const { createSkillService } = require('./services/skills');
+const {
+  tickSkillCooldowns, getSkillCooldown, findLoadoutSkill, resolveCombatSkill,
+} = require('./services/combatSkills');
+
+const skillService = createSkillService(db);
 
 // In-memory raid state keyed by pairKey
 let botRef = null;
@@ -56,6 +63,7 @@ function resolveTurn(raid, actions) {
   const logs = [];
   const boss = raid.boss;
   const bossDefender = { def: boss.def, phys_resist: boss.physResist || 0, magic_resist: boss.magicResist || 0 };
+  Object.values(raid.players).forEach(tickSkillCooldowns);
 
   // Tick burn boss (in-memory, boss bukan user DB)
   if (raid.boss.burnTurns > 0 && raid.boss.burnDmg > 0) {
@@ -119,6 +127,28 @@ function resolveTurn(raid, actions) {
       const typeIcon = cls.damageType === 'magic' ? '🔮' : '⚔️';
       logs.push(`${typeIcon} ${player.className}: menyerang! *-${dmg} HP* bos${critText}`);
 
+    } else if (action.type === 'skill' && action.skillId) {
+      const skill = findLoadoutSkill(player, action.skillId);
+      if (!skill) {
+        logs.push(`⚠️ ${player.className}: skill loadout tidak valid.`);
+        continue;
+      }
+      const result = resolveCombatSkill({
+        attacker: player,
+        defender: bossDefender,
+        skill,
+        calcPhysicalDamage,
+        calcMagicDamage,
+        rollCrit,
+      });
+      boss.hp = Math.max(0, boss.hp - result.damage);
+      if (result.status?.type === 'burn') {
+        boss.burnDmg = Math.max(boss.burnDmg || 0, result.status.power);
+        boss.burnTurns = Math.max(boss.burnTurns || 0, result.status.turns);
+      }
+      if (bossDefender.weakenPower) boss.weakenPower = bossDefender.weakenPower;
+      logs.push(`${player.icon} ${player.className}: ${result.log}`);
+
     } else if (action.type === 'skill') {
       // Skill — damage type sesuai kelas + status effect
       const baseDmg = cls.damageType === 'magic' ? (player.magicAtk || player.atk) : (player.atk + (player.atkBonus || 0));
@@ -171,7 +201,11 @@ function resolveTurn(raid, actions) {
   if (boss.hp <= 0) return logs;
 
   // Boss attack
-  const bossAtk = randInt(...boss.atkRange);
+  let bossAtk = randInt(...boss.atkRange);
+  if (boss.weakenPower) {
+    bossAtk = Math.max(1, Math.floor(bossAtk * (1 - boss.weakenPower)));
+    boss.weakenPower = 0;
+  }
   const isTelegraph = raid.turnNumber % 3 === 0;
 
   // Enrage at 50% HP
@@ -188,9 +222,17 @@ function resolveTurn(raid, actions) {
     let dmg = Math.max(1, bossAtk - Math.floor(player.def / 2) + randInt(-2, 3));
     // Shield: -50% damage — cek uid bukan player.classId
     if (hasStatusEffect(uid, 'shield') || player.defending) {
-      dmg = Math.floor(dmg * 0.5);
+      dmg = Math.floor(dmg * (1 - (player.guardReduction || 0.5)));
       player.defending = false;
+      player.guardReduction = 0;
     }
+    if (player.shieldPercent) {
+      dmg = Math.floor(dmg * (1 - player.shieldPercent));
+      player.shieldPercent = 0;
+    }
+    const protector = Object.values(raid.players)
+      .find(other => other !== player && other.alive && other.provoking);
+    if (protector) dmg = Math.floor(dmg * 0.5);
     // Ksatria trait: -10% damage
     if (player.classId === 'ksatria') dmg = Math.floor(dmg * 0.9);
     // Apply player phys resist
@@ -203,6 +245,7 @@ function resolveTurn(raid, actions) {
       logs.push(`👹 ${boss.name} menyerang ${player.className}: *-${dmg} HP*`);
     }
   }
+  Object.values(raid.players).forEach(player => { player.provoking = false; });
 
   if (isTelegraph && boss.hp > 0) {
     logs.push(`⚠️ <b>${boss.name} bersiap untuk serangan berat! Gunakan BERTAHAN!</b>`);
@@ -237,7 +280,11 @@ function sendCombatUI(bot, raid, extraLogs = []) {
       const critPct = Math.round((p.critRate || 0.05) * 100);
       msg += `${p.icon} <b>${p.className}</b> ${dmgType}\n`;
       msg += `   ${renderHpBar(p.hp, p.maxHp, 8)}\n`;
-      msg += `   ⚡ CD: ${p.skillCooldown} | 💥 Crit: ${critPct}%\n`;
+      const activeCooldowns = Object.values(p.skillCooldowns || {}).filter(cd => cd > 0);
+      const cooldownText = p.skillLoadout?.length
+        ? (activeCooldowns.length ? activeCooldowns.join('/') : 'ready')
+        : p.skillCooldown;
+      msg += `   ⚡ CD: ${cooldownText} | 💥 Crit: ${critPct}%\n`;
     } else {
       msg += `${p.icon} <b>${p.className}</b>: 💀 Tumbang\n`;
     }
@@ -259,7 +306,7 @@ function sendCombatUI(bot, raid, extraLogs = []) {
     [Markup.button.callback('🗡️ Serang', `raid:${pairKey}:${turnNumber}:attack`)],
     [
       Markup.button.callback('🛡️ Bertahan', `raid:${pairKey}:${turnNumber}:defend`),
-      Markup.button.callback('🔮 Skill', `raid:${pairKey}:${turnNumber}:skill`),
+      Markup.button.callback('🔮 Skill', `raid:skills:${turnNumber}`),
     ],
   ];
 
@@ -582,6 +629,8 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
           physResist: userA.phys_resist || 0,
           magicResist: userA.magic_resist || 0,
           skillCooldown: 0,
+          skillCooldowns: {},
+          skillLoadout: skillService.getCombatLoadout(invite.inviter),
           alive: true,
           defending: false,
         },
@@ -600,6 +649,8 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
           physResist: userB.phys_resist || 0,
           magicResist: userB.magic_resist || 0,
           skillCooldown: 0,
+          skillCooldowns: {},
+          skillLoadout: skillService.getCombatLoadout(userId),
           alive: true,
           defending: false,
         },
@@ -619,7 +670,7 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
   });
 
   // Combat action handler
-  bot.action(/^raid:(.+):(\d+):(attack|defend|skill|item)$/, rateLimitCommand, (ctx) => {
+  bot.action(/^raid:(.+):(\d+):(attack|defend|item)$/, rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
     const [, pairKey, turnStr, actionType] = ctx.match;
     const turnNumber = parseInt(turnStr);
@@ -642,10 +693,6 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
 
     const player = raid.players[userId];
     if (!player || !player.alive) return ctx.answerCbQuery('Kamu sudah tumbang!', { show_alert: true });
-    if (actionType === 'skill' && player.skillCooldown > 0) {
-      return ctx.answerCbQuery(`Skill cooldown ${player.skillCooldown} turn!`, { show_alert: true });
-    }
-
     raid.actions[userId] = { type: actionType };
     raid.lastActivity = Date.now(); // Update activity timestamp
     ctx.answerCbQuery('Aksi dikonfirmasi!');
@@ -657,6 +704,65 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
     }
 
     checkRaidResolve(bot, pairKey);
+  });
+
+  function findRaidForUser(userId) {
+    const id = String(userId);
+    for (const raid of raidSessions.values()) {
+      if (String(raid.chatIdA) === id || String(raid.chatIdB) === id) return raid;
+    }
+    return null;
+  }
+
+  function submitSkillAction(ctx, raid, action) {
+    const userId = ctx.chat.id;
+    raid.actions[userId] = action;
+    raid.lastActivity = Date.now();
+    ctx.answerCbQuery('Aksi dikonfirmasi!');
+    const partnerId = userId === raid.chatIdA ? raid.chatIdB : raid.chatIdA;
+    if (!raid.actions[partnerId]) ctx.reply('⏳ Menunggu partner...');
+    checkRaidResolve(bot, raid.pairKey);
+  }
+
+  bot.action(/^raid:skills:(\d+)$/, rateLimitCommand, ctx => {
+    const raid = findRaidForUser(ctx.chat.id);
+    const turnNumber = Number(ctx.match[1]);
+    if (!raid) return ctx.answerCbQuery('Raid sudah selesai.', { show_alert: true });
+    if (raid.turnNumber !== turnNumber) return ctx.answerCbQuery('Turn ini sudah berlalu.', { show_alert: true });
+    if (raid.actions[ctx.chat.id]) return ctx.answerCbQuery('Kamu sudah memilih!', { show_alert: true });
+    const player = raid.players[ctx.chat.id];
+    if (!player || !player.alive) return ctx.answerCbQuery('Kamu sudah tumbang!', { show_alert: true });
+    if (!player.skillLoadout?.length) {
+      if (player.skillCooldown > 0) {
+        return ctx.answerCbQuery(`Skill cooldown ${player.skillCooldown} turn!`, { show_alert: true });
+      }
+      return submitSkillAction(ctx, raid, { type: 'skill' });
+    }
+    const buttons = player.skillLoadout.map(skill => {
+      const cooldown = getSkillCooldown(player, skill.id);
+      const suffix = cooldown > 0 ? ` (${cooldown}T)` : '';
+      return [Markup.button.callback(
+        `${skill.name}${suffix}`,
+        `raid:skill:${turnNumber}:${skill.id}`,
+      )];
+    });
+    ctx.answerCbQuery();
+    return ctx.reply('Pilih skill dari loadout:', Markup.inlineKeyboard(buttons));
+  });
+
+  bot.action(/^raid:skill:(\d+):([a-z0-9_]+)$/, rateLimitCommand, ctx => {
+    const raid = findRaidForUser(ctx.chat.id);
+    const turnNumber = Number(ctx.match[1]);
+    const skillId = ctx.match[2];
+    if (!raid) return ctx.answerCbQuery('Raid sudah selesai.', { show_alert: true });
+    if (raid.turnNumber !== turnNumber) return ctx.answerCbQuery('Turn ini sudah berlalu.', { show_alert: true });
+    if (raid.actions[ctx.chat.id]) return ctx.answerCbQuery('Kamu sudah memilih!', { show_alert: true });
+    const player = raid.players[ctx.chat.id];
+    const skill = player && findLoadoutSkill(player, skillId);
+    if (!skill) return ctx.answerCbQuery('Skill bukan bagian loadout-mu.', { show_alert: true });
+    const cooldown = getSkillCooldown(player, skillId);
+    if (cooldown > 0) return ctx.answerCbQuery(`Cooldown ${cooldown} turn!`, { show_alert: true });
+    return submitSkillAction(ctx, raid, { type: 'skill', skillId });
   });
 
   return { clearRaidSession };

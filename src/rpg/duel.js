@@ -8,6 +8,13 @@ const {
   getDuelCooldown, setDuelCooldown, createDuelRun, finalizeDuelRun,
   incrementWinStreak, resetWinStreak, getWinStreak,
 } = require('./db_rpg');
+const { db } = require('../db');
+const { createSkillService } = require('./services/skills');
+const {
+  tickSkillCooldowns, getSkillCooldown, findLoadoutSkill, resolveCombatSkill,
+} = require('./services/combatSkills');
+
+const skillService = createSkillService(db);
 
 const duelSessions = new Map();
 const duelInvites = new Map(); // pairKey → { inviter, invitee }
@@ -19,11 +26,35 @@ function getDuelPairKey(a, b) {
 function resolveDuelTurn(duel, actions) {
   const logs = [];
   const { playerA, playerB } = duel;
+  tickSkillCooldowns(playerA);
+  tickSkillCooldowns(playerB);
 
-  for (const [uid, action] of Object.entries(actions)) {
+  const actionPriority = ([uid, action]) => {
+    if (action.type === 'defend') return 0;
+    const player = String(uid) === String(duel.chatIdA) ? playerA : playerB;
+    const skill = action.skillId && findLoadoutSkill(player, action.skillId);
+    return skill && !['physical_damage', 'magic_damage'].includes(skill.effect?.type) ? 1 : 2;
+  };
+  const orderedActions = Object.entries(actions).sort((a, b) => actionPriority(a) - actionPriority(b));
+
+  function applyMitigation(defender, damage) {
+    let finalDamage = damage;
+    if (defender.defending) {
+      finalDamage = Math.floor(finalDamage * (1 - (defender.guardReduction || 0.5)));
+      defender.defending = false;
+      defender.guardReduction = 0;
+    }
+    if (defender.shieldPercent) {
+      finalDamage = Math.floor(finalDamage * (1 - defender.shieldPercent));
+      defender.shieldPercent = 0;
+    }
+    return Math.max(1, finalDamage);
+  }
+
+  for (const [uid, action] of orderedActions) {
     if (action.type === 'dead') continue;
-    const attacker = uid === duel.chatIdA ? playerA : playerB;
-    const defender = uid === duel.chatIdA ? playerB : playerA;
+    const attacker = String(uid) === String(duel.chatIdA) ? playerA : playerB;
+    const defender = String(uid) === String(duel.chatIdA) ? playerB : playerA;
 
     if (action.type === 'attack') {
       const cls = CLASS_DEFS[attacker.classId];
@@ -39,8 +70,45 @@ function resolveDuelTurn(duel, actions) {
       }
       const { isCrit, multiplier } = rollCrit(attacker.critRate || 0.05, attacker.critMulti || 1.5);
       dmg = Math.floor(dmg * multiplier);
+      if (attacker.weakenPower) {
+        dmg = Math.floor(dmg * (1 - attacker.weakenPower));
+        attacker.weakenPower = 0;
+      }
+      dmg = applyMitigation(defender, dmg);
       defender.hp = Math.max(0, defender.hp - dmg);
       logs.push(`${attacker.icon} ${attacker.className} menyerang! *-${dmg} HP*${isCrit ? ' 💥 CRIT!' : ''}`);
+
+    } else if (action.type === 'skill' && action.skillId) {
+      const skill = findLoadoutSkill(attacker, action.skillId);
+      if (!skill) {
+        logs.push(`⚠️ ${attacker.className}: skill loadout tidak valid.`);
+        continue;
+      }
+      const defStats = {
+        def: defender.def,
+        phys_resist: defender.physResist || 0,
+        magic_resist: defender.magicResist || 0,
+      };
+      const result = resolveCombatSkill({
+        attacker,
+        defender: defStats,
+        skill,
+        calcPhysicalDamage,
+        calcMagicDamage,
+        rollCrit,
+      });
+      if (defStats.weakenPower) defender.weakenPower = defStats.weakenPower;
+      if (result.damage > 0) {
+        let damage = result.damage;
+        if (attacker.weakenPower) {
+          damage = Math.floor(damage * (1 - attacker.weakenPower));
+          attacker.weakenPower = 0;
+        }
+        damage = applyMitigation(defender, damage);
+        defender.hp = Math.max(0, defender.hp - damage);
+        result.log = result.log.replace(`-${result.damage} HP`, `-${damage} HP`);
+      }
+      logs.push(`${attacker.icon} ${attacker.className}: ${result.log}`);
 
     } else if (action.type === 'skill') {
       const cls = CLASS_DEFS[attacker.classId];
@@ -60,6 +128,11 @@ function resolveDuelTurn(duel, actions) {
       } else {
         dmg = calcPhysicalDamage(attacker, defStats, baseDmg, skillMulti, 0.10);
       }
+      if (attacker.weakenPower) {
+        dmg = Math.floor(dmg * (1 - attacker.weakenPower));
+        attacker.weakenPower = 0;
+      }
+      dmg = applyMitigation(defender, dmg);
       defender.hp = Math.max(0, defender.hp - dmg);
       attacker.skillCooldown = attacker.classId === 'pencuri' ? 4 : 3;
       logs.push(`${attacker.icon} ${attacker.className}: ${cls.skillName}! *-${dmg} HP* 💥 Skill!`);
@@ -75,11 +148,12 @@ function resolveDuelTurn(duel, actions) {
   // Defend reduction
   for (const [uid, action] of Object.entries(actions)) {
     if (action.type === 'defend') {
-      const defender = uid === duel.chatIdA ? playerA : playerB;
+      const defender = String(uid) === String(duel.chatIdA) ? playerA : playerB;
       defender.hp = Math.min(defender.maxHp, defender.hp + Math.floor(defender.maxHp * 0.05)); // +5% HP saat defend
     }
   }
 
+  duel.turnNumber++;
   return logs;
 }
 
@@ -109,7 +183,7 @@ function sendDuelUI(bot, duel, extraLogs = []) {
       ...Markup.inlineKeyboard([
         [Markup.button.callback('🗡️ Serang', `duel:${pairKey}:${turnNumber}:attack`)],
         [Markup.button.callback('🛡️ Bertahan', `duel:${pairKey}:${turnNumber}:defend`),
-         Markup.button.callback('🔮 Skill', `duel:${pairKey}:${turnNumber}:skill`)],
+         Markup.button.callback('🔮 Skill', `duel:skills:${turnNumber}`)],
       ])
     }).catch(() => {});
   };
@@ -154,6 +228,7 @@ function startDuel(bot, inviterId, inviteeId) {
       critRate: user.crit_rate || 0.05, critMulti: user.crit_multi || 1.5,
       physResist: user.phys_resist || 0, magicResist: user.magic_resist || 0,
       skillCooldown: 0, alive: true, defending: false,
+      skillCooldowns: {}, skillLoadout: skillService.getCombatLoadout(inviterId),
     },
     playerB: {
       classId: partner.class_name, className: clsB.name, icon: clsB.name.split(' ')[0],
@@ -163,6 +238,7 @@ function startDuel(bot, inviterId, inviteeId) {
       critRate: partner.crit_rate || 0.05, critMulti: partner.crit_multi || 1.5,
       physResist: partner.phys_resist || 0, magicResist: partner.magic_resist || 0,
       skillCooldown: 0, alive: true, defending: false,
+      skillCooldowns: {}, skillLoadout: skillService.getCombatLoadout(inviteeId),
     },
     actions: {},
     pendingLogs: [],
@@ -175,6 +251,60 @@ function startDuel(bot, inviterId, inviteeId) {
   bot.telegram.sendMessage(inviteeId, startMsg, { parse_mode: 'Markdown' }).catch(() => {});
 
   setTimeout(() => sendDuelUI(bot, duel), 1500);
+}
+
+function resolveDuelIfReady(bot, duel) {
+  if (!duel.actions[duel.chatIdA] || !duel.actions[duel.chatIdB]) return false;
+  const logs = resolveDuelTurn(duel, duel.actions);
+  duel.actions = {};
+  duel.pendingLogs = logs;
+  updateHp(duel.chatIdA, duel.playerA.hp);
+  updateHp(duel.chatIdB, duel.playerB.hp);
+
+  const isADead = duel.playerA.hp <= 0;
+  const isBDead = duel.playerB.hp <= 0;
+  if (!isADead && !isBDead) {
+    sendDuelUI(bot, duel);
+    return true;
+  }
+
+  let winnerId, loserId, winnerPlayer;
+  if (isADead && isBDead) {
+    const xpReward = 20, goldReward = 10;
+    addXp(duel.chatIdA, xpReward);
+    addXp(duel.chatIdB, xpReward);
+    addGold(duel.chatIdA, goldReward);
+    addGold(duel.chatIdB, goldReward);
+    finalizeDuelRun(duel.runId, null, xpReward, goldReward);
+    const drawMsg = logs.join('\n') + `\n\n🤝 **DRAW!**\n✨ +${xpReward} XP · 💰 +${goldReward}g`;
+    bot.telegram.sendMessage(duel.chatIdA, drawMsg, { parse_mode: 'Markdown' }).catch(() => {});
+    bot.telegram.sendMessage(duel.chatIdB, drawMsg, { parse_mode: 'Markdown' }).catch(() => {});
+  } else {
+    if (isADead) {
+      winnerId = duel.chatIdB; loserId = duel.chatIdA; winnerPlayer = duel.playerB;
+    } else {
+      winnerId = duel.chatIdA; loserId = duel.chatIdB; winnerPlayer = duel.playerA;
+    }
+    const streak = getWinStreak(winnerId);
+    const bonus = streak >= 2 ? 1.2 : 1.0;
+    const xpWin = Math.floor(50 * bonus);
+    const goldWin = Math.floor(25 * bonus);
+    const xpLose = 20, goldLose = 10;
+    addXp(winnerId, xpWin);
+    addXp(loserId, xpLose);
+    addGold(winnerId, goldWin);
+    addGold(loserId, goldLose);
+    incrementWinStreak(winnerId);
+    resetWinStreak(loserId);
+    finalizeDuelRun(duel.runId, winnerId, xpWin, goldWin);
+    const winMsg = logs.join('\n') + `\n\n🏆 **${winnerPlayer.className} MENANG!**\n` +
+      `🥇 +${xpWin} XP · 💰 +${goldWin}g${streak >= 2 ? ' (streak bonus!)' : ''}\n` +
+      `🥈 +${xpLose} XP · 💰 +${goldLose}g`;
+    bot.telegram.sendMessage(winnerId, winMsg, { parse_mode: 'Markdown' }).catch(() => {});
+    bot.telegram.sendMessage(loserId, winMsg, { parse_mode: 'Markdown' }).catch(() => {});
+  }
+  duelSessions.delete(duel.pairKey);
+  return true;
 }
 
 function setupDuel(bot, { getPartnerId, rateLimitCommand }) {
@@ -249,7 +379,7 @@ function setupDuel(bot, { getPartnerId, rateLimitCommand }) {
   });
 
   // ===== Combat action handler =====
-  bot.action(/^duel:(.+):(\d+):(attack|defend|skill)$/, rateLimitCommand, (ctx) => {
+  bot.action(/^duel:(.+):(\d+):(attack|defend)$/, rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
     const [, pairKey, turnStr, actionType] = ctx.match;
     const turnNumber = parseInt(turnStr);
@@ -262,80 +392,67 @@ function setupDuel(bot, { getPartnerId, rateLimitCommand }) {
 
     const player = userId === duel.chatIdA ? duel.playerA : duel.playerB;
     if (!player || !player.alive) return ctx.answerCbQuery('Kamu sudah kalah!', { show_alert: true });
-    if (actionType === 'skill' && player.skillCooldown > 0) {
-      return ctx.answerCbQuery(`Skill cooldown ${player.skillCooldown} turn!`, { show_alert: true });
-    }
-
     duel.actions[userId] = { type: actionType };
     duel.lastActivity = Date.now();
     ctx.answerCbQuery('Aksi dikonfirmasi!');
 
-    const bothActed = duel.actions[duel.chatIdA] && duel.actions[duel.chatIdB];
-    if (!bothActed) return;
+    resolveDuelIfReady(bot, duel);
+  });
 
-    // Resolve turn
-    const logs = resolveDuelTurn(duel, duel.actions);
-    duel.actions = {};
-    duel.pendingLogs = logs;
-
-    // Sync HP
-    updateHp(duel.chatIdA, duel.playerA.hp);
-    updateHp(duel.chatIdB, duel.playerB.hp);
-
-    const isADead = duel.playerA.hp <= 0;
-    const isBDead = duel.playerB.hp <= 0;
-
-    if (isADead || isBDead) {
-      let winnerId, loserId, winnerPlayer, loserPlayer;
-
-      if (isADead && isBDead) {
-        // Draw
-        const xpReward = 20, goldReward = 10;
-        addXp(duel.chatIdA, xpReward);
-        addXp(duel.chatIdB, xpReward);
-        addGold(duel.chatIdA, goldReward);
-        addGold(duel.chatIdB, goldReward);
-        finalizeDuelRun(duel.runId, null, xpReward, goldReward);
-
-        const drawMsg = logs.join('\n') + `\n\n🤝 **DRAW!**\n✨ +${xpReward} XP · 💰 +${goldReward}g`;
-        bot.telegram.sendMessage(duel.chatIdA, drawMsg, { parse_mode: 'Markdown' }).catch(() => {});
-        bot.telegram.sendMessage(duel.chatIdB, drawMsg, { parse_mode: 'Markdown' }).catch(() => {});
-      } else if (isADead) {
-        winnerId = duel.chatIdB; loserId = duel.chatIdA;
-        winnerPlayer = duel.playerB; loserPlayer = duel.playerA;
-      } else {
-        winnerId = duel.chatIdA; loserId = duel.chatIdB;
-        winnerPlayer = duel.playerA; loserPlayer = duel.playerB;
-      }
-
-      if (!isADead || !isBDead) {
-        const streak = getWinStreak(winnerId);
-        const bonus = streak >= 2 ? 1.2 : 1.0;
-        const xpWin = Math.floor(50 * bonus);
-        const goldWin = Math.floor(25 * bonus);
-        const xpLose = 20, goldLose = 10;
-
-        addXp(winnerId, xpWin);
-        addXp(loserId, xpLose);
-        addGold(winnerId, goldWin);
-        addGold(loserId, goldLose);
-        incrementWinStreak(winnerId);
-        resetWinStreak(loserId);
-        finalizeDuelRun(duel.runId, winnerId, xpWin, goldWin);
-
-        const winMsg = logs.join('\n') + `\n\n🏆 **${winnerPlayer.className} MENANG!**\n` +
-          `🥇 +${xpWin} XP · 💰 +${goldWin}g${streak >= 2 ? ' (streak bonus!)' : ''}\n` +
-          `🥈 +${xpLose} XP · 💰 +${goldLose}g`;
-
-        bot.telegram.sendMessage(winnerId, winMsg, { parse_mode: 'Markdown' }).catch(() => {});
-        bot.telegram.sendMessage(loserId, winMsg, { parse_mode: 'Markdown' }).catch(() => {});
-      }
-
-      duelSessions.delete(pairKey);
-      return;
+  function findDuelForUser(userId) {
+    const id = String(userId);
+    for (const duel of duelSessions.values()) {
+      if (String(duel.chatIdA) === id || String(duel.chatIdB) === id) return duel;
     }
+    return null;
+  }
 
-    sendDuelUI(bot, duel);
+  function submitDuelSkill(ctx, duel, action) {
+    const userId = ctx.chat.id;
+    duel.actions[userId] = action;
+    duel.lastActivity = Date.now();
+    ctx.answerCbQuery('Aksi dikonfirmasi!');
+    resolveDuelIfReady(bot, duel);
+  }
+
+  bot.action(/^duel:skills:(\d+)$/, rateLimitCommand, ctx => {
+    const duel = findDuelForUser(ctx.chat.id);
+    const turnNumber = Number(ctx.match[1]);
+    if (!duel) return ctx.answerCbQuery('Duel sudah selesai.', { show_alert: true });
+    if (duel.turnNumber !== turnNumber) return ctx.answerCbQuery('Turn ini sudah berlalu.', { show_alert: true });
+    if (duel.actions[ctx.chat.id]) return ctx.answerCbQuery('Kamu sudah memilih!', { show_alert: true });
+    const player = ctx.chat.id === duel.chatIdA ? duel.playerA : duel.playerB;
+    if (!player || !player.alive) return ctx.answerCbQuery('Kamu sudah kalah!', { show_alert: true });
+    if (!player.skillLoadout?.length) {
+      if (player.skillCooldown > 0) {
+        return ctx.answerCbQuery(`Skill cooldown ${player.skillCooldown} turn!`, { show_alert: true });
+      }
+      return submitDuelSkill(ctx, duel, { type: 'skill' });
+    }
+    const buttons = player.skillLoadout.map(skill => {
+      const cooldown = getSkillCooldown(player, skill.id);
+      return [Markup.button.callback(
+        `${skill.name}${cooldown > 0 ? ` (${cooldown}T)` : ''}`,
+        `duel:skill:${turnNumber}:${skill.id}`,
+      )];
+    });
+    ctx.answerCbQuery();
+    return ctx.reply('Pilih skill dari loadout:', Markup.inlineKeyboard(buttons));
+  });
+
+  bot.action(/^duel:skill:(\d+):([a-z0-9_]+)$/, rateLimitCommand, ctx => {
+    const duel = findDuelForUser(ctx.chat.id);
+    const turnNumber = Number(ctx.match[1]);
+    const skillId = ctx.match[2];
+    if (!duel) return ctx.answerCbQuery('Duel sudah selesai.', { show_alert: true });
+    if (duel.turnNumber !== turnNumber) return ctx.answerCbQuery('Turn ini sudah berlalu.', { show_alert: true });
+    if (duel.actions[ctx.chat.id]) return ctx.answerCbQuery('Kamu sudah memilih!', { show_alert: true });
+    const player = ctx.chat.id === duel.chatIdA ? duel.playerA : duel.playerB;
+    const skill = player && findLoadoutSkill(player, skillId);
+    if (!skill) return ctx.answerCbQuery('Skill bukan bagian loadout-mu.', { show_alert: true });
+    const cooldown = getSkillCooldown(player, skillId);
+    if (cooldown > 0) return ctx.answerCbQuery(`Cooldown ${cooldown} turn!`, { show_alert: true });
+    return submitDuelSkill(ctx, duel, { type: 'skill', skillId });
   });
 }
 
