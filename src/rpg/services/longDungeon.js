@@ -68,6 +68,7 @@ function createLongDungeonService(db, options = {}) {
   const xpToNextLevel = options.xpToNextLevel || (level => Math.floor(40 * Math.pow(level, 1.2)));
   const calcStats = options.calcStats || (() => null);
   const ledger = createLedgerService(db);
+  const onEvent = options.onEvent || (() => {});
 
   function hydrate(row) {
     if (!row) return null;
@@ -277,6 +278,12 @@ function createLongDungeonService(db, options = {}) {
       let rewarded = false;
       if (terminalStatus === 'completed') {
         rewarded = db.transaction(() => awardCompletion(updated))();
+        onEvent(userId, {
+          key: `dungeon_complete:${session.id}:${userId}`,
+          type: 'dungeon_complete',
+          target: session.dungeon_id,
+          amount: 1,
+        });
       }
       return { success: true, session: updated, room: nextRoom, rewarded };
     },

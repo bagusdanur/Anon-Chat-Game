@@ -183,6 +183,43 @@ const MIGRATIONS = [
       );
     `,
   },
+  {
+    version: 5,
+    name: 'campaign_objective_engine',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_campaign_definitions (
+        quest_id TEXT PRIMARY KEY,
+        chapter INTEGER NOT NULL,
+        sort_order INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        definition_json TEXT NOT NULL,
+        published INTEGER NOT NULL DEFAULT 0,
+        content_version INTEGER NOT NULL DEFAULT 1,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS rpg_campaign_progress_v2 (
+        user_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        quest_id TEXT NOT NULL REFERENCES rpg_campaign_definitions(quest_id),
+        objective_json TEXT NOT NULL DEFAULT '{}',
+        status TEXT NOT NULL DEFAULT 'active'
+          CHECK (status IN ('active','completed','claimed')),
+        started_at INTEGER NOT NULL,
+        completed_at INTEGER,
+        claimed_at INTEGER,
+        PRIMARY KEY (user_id, quest_id)
+      );
+      CREATE TABLE IF NOT EXISTS rpg_campaign_event_receipts (
+        event_key TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        target_id TEXT,
+        amount INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_campaign_progress_user
+        ON rpg_campaign_progress_v2(user_id, status);
+    `,
+  },
 ];
 
 function quoteSql(value) {

@@ -24,6 +24,11 @@ const {
   publishDungeons,
   createLongDungeonService,
 } = require('../src/rpg/services/longDungeon');
+const {
+  loadCampaign,
+  publishCampaign,
+  createCampaignService,
+} = require('../src/rpg/services/campaign');
 
 function createTestDb() {
   const db = new Database(':memory:');
@@ -66,7 +71,7 @@ test('migrations are ordered and idempotent', () => {
     "SELECT version FROM schema_migrations WHERE scope = 'rpg' ORDER BY version",
   ).all();
   assert.deepEqual(versions, [
-    { version: 1 }, { version: 2 }, { version: 3 }, { version: 4 },
+    { version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }, { version: 5 },
   ]);
   db.close();
 });
@@ -273,5 +278,51 @@ test('long dungeon completion rewards are idempotent and include treasure', () =
   ]);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_dungeon_reward_claims').get().count, 1);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 1);
+  db.close();
+});
+
+test('campaign events are idempotent and unlock the next quest', () => {
+  const db = createTestDb();
+  publishCampaign(db, loadCampaign());
+  const campaign = createCampaignService(db);
+  for (let index = 1; index <= 3; index++) {
+    const result = campaign.recordEvent('1', {
+      key: `explore:1:${index}`,
+      type: 'explore',
+      target: 'aldenmoor_outskirts',
+      amount: 1,
+    });
+    assert.equal(result.processed, true);
+  }
+  const duplicate = campaign.recordEvent('1', {
+    key: 'explore:1:3',
+    type: 'explore',
+    target: 'aldenmoor_outskirts',
+    amount: 1,
+  });
+  assert.equal(duplicate.processed, false);
+  const quests = campaign.list('1');
+  assert.equal(quests.find(quest => quest.quest_id === 'chapter1_mist_clues').status, 'completed');
+  assert.equal(quests.find(quest => quest.quest_id === 'chapter1_goblin_ruins').status, 'active');
+  db.close();
+});
+
+test('campaign dungeon objective completes from a unique session event', () => {
+  const db = createTestDb();
+  publishCampaign(db, loadCampaign());
+  const campaign = createCampaignService(db);
+  campaign.recordEvent('1', {
+    key: 'seed:explore',
+    type: 'explore',
+    target: 'aldenmoor_outskirts',
+    amount: 3,
+  });
+  const result = campaign.recordEvent('1', {
+    key: 'dungeon_complete:77:1',
+    type: 'dungeon_complete',
+    target: 'goblin_ruins',
+    amount: 1,
+  });
+  assert.deepEqual(result.completed, ['chapter1_goblin_ruins']);
   db.close();
 });

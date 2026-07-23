@@ -1,0 +1,29 @@
+[
+  {
+    "id": "chapter1_mist_clues",
+    "chapter": 1,
+    "order": 1,
+    "title": "Kabut di Perbatasan",
+    "description": "Telusuri Pinggiran Aldenmoor dan kumpulkan tiga petunjuk.",
+    "version": 1,
+    "published": true,
+    "objectives": [
+      { "id": "explore_outskirts", "type": "explore", "target": "aldenmoor_outskirts", "count": 3 }
+    ],
+    "rewards": { "xp": 30, "gold": 20 }
+  },
+  {
+    "id": "chapter1_goblin_ruins",
+    "chapter": 1,
+    "order": 2,
+    "title": "Jantung Reruntuhan",
+    "description": "Taklukkan Reruntuhan Goblin dan pulihkan jalur dagang.",
+    "requires": "chapter1_mist_clues",
+    "version": 1,
+    "published": true,
+    "objectives": [
+      { "id": "clear_ruins", "type": "dungeon_complete", "target": "goblin_ruins", "count": 1 }
+    ],
+    "rewards": { "xp": 75, "gold": 45, "item": "ramuan_besar", "quantity": 1 }
+  }
+]

@@ -15,6 +15,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Skill tree dan loadout per class (`/skill`, `/build`)
 - Loadout skill aktif digunakan dalam combat dungeon dan duel, dengan cooldown per skill
 - Dungeon solo multi-room dengan jalur bercabang dan checkpoint persisten (`/adventure`)
+- Campaign Aldenmoor berbasis objective dengan event idempotent (`/campaign`)
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
@@ -81,6 +82,7 @@ pm2 save && pm2 startup
 | `/build`          | Melihat skill tree dan loadout aktif                 |
 | `/adventure`      | Memulai atau melanjutkan dungeon solo panjang        |
 | `/dungeon solo`   | Alias dungeon solo dengan checkpoint persisten       |
+| `/campaign`       | Melihat chapter dan objective campaign               |
 | `/next`           | Putus chat dan langsung cari partner baru          |
 | `/stop`           | Mengakhiri chat atau batal antri                   |
 | `/lang [id/en]`   | Memilih preferensi bahasa (prioritas matching)     |

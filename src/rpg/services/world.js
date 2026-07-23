@@ -10,6 +10,7 @@ function weightedPick(items, random = Math.random) {
 
 function createWorldService(db, options = {}) {
   const random = options.random || Math.random;
+  const onEvent = options.onEvent || (() => {});
   const now = () => Math.floor(Date.now() / 1000);
 
   function ensureProgress(userId) {
@@ -74,6 +75,12 @@ function createWorldService(db, options = {}) {
         WHERE user_id = ?
       `).run(points, points, now(), String(userId));
       const updated = ensureProgress(userId);
+      onEvent(userId, {
+        key: `explore:${userId}:${updated.exploration_points}`,
+        type: 'explore',
+        target: content.id,
+        amount: 1,
+      });
       return { success: true, encounter, region: content, points, progress: updated };
     },
   };

@@ -5,11 +5,18 @@ const { createFeatureFlagService } = require('./services/featureFlags');
 const {
   loadDungeons, publishDungeons, createLongDungeonService,
 } = require('./services/longDungeon');
+const { loadCampaign, publishCampaign, createCampaignService } = require('./services/campaign');
 
 function setupLongDungeon(bot, { rateLimitCommand }) {
   const flags = createFeatureFlagService(db);
   publishDungeons(db, loadDungeons());
-  const service = createLongDungeonService(db, { xpToNextLevel, calcStats });
+  publishCampaign(db, loadCampaign());
+  const campaign = createCampaignService(db);
+  const service = createLongDungeonService(db, {
+    xpToNextLevel,
+    calcStats,
+    onEvent: (userId, event) => campaign.recordEvent(userId, event),
+  });
 
   function renderSession(session) {
     const room = service.getRoom(session);

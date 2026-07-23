@@ -4,12 +4,17 @@ const { getOrCreateUser } = require('./db_rpg');
 const { createFeatureFlagService } = require('./services/featureFlags');
 const { loadRegions, publishRegions } = require('./services/contentRegistry');
 const { createWorldService } = require('./services/world');
+const { loadCampaign, publishCampaign, createCampaignService } = require('./services/campaign');
 
 function setupWorld(bot, { rateLimitCommand }) {
   const flags = createFeatureFlagService(db);
   const regions = loadRegions();
   publishRegions(db, regions);
-  const world = createWorldService(db);
+  publishCampaign(db, loadCampaign());
+  const campaign = createCampaignService(db);
+  const world = createWorldService(db, {
+    onEvent: (userId, event) => campaign.recordEvent(userId, event),
+  });
 
   function requireWorld(ctx) {
     if (!flags.isEnabled('world_v2')) {
