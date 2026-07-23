@@ -29,6 +29,10 @@ const {
   publishCampaign,
   createCampaignService,
 } = require('../src/rpg/services/campaign');
+const {
+  professionXpToNext,
+  createProfessionService,
+} = require('../src/rpg/services/professions');
 
 function createTestDb() {
   const db = new Database(':memory:');
@@ -72,6 +76,7 @@ test('migrations are ordered and idempotent', () => {
   ).all();
   assert.deepEqual(versions, [
     { version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }, { version: 5 },
+    { version: 6 },
   ]);
   db.close();
 });
@@ -324,5 +329,21 @@ test('campaign dungeon objective completes from a unique session event', () => {
     amount: 1,
   });
   assert.deepEqual(result.completed, ['chapter1_goblin_ruins']);
+  db.close();
+});
+
+test('profession XP levels independently and rejects duplicate Telegram events', () => {
+  const db = createTestDb();
+  const professions = createProfessionService(db);
+  const required = professionXpToNext(1);
+  const first = professions.grantXp('1', 'mining', required + 5, 'telegram:100:mine');
+  assert.equal(first.processed, true);
+  assert.equal(first.level, 2);
+  assert.equal(first.xp, 5);
+  const duplicate = professions.grantXp('1', 'mining', 99, 'telegram:100:mine');
+  assert.equal(duplicate.processed, false);
+  const mining = professions.list('1').find(item => item.id === 'mining');
+  assert.equal(mining.level, 2);
+  assert.equal(mining.xp, 5);
   db.close();
 });

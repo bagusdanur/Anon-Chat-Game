@@ -7,6 +7,10 @@ const {
 } = require('./db_rpg');
 const { RARITY_EMOJI } = require('./profile');
 const { getGameSettings } = require('./config');
+const { db } = require('../db');
+const { createProfessionService } = require('./services/professions');
+
+const professionService = createProfessionService(db);
 
 const fs = require('fs');
 const path = require('path');
@@ -164,6 +168,7 @@ function setupGrind(bot, { rateLimitCommand }) {
       const { leveled, newLevel } = addXp(userId, xpGain);
       addGold(userId, goldGain);
       incrementQuestProgress(userId, 'hunt');
+      professionService.grantXp(userId, 'hunting', 10, `telegram:${ctx.update.update_id}:hunt`);
       const newHp = Math.max(1, currentHp - result.damageTaken);
       updateHp(userId, newHp);
 
@@ -229,6 +234,7 @@ function setupGrind(bot, { rateLimitCommand }) {
 
     const { leveled, newLevel } = addXp(userId, xpGain);
     incrementQuestProgress(userId, 'fish');
+    professionService.grantXp(userId, 'fishing', 8, `telegram:${ctx.update.update_id}:fish`);
     msg += `✨ +<b>${xpGain}</b> XP`;
     if (leveled && leveled.length > 0) {
       msg += `\n\n🎉 <b>LEVEL UP!</b> → Lv <b>${newLevel}</b>!`;
@@ -280,6 +286,7 @@ function setupGrind(bot, { rateLimitCommand }) {
     const { leveled, newLevel } = addXp(userId, xpGain);
     addGold(userId, goldGain);
     incrementQuestProgress(userId, 'mine');
+    professionService.grantXp(userId, 'mining', 12, `telegram:${ctx.update.update_id}:mine`);
 
     let msg = `<b>⛏️ MENAMBANG</b>\n`;
     msg += `━━━━━━━━━━━━━━━━━━━━\n`;

@@ -11,6 +11,7 @@ const {
 } = require('./db_rpg');
 const { RARITY_EMOJI } = require('./profile');
 const { getGameSettings } = require('./config');
+const { createProfessionService } = require('./services/professions');
 
 const fs = require('fs');
 const path = require('path');
@@ -42,6 +43,7 @@ function getCraftingConfig() {
 // Cache inventory per user (session, bukan persisten) untuk resolusi ID numerik
 // key: userId, value: [item_id, ...] berurutan sesuai tampilan /inv
 const invCache = new Map();
+const professionService = createProfessionService(db);
 
 // Cache untuk pending upgrade confirmation
 const upgradeConfirmCache = new Map();
@@ -399,6 +401,7 @@ function getSpecialShopConfig() {
     const rarity = catalog ? RARITY_EMOJI[catalog.rarity] || '' : '';
     ctx.reply(`⚒️ <b>Crafting Berhasil!</b>\n\n${rarity} ${recipe.name} sudah masuk inventory!\n💰 Biaya: ${recipe.gold}g`, { parse_mode: 'HTML' });
     incrementQuestProgress(userId, 'craft');
+    professionService.grantXp(userId, 'smithing', 15, `telegram:${ctx.update.update_id}:craft`);
   });
 
   // ===== /use (terima nomor ID dari /inv atau nama) =====
@@ -610,6 +613,7 @@ function getSpecialShopConfig() {
     const statType = invItem.category === 'weapon' || invItem.category === 'staff' ? 'ATK/Magic' : 'DEF';
     ctx.answerCbQuery('Upgrade berhasil!');
     incrementQuestProgress(userId, 'upgrade');
+    professionService.grantXp(userId, 'enchanting', 18, `telegram:${ctx.update.update_id}:upgrade`);
     ctx.editMessageText(
       `⚒️ <b>Upgrade Berhasil!</b>\n\n<b>${invItem.display_name}</b> → <b>+${nextTier}</b>\n+2 ${statType} ditambahkan ke karakter!\n\n<i>Cek /profile untuk stats terbaru.</i>`,
       { parse_mode: 'HTML' }

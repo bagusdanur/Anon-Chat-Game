@@ -220,6 +220,21 @@ const MIGRATIONS = [
         ON rpg_campaign_progress_v2(user_id, status);
     `,
   },
+  {
+    version: 6,
+    name: 'profession_event_receipts',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_profession_events (
+        event_key TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        profession_id TEXT NOT NULL,
+        xp_amount INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_profession_events_user
+        ON rpg_profession_events(user_id, profession_id, created_at);
+    `,
+  },
 ];
 
 function quoteSql(value) {

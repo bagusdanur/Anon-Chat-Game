@@ -16,6 +16,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Loadout skill aktif digunakan dalam combat dungeon dan duel, dengan cooldown per skill
 - Dungeon solo multi-room dengan jalur bercabang dan checkpoint persisten (`/adventure`)
 - Campaign Aldenmoor berbasis objective dengan event idempotent (`/campaign`)
+- Tujuh profession dengan gathering, salvage, dan refinement
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
@@ -83,6 +84,10 @@ pm2 save && pm2 startup
 | `/adventure`      | Memulai atau melanjutkan dungeon solo panjang        |
 | `/dungeon solo`   | Alias dungeon solo dengan checkpoint persisten       |
 | `/campaign`       | Melihat chapter dan objective campaign               |
+| `/profession`     | Melihat level dan mastery seluruh profession          |
+| `/gather herb`    | Mengumpulkan tanaman dan Herbalism XP                 |
+| `/salvage [item]` | Membongkar equipment menjadi material                 |
+| `/refine [ore]`   | Memurnikan lima material menjadi tier berikutnya      |
 | `/next`           | Putus chat dan langsung cari partner baru          |
 | `/stop`           | Mengakhiri chat atau batal antri                   |
 | `/lang [id/en]`   | Memilih preferensi bahasa (prioritas matching)     |
