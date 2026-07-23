@@ -57,6 +57,7 @@ function setupWorld(bot, { rateLimitCommand }) {
       {
         parse_mode: 'HTML',
         ...Markup.inlineKeyboard([
+          [Markup.button.callback('🧭 Panduan Alur Saya', 'guide:open')],
           [Markup.button.callback('🧭 Eksplorasi Solo', 'world:explore')],
           [Markup.button.callback('🤝 Eksplorasi Co-op', 'world:coop')],
           [Markup.button.callback('🏰 Buka Adventure', 'world:adventure')],

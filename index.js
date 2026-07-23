@@ -680,6 +680,7 @@ const botCommands = [
   { command: 'report',   description: '🚨 Laporkan partner' },
   // === RPG ===
   { command: 'rpg',      description: '🌍 Menu utama RPG' },
+  { command: 'guide',    description: '🧭 Panduan alur progresmu' },
   { command: 'helprpg',  description: '📖 Panduan RPG lengkap' },
   { command: 'profile',  description: '⚔️ Profil karakter' },
   { command: 'alias',    description: '🎭 Atur alias karakter anonim' },

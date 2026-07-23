@@ -12,6 +12,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Preferensi Bahasa (`/lang id` atau `/lang en`)
 - Sistem *Report* dan *Ban* untuk menangani penyalahgunaan
 - Dunia RPG persisten dengan region, campaign, dan eksplorasi (`/rpg`, `/world`, `/explore`)
+- Panduan progres dinamis yang menunjukkan langkah karakter berikutnya (`/guide`)
 - Skill tree dan loadout per class (`/skill`, `/build`)
 - Loadout skill aktif digunakan dalam combat dungeon dan duel, dengan cooldown per skill
 - Dungeon solo/duo multi-room dengan jalur bercabang dan checkpoint persisten (`/dungeon`)
@@ -100,6 +101,7 @@ pm2 save && pm2 startup
 | `/start`          | Pesan selamat datang & bantuan                     |
 | `/search`         | Mulai cari partner                                 |
 | `/rpg`            | Membuka menu dunia dan campaign RPG                 |
+| `/guide`          | Menampilkan alur progres dan langkah berikutnya     |
 | `/profile`        | Ringkasan alias, progres, sosial, build, dan status |
 | `/world`          | Melihat region dan progress campaign RPG            |
 | `/explore`        | Menjelajahi region aktif                             |

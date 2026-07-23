@@ -207,7 +207,7 @@ function renderProfile(user) {
     msg += `${slot}️⃣ ${skill ? `<b>${skill.name}</b> · Rank ${skill.rank}` : '<i>(Kosong)</i>'}\n`;
   }
 
-  msg += `\n<i>/alias • /world • /campaign • /guild • /party\n/skill • /gear • /inv • /helprpg</i>`;
+  msg += `\n<i>/guide • /world • /campaign • /party • /guild\n/skill • /gear • /inv • /helprpg</i>`;
   return msg;
 }
 
