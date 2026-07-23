@@ -10,11 +10,13 @@ const {
 } = require('./db_rpg');
 const { db } = require('../db');
 const { createSkillService } = require('./services/skills');
+const { createEquipmentService } = require('./services/equipment');
 const {
   tickSkillCooldowns, getSkillCooldown, findLoadoutSkill, resolveCombatSkill,
 } = require('./services/combatSkills');
 
 const skillService = createSkillService(db);
+const equipmentV2 = createEquipmentService(db);
 
 const duelSessions = new Map();
 const duelInvites = new Map(); // pairKey → { inviter, invitee }
@@ -207,9 +209,11 @@ function startDuel(bot, inviterId, inviteeId) {
   const clsB = CLASS_DEFS[partner.class_name];
   const equipA = getEquipmentBonus(inviterId);
   const equipB = getEquipmentBonus(inviteeId);
+  const equipV2A = equipmentV2.bonuses(inviterId);
+  const equipV2B = equipmentV2.bonuses(inviteeId);
 
-  const hpA = Math.max(1, Math.floor(getCurrentHp(user) * 0.5));
-  const hpB = Math.max(1, Math.floor(getCurrentHp(partner) * 0.5));
+  const hpA = Math.max(1, Math.floor((getCurrentHp(user) + (equipV2A.max_hp || 0)) * 0.5));
+  const hpB = Math.max(1, Math.floor((getCurrentHp(partner) + (equipV2B.max_hp || 0)) * 0.5));
 
   const runId = createDuelRun(inviterId, inviteeId);
 
@@ -222,21 +226,23 @@ function startDuel(bot, inviterId, inviteeId) {
     lastActivity: Date.now(),
     playerA: {
       classId: user.class_name, className: clsA.name, icon: clsA.name.split(' ')[0],
-      hp: hpA, maxHp: user.max_hp,
-      atk: user.atk + equipA.atkBonus, def: user.def + equipA.defBonus,
-      magicAtk: user.magic_atk || 0, atkBonus: equipA.atkBonus,
-      critRate: user.crit_rate || 0.05, critMulti: user.crit_multi || 1.5,
-      physResist: user.phys_resist || 0, magicResist: user.magic_resist || 0,
+      hp: hpA, maxHp: user.max_hp + (equipV2A.max_hp || 0),
+      atk: user.atk + equipA.atkBonus + (equipV2A.atk || 0), def: user.def + equipA.defBonus + (equipV2A.def || 0),
+      magicAtk: (user.magic_atk || 0) + (equipV2A.magic_atk || 0), atkBonus: equipA.atkBonus,
+      critRate: (user.crit_rate || 0.05) + (equipV2A.crit_rate || 0), critMulti: user.crit_multi || 1.5,
+      physResist: (user.phys_resist || 0) + (equipV2A.phys_resist || 0),
+      magicResist: (user.magic_resist || 0) + (equipV2A.magic_resist || 0),
       skillCooldown: 0, alive: true, defending: false,
       skillCooldowns: {}, skillLoadout: skillService.getCombatLoadout(inviterId),
     },
     playerB: {
       classId: partner.class_name, className: clsB.name, icon: clsB.name.split(' ')[0],
-      hp: hpB, maxHp: partner.max_hp,
-      atk: partner.atk + equipB.atkBonus, def: partner.def + equipB.defBonus,
-      magicAtk: partner.magic_atk || 0, atkBonus: equipB.atkBonus,
-      critRate: partner.crit_rate || 0.05, critMulti: partner.crit_multi || 1.5,
-      physResist: partner.phys_resist || 0, magicResist: partner.magic_resist || 0,
+      hp: hpB, maxHp: partner.max_hp + (equipV2B.max_hp || 0),
+      atk: partner.atk + equipB.atkBonus + (equipV2B.atk || 0), def: partner.def + equipB.defBonus + (equipV2B.def || 0),
+      magicAtk: (partner.magic_atk || 0) + (equipV2B.magic_atk || 0), atkBonus: equipB.atkBonus,
+      critRate: (partner.crit_rate || 0.05) + (equipV2B.crit_rate || 0), critMulti: partner.crit_multi || 1.5,
+      physResist: (partner.phys_resist || 0) + (equipV2B.phys_resist || 0),
+      magicResist: (partner.magic_resist || 0) + (equipV2B.magic_resist || 0),
       skillCooldown: 0, alive: true, defending: false,
       skillCooldowns: {}, skillLoadout: skillService.getCombatLoadout(inviteeId),
     },

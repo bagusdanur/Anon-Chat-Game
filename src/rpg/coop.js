@@ -13,11 +13,13 @@ const {
 const { renderHpBar } = require('./profile');
 const { db } = require('../db');
 const { createSkillService } = require('./services/skills');
+const { createEquipmentService } = require('./services/equipment');
 const {
   tickSkillCooldowns, getSkillCooldown, findLoadoutSkill, resolveCombatSkill,
 } = require('./services/combatSkills');
 
 const skillService = createSkillService(db);
+const equipmentV2 = createEquipmentService(db);
 
 // In-memory raid state keyed by pairKey
 let botRef = null;
@@ -592,6 +594,8 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
     const clsA = CLASS_DEFS[userA.class_name];
     const clsB = CLASS_DEFS[userB.class_name];
 
+    const equipV2A = equipmentV2.bonuses(invite.inviter);
+    const equipV2B = equipmentV2.bonuses(userId);
     const raid = {
       pairKey,
       chatIdA: invite.inviter,
@@ -618,16 +622,16 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
           classId: userA.class_name,
           className: clsA.name,
           icon: clsA.name.split(' ')[0],
-          hp: getCurrentHp(userA),
-          maxHp: userA.max_hp,
-          atk: userA.atk + getEquipmentBonus(invite.inviter).atkBonus,
-          def: userA.def + getEquipmentBonus(invite.inviter).defBonus,
-          magicAtk: userA.magic_atk || 0,
+          hp: getCurrentHp(userA) + (equipV2A.max_hp || 0),
+          maxHp: userA.max_hp + (equipV2A.max_hp || 0),
+          atk: userA.atk + getEquipmentBonus(invite.inviter).atkBonus + (equipV2A.atk || 0),
+          def: userA.def + getEquipmentBonus(invite.inviter).defBonus + (equipV2A.def || 0),
+          magicAtk: (userA.magic_atk || 0) + (equipV2A.magic_atk || 0),
           atkBonus: getEquipmentBonus(invite.inviter).atkBonus,
-          critRate: userA.crit_rate || 0.05,
+          critRate: (userA.crit_rate || 0.05) + (equipV2A.crit_rate || 0),
           critMulti: userA.crit_multi || 1.5,
-          physResist: userA.phys_resist || 0,
-          magicResist: userA.magic_resist || 0,
+          physResist: (userA.phys_resist || 0) + (equipV2A.phys_resist || 0),
+          magicResist: (userA.magic_resist || 0) + (equipV2A.magic_resist || 0),
           skillCooldown: 0,
           skillCooldowns: {},
           skillLoadout: skillService.getCombatLoadout(invite.inviter),
@@ -638,16 +642,16 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
           classId: userB.class_name,
           className: clsB.name,
           icon: clsB.name.split(' ')[0],
-          hp: getCurrentHp(userB),
-          maxHp: userB.max_hp,
-          atk: userB.atk + getEquipmentBonus(userId).atkBonus,
-          def: userB.def + getEquipmentBonus(userId).defBonus,
-          magicAtk: userB.magic_atk || 0,
+          hp: getCurrentHp(userB) + (equipV2B.max_hp || 0),
+          maxHp: userB.max_hp + (equipV2B.max_hp || 0),
+          atk: userB.atk + getEquipmentBonus(userId).atkBonus + (equipV2B.atk || 0),
+          def: userB.def + getEquipmentBonus(userId).defBonus + (equipV2B.def || 0),
+          magicAtk: (userB.magic_atk || 0) + (equipV2B.magic_atk || 0),
           atkBonus: getEquipmentBonus(userId).atkBonus,
-          critRate: userB.crit_rate || 0.05,
+          critRate: (userB.crit_rate || 0.05) + (equipV2B.crit_rate || 0),
           critMulti: userB.crit_multi || 1.5,
-          physResist: userB.phys_resist || 0,
-          magicResist: userB.magic_resist || 0,
+          physResist: (userB.phys_resist || 0) + (equipV2B.phys_resist || 0),
+          magicResist: (userB.magic_resist || 0) + (equipV2B.magic_resist || 0),
           skillCooldown: 0,
           skillCooldowns: {},
           skillLoadout: skillService.getCombatLoadout(userId),

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { createLedgerService } = require('./ledger');
+const { createEquipmentService } = require('./equipment');
 
 const DUNGEONS_FILE = path.join(__dirname, '../../../data/rpg_dungeons.json');
 const SESSION_TTL_SECONDS = 24 * 60 * 60;
@@ -68,6 +69,7 @@ function createLongDungeonService(db, options = {}) {
   const xpToNextLevel = options.xpToNextLevel || (level => Math.floor(40 * Math.pow(level, 1.2)));
   const calcStats = options.calcStats || (() => null);
   const ledger = createLedgerService(db);
+  const equipment = createEquipmentService(db, { now, random });
   const onEvent = options.onEvent || (() => {});
 
   function hydrate(row) {
@@ -98,7 +100,11 @@ function createLongDungeonService(db, options = {}) {
   }
 
   function calculatePower(user) {
-    return user.atk + user.def + (user.magic_atk || 0) + Math.floor(user.level * 1.5);
+    const bonus = equipment.bonuses(user.telegram_user_id);
+    return user.atk + (bonus.atk || 0) +
+      user.def + (bonus.def || 0) +
+      (user.magic_atk || 0) + (bonus.magic_atk || 0) +
+      Math.floor(user.level * 1.5);
   }
 
   function awardCompletion(session) {

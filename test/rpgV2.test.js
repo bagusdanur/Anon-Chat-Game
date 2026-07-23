@@ -733,3 +733,28 @@ test('equipped dragon pieces activate cumulative set bonuses', () => {
   assert.equal(bonuses.crit_rate >= 0.08, true);
   db.close();
 });
+
+test('equipment v2 bonuses feed tower and asynchronous raid power formulas', () => {
+  const db = createTestDb();
+  db.prepare(`
+    INSERT INTO items_catalog (item_id,display_name,category,rarity,sell_price)
+    VALUES ('combat_blade','Combat Blade','weapon','rare',50)
+  `).run();
+  db.prepare(`
+    INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
+    VALUES ('1','combat_blade',1)
+  `).run();
+  const equipment = createEquipmentService(db, { random: () => 0, now: () => 2_000_000_000 });
+  const instance = equipment.forge('1', 'combat_blade').item;
+  equipment.equip('1', instance.id);
+
+  publishRaids(db, loadRaids(), 2_000_000_000);
+  const raids = createRaidService(db, { now: () => 2_000_000_000, random: () => 0 });
+  const attack = raids.attack('1', 'world', 'equipment:raid:1');
+  assert.equal(attack.damage, 33);
+
+  const endgame = createEndgameService(db, { now: () => 2_000_000_000, random: () => 1 });
+  const tower = endgame.attemptTower('1');
+  assert.equal(tower.playerPower, 24);
+  db.close();
+});

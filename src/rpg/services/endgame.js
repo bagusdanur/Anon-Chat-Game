@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { createLedgerService } = require('./ledger');
+const { createEquipmentService } = require('./equipment');
 
 const SEASON_DURATION_SECONDS = 70 * 24 * 60 * 60;
 const TOWER_COOLDOWN_SECONDS = 60;
@@ -20,6 +21,7 @@ function createEndgameService(db, options = {}) {
   const now = options.now || (() => Math.floor(Date.now() / 1000));
   const random = options.random || Math.random;
   const ledger = createLedgerService(db);
+  const equipment = createEquipmentService(db, { now, random });
 
   function getActiveSeason() {
     const timestamp = now();
@@ -100,7 +102,11 @@ function createEndgameService(db, options = {}) {
         : 0;
       if (remaining > 0) return { success: false, reason: `Tunggu ${remaining} detik.`, remaining };
       const floor = tower.best_floor + 1;
-      const playerPower = user.atk + user.def + (user.magic_atk || 0) + user.level * 2;
+      const bonus = equipment.bonuses(userId);
+      const playerPower = user.atk + (bonus.atk || 0) +
+        user.def + (bonus.def || 0) +
+        (user.magic_atk || 0) + (bonus.magic_atk || 0) +
+        (bonus.max_hp || 0) * 0.1 + user.level * 2;
       const enemyPower = 12 + floor * 4;
       const win = playerPower * (0.85 + random() * 0.3) >= enemyPower;
       const timestamp = now();

@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { createLedgerService } = require('./ledger');
 const { createEndgameService } = require('./endgame');
+const { createEquipmentService } = require('./equipment');
 
 const RAID_FILE = path.join(__dirname, '../../../data/rpg_raids.json');
 
@@ -55,6 +56,7 @@ function createRaidService(db, options = {}) {
   const random = options.random || Math.random;
   const ledger = createLedgerService(db);
   const endgame = createEndgameService(db, { now, random });
+  const equipment = createEquipmentService(db, { now, random });
 
   function definition(type) {
     const row = db.prepare(`
@@ -104,8 +106,11 @@ function createRaidService(db, options = {}) {
     if (contribution.attempts >= raid.attemptLimit) return { success: false, reason: 'Batas serangan periode ini sudah habis.' };
     const user = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id=?').get(String(userId));
     if (!user || user.level < raid.minLevel) return { success: false, reason: `Minimal level ${raid.minLevel}.` };
+    const bonus = equipment.bonuses(userId);
     const damage = Math.max(1, Math.floor(
-      user.atk * 2 + user.magic_atk * 1.8 + user.def * 0.5 + user.level * 4 + random() * 12,
+      (user.atk + (bonus.atk || 0)) * 2 +
+      (user.magic_atk + (bonus.magic_atk || 0)) * 1.8 +
+      (user.def + (bonus.def || 0)) * 0.5 + user.level * 4 + random() * 12,
     ));
     return db.transaction(() => {
       const receipt = db.prepare(`

@@ -1,5 +1,6 @@
 const { createLedgerService } = require('./ledger');
 const { createEndgameService } = require('./endgame');
+const { createEquipmentService } = require('./equipment');
 
 const BOUNTY_TARGET = 100;
 const BOUNTY_ACTION_LIMIT = 3;
@@ -13,6 +14,7 @@ function createCoopActivityService(db, options = {}) {
   const random = options.random || Math.random;
   const ledger = createLedgerService(db);
   const endgame = createEndgameService(db, { now, random });
+  const equipment = createEquipmentService(db, { now, random });
 
   function partyFor(userId) {
     const party = db.prepare(`
@@ -47,7 +49,11 @@ function createCoopActivityService(db, options = {}) {
     if (state.bounty.status !== 'active') return { success: false, reason: 'Bounty hari ini sudah selesai.' };
     if (state.personal.actions >= BOUNTY_ACTION_LIMIT) return { success: false, reason: 'Batas aksi bounty hari ini sudah habis.' };
     const user = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id=?').get(String(userId));
-    const amount = Math.max(1, Math.floor(user.atk + user.magic_atk + user.level * 3 + random() * 8));
+    const bonus = equipment.bonuses(userId);
+    const amount = Math.max(1, Math.floor(
+      user.atk + (bonus.atk || 0) + user.magic_atk + (bonus.magic_atk || 0) +
+      user.level * 3 + random() * 8,
+    ));
     return db.transaction(() => {
       const receipt = db.prepare(`
         INSERT OR IGNORE INTO rpg_duo_bounty_actions

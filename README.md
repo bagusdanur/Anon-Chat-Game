@@ -25,6 +25,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Duo bounty harian dan co-op campaign dengan progress karakter independen
 - Equipment instance dengan quality, item power, affix, binding, dan socket/gem
 - Upgrade hingga +15, reforge affix, dan bonus equipment set
+- Bonus equipment v2 aktif pada dungeon, duel, tower, bounty, world boss, dan raid
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
