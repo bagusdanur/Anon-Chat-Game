@@ -50,6 +50,9 @@ const {
   periodFor,
   createRaidService,
 } = require('../src/rpg/services/raids');
+const {
+  createCoopActivityService,
+} = require('../src/rpg/services/coopActivities');
 
 function createTestDb() {
   const db = new Database(':memory:');
@@ -115,6 +118,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 9 },
     { version: 10 },
     { version: 11 },
+    { version: 12 },
   ]);
   db.close();
 });
@@ -585,5 +589,43 @@ test('weekly guild quest follows contributions and can only level the guild once
   assert.equal(claim.newLevel, 2);
   assert.equal(social.claimGuildQuest('1').success, false);
   assert.equal(social.getGuild('1').level, 2);
+  db.close();
+});
+
+test('duo bounty combines member actions and rewards each contributor once', () => {
+  const db = createTestDb();
+  const social = createSocialService(db, { now: () => 2_000_000_000 });
+  social.createParty('1');
+  social.invite('1', '2');
+  social.acceptInvite('2');
+  db.prepare("UPDATE rpg_users SET atk=30 WHERE telegram_user_id IN ('1','2')").run();
+  const coop = createCoopActivityService(db, { now: () => 2_000_000_000, random: () => 0 });
+  assert.equal(coop.act('1', 'bounty:1:1').success, true);
+  assert.equal(coop.act('1', 'bounty:1:2').success, true);
+  assert.equal(coop.act('2', 'bounty:2:1').success, true);
+  const completed = coop.act('2', 'bounty:2:2');
+  assert.equal(completed.bounty.status, 'completed');
+  assert.equal(coop.act('2', 'bounty:2:2').success, false);
+  assert.equal(coop.claim('1').success, true);
+  assert.equal(coop.claim('2').success, true);
+  assert.equal(coop.claim('1').success, false);
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_duo_bounty_claims').get().count, 2);
+  db.close();
+});
+
+test('co-op campaign exploration advances only the acting character', () => {
+  const db = createTestDb();
+  publishRegions(db, loadRegions());
+  publishCampaign(db, loadCampaign());
+  const campaign = createCampaignService(db);
+  const world = createWorldService(db, {
+    random: () => 0,
+    onEvent: (userId, event) => campaign.recordEvent(userId, event),
+  });
+  world.explore('1');
+  const first = campaign.list('1')[0];
+  const second = campaign.list('2')[0];
+  assert.equal(first.progress.explore_outskirts, 1);
+  assert.equal(second.progress.explore_outskirts || 0, 0);
   db.close();
 });

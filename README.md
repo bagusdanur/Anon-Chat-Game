@@ -22,6 +22,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Party persisten dan guild dengan alias karakter anonim
 - World boss asynchronous harian dan weekly party raid dengan kontribusi persisten
 - Guild quest mingguan serta role owner/officer/member dengan audit perubahan
+- Duo bounty harian dan co-op campaign dengan progress karakter independen
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
@@ -106,6 +107,8 @@ pm2 save && pm2 startup
 | `/guild quest`    | Melihat atau mengklaim guild quest mingguan           |
 | `/worldboss`      | Melihat, menyerang, dan mengklaim hadiah world boss   |
 | `/raid`           | Weekly raid asynchronous untuk party minimal 2 pemain |
+| `/bounty`         | Duo bounty harian dengan kontribusi bersama            |
+| `/coopcampaign`   | Melihat dan menjalankan campaign bersama party          |
 | `/next`           | Putus chat dan langsung cari partner baru          |
 | `/stop`           | Mengakhiri chat atau batal antri                   |
 | `/lang [id/en]`   | Memilih preferensi bahasa (prioritas matching)     |

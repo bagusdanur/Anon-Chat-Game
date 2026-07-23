@@ -475,6 +475,41 @@ const MIGRATIONS = [
       );
     `,
   },
+  {
+    version: 12,
+    name: 'duo_bounties',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_duo_bounties (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        party_id INTEGER NOT NULL REFERENCES rpg_parties(id),
+        period_key TEXT NOT NULL,
+        target INTEGER NOT NULL CHECK (target > 0),
+        progress INTEGER NOT NULL DEFAULT 0 CHECK (progress >= 0),
+        status TEXT NOT NULL DEFAULT 'active'
+          CHECK (status IN ('active','completed','expired')),
+        created_at INTEGER NOT NULL,
+        completed_at INTEGER,
+        UNIQUE (party_id, period_key)
+      );
+      CREATE TABLE IF NOT EXISTS rpg_duo_bounty_actions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_key TEXT NOT NULL UNIQUE,
+        bounty_id INTEGER NOT NULL REFERENCES rpg_duo_bounties(id),
+        user_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        amount INTEGER NOT NULL CHECK (amount > 0),
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_duo_bounty_actions
+        ON rpg_duo_bounty_actions(bounty_id, user_id);
+      CREATE TABLE IF NOT EXISTS rpg_duo_bounty_claims (
+        bounty_id INTEGER NOT NULL REFERENCES rpg_duo_bounties(id),
+        user_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        reward_json TEXT NOT NULL,
+        claimed_at INTEGER NOT NULL,
+        PRIMARY KEY (bounty_id, user_id)
+      );
+    `,
+  },
 ];
 
 function quoteSql(value) {
