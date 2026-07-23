@@ -3,6 +3,7 @@ const DEFAULT_FLAGS = {
   character_builds_v2: true,
   marketplace_v2: false,
   recoverable_sessions_v2: false,
+  long_dungeons_v2: true,
   seasons_v2: false,
 };
 

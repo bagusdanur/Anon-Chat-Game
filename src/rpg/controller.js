@@ -10,11 +10,13 @@ const { setupHelp } = require('./help');
 const { setupDuel } = require('./duel');
 const { setupWorld } = require('./world');
 const { setupSkills } = require('./skills');
+const { setupLongDungeon } = require('./longDungeon');
 
 function setupRpg(bot, { getPartnerId, rateLimitCommand }) {
   // RPG v2: menu utama, region, campaign, dan eksplorasi.
   setupWorld(bot, { rateLimitCommand });
   setupSkills(bot, { rateLimitCommand });
+  setupLongDungeon(bot, { rateLimitCommand });
 
   // Fase 1: Profile & Character Creation
   setupProfile(bot, { rateLimitCommand });

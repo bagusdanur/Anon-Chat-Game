@@ -14,6 +14,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Dunia RPG persisten dengan region, campaign, dan eksplorasi (`/rpg`, `/world`, `/explore`)
 - Skill tree dan loadout per class (`/skill`, `/build`)
 - Loadout skill aktif digunakan dalam combat dungeon dan duel, dengan cooldown per skill
+- Dungeon solo multi-room dengan jalur bercabang dan checkpoint persisten (`/adventure`)
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
@@ -78,6 +79,8 @@ pm2 save && pm2 startup
 | `/travel [region]`| Berpindah ke region yang sudah terbuka               |
 | `/skill`          | Melihat, mempelajari, dan memasang skill             |
 | `/build`          | Melihat skill tree dan loadout aktif                 |
+| `/adventure`      | Memulai atau melanjutkan dungeon solo panjang        |
+| `/dungeon solo`   | Alias dungeon solo dengan checkpoint persisten       |
 | `/next`           | Putus chat dan langsung cari partner baru          |
 | `/stop`           | Mengakhiri chat atau batal antri                   |
 | `/lang [id/en]`   | Memilih preferensi bahasa (prioritas matching)     |

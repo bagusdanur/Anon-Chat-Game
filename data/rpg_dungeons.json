@@ -1,0 +1,80 @@
+[
+  {
+    "id": "goblin_ruins",
+    "name": "🏚️ Reruntuhan Goblin",
+    "description": "Kompleks bawah tanah di balik kabut Aldenmoor. Setiap jalur menyimpan bahaya dan hadiah berbeda.",
+    "min_level": 1,
+    "version": 1,
+    "published": true,
+    "entry_room": "gate",
+    "rewards": { "xp": 90, "gold": 55, "item": "besi_rongsok", "quantity": 2 },
+    "rooms": [
+      {
+        "id": "gate",
+        "type": "event",
+        "name": "Gerbang Retak",
+        "text": "Dua jalur terbuka di balik gerbang. Lorong kiri terdengar ramai; lorong kanan dipenuhi perangkap tua.",
+        "options": [
+          { "id": "left", "label": "⚔️ Lorong Penjaga", "next": "guard_post" },
+          { "id": "right", "label": "🧭 Lorong Perangkap", "next": "trap_hall" }
+        ]
+      },
+      {
+        "id": "guard_post",
+        "type": "combat",
+        "name": "Pos Penjaga",
+        "text": "Sekelompok goblin menghadang jalan.",
+        "enemy": { "name": "Penjaga Goblin", "power": 12, "damage": 7 },
+        "success": "camp",
+        "failure": "failed"
+      },
+      {
+        "id": "trap_hall",
+        "type": "event",
+        "name": "Aula Perangkap",
+        "text": "Lantai batu memiliki pola mencurigakan.",
+        "options": [
+          { "id": "careful", "label": "🔍 Bergerak hati-hati", "next": "hidden_cache", "damage": 2 },
+          { "id": "rush", "label": "🏃 Berlari menerobos", "next": "camp", "damage": 9 }
+        ]
+      },
+      {
+        "id": "hidden_cache",
+        "type": "treasure",
+        "name": "Ruang Penyimpanan",
+        "text": "Peti tua masih menyimpan bekal para perampok.",
+        "reward": { "gold": 12, "item": "ramuan_kecil", "quantity": 1 },
+        "next": "camp"
+      },
+      {
+        "id": "camp",
+        "type": "rest",
+        "name": "Api Unggun Padam",
+        "text": "Tempat aman untuk menarik napas sebelum masuk lebih dalam.",
+        "heal_percent": 25,
+        "next": "chieftain"
+      },
+      {
+        "id": "chieftain",
+        "type": "boss",
+        "name": "Ruang Kepala Suku",
+        "text": "Kepala Goblin mengangkat kapaknya dan menutup jalan keluar.",
+        "enemy": { "name": "Kepala Goblin Kabut", "power": 22, "damage": 14 },
+        "success": "victory",
+        "failure": "failed"
+      },
+      {
+        "id": "victory",
+        "type": "finish",
+        "name": "Reruntuhan Ditaklukkan",
+        "text": "Kabut menipis. Jalur dagang Aldenmoor kembali aman."
+      },
+      {
+        "id": "failed",
+        "type": "failure",
+        "name": "Ekspedisi Gagal",
+        "text": "Kamu mundur sebelum seluruh bekal habis. Checkpoint ekspedisi ditutup."
+      }
+    ]
+  }
+]

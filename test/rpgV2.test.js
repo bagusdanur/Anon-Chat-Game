@@ -19,6 +19,11 @@ const {
   findLoadoutSkill,
   resolveCombatSkill,
 } = require('../src/rpg/services/combatSkills');
+const {
+  loadDungeons,
+  publishDungeons,
+  createLongDungeonService,
+} = require('../src/rpg/services/longDungeon');
 
 function createTestDb() {
   const db = new Database(':memory:');
@@ -28,8 +33,23 @@ function createTestDb() {
       telegram_user_id TEXT PRIMARY KEY,
       class_name TEXT NOT NULL DEFAULT 'ksatria',
       level INTEGER NOT NULL DEFAULT 1,
+      xp INTEGER NOT NULL DEFAULT 0,
       gold INTEGER NOT NULL DEFAULT 0,
+      hp INTEGER NOT NULL DEFAULT 50,
+      max_hp INTEGER NOT NULL DEFAULT 50,
+      atk INTEGER NOT NULL DEFAULT 10,
+      def INTEGER NOT NULL DEFAULT 10,
+      magic_atk INTEGER NOT NULL DEFAULT 0,
+      crit_rate REAL NOT NULL DEFAULT 0.05,
+      crit_multi REAL NOT NULL DEFAULT 1.5,
       updated_at INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE rpg_inventory (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      telegram_user_id TEXT NOT NULL,
+      item_id TEXT NOT NULL,
+      quantity INTEGER NOT NULL DEFAULT 1,
+      UNIQUE(telegram_user_id, item_id)
     );
     INSERT INTO rpg_users (telegram_user_id, class_name, level, gold)
     VALUES ('1', 'ksatria', 1, 1000);
@@ -45,7 +65,9 @@ test('migrations are ordered and idempotent', () => {
   const versions = db.prepare(
     "SELECT version FROM schema_migrations WHERE scope = 'rpg' ORDER BY version",
   ).all();
-  assert.deepEqual(versions, [{ version: 1 }, { version: 2 }, { version: 3 }]);
+  assert.deepEqual(versions, [
+    { version: 1 }, { version: 2 }, { version: 3 }, { version: 4 },
+  ]);
   db.close();
 });
 
@@ -208,4 +230,48 @@ test('defensive combat skills mutate temporary combat state', () => {
   assert.equal(attacker.guardReduction, 0.55);
   attacker.skillLoadout = [skill];
   assert.equal(findLoadoutSkill(attacker, 'guard').name, 'Guard');
+});
+
+test('long dungeon validates content and persists every room checkpoint', () => {
+  const db = createTestDb();
+  const definitions = loadDungeons();
+  publishDungeons(db, definitions);
+  const dungeon = createLongDungeonService(db, { random: () => 1 });
+  const started = dungeon.startSolo('1', 'goblin_ruins');
+  assert.equal(started.success, true);
+  const sessionId = started.session.id;
+  const first = dungeon.advance('1', sessionId, 1, 'right');
+  assert.equal(first.room.id, 'trap_hall');
+  const stale = dungeon.advance('1', sessionId, 1, 'right');
+  assert.equal(stale.success, false);
+  const second = dungeon.advance('1', sessionId, 2, 'careful');
+  assert.equal(second.room.id, 'hidden_cache');
+  assert.equal(dungeon.getActive('1').state_version, 3);
+  db.close();
+});
+
+test('long dungeon completion rewards are idempotent and include treasure', () => {
+  const db = createTestDb();
+  publishDungeons(db, loadDungeons());
+  const dungeon = createLongDungeonService(db, { random: () => 1 });
+  let session = dungeon.startSolo('1', 'goblin_ruins').session;
+  const choices = ['right', 'careful', 'claim', 'rest', 'fight'];
+  for (const choice of choices) {
+    const result = dungeon.advance('1', session.id, session.state_version, choice);
+    assert.equal(result.success, true);
+    session = result.session;
+  }
+  assert.equal(session.status, 'completed');
+  const user = db.prepare('SELECT level, xp, gold FROM rpg_users WHERE telegram_user_id = ?').get('1');
+  assert.deepEqual(user, { level: 2, xp: 50, gold: 1067 });
+  const inventory = db.prepare(
+    'SELECT item_id, quantity FROM rpg_inventory WHERE telegram_user_id = ? ORDER BY item_id',
+  ).all('1');
+  assert.deepEqual(inventory, [
+    { item_id: 'besi_rongsok', quantity: 2 },
+    { item_id: 'ramuan_kecil', quantity: 1 },
+  ]);
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_dungeon_reward_claims').get().count, 1);
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 1);
+  db.close();
 });

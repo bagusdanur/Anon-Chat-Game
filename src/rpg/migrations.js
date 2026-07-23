@@ -136,6 +136,53 @@ const MIGRATIONS = [
         ON rpg_respec_history(user_id, created_at);
     `,
   },
+  {
+    version: 4,
+    name: 'persistent_multi_room_dungeons',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_dungeon_definitions (
+        dungeon_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        min_level INTEGER NOT NULL DEFAULT 1,
+        definition_json TEXT NOT NULL,
+        published INTEGER NOT NULL DEFAULT 0,
+        content_version INTEGER NOT NULL DEFAULT 1,
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS rpg_dungeon_sessions_v2 (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        dungeon_id TEXT NOT NULL REFERENCES rpg_dungeon_definitions(dungeon_id),
+        owner_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        partner_id TEXT,
+        mode TEXT NOT NULL CHECK (mode IN ('solo','duo')),
+        current_room_id TEXT NOT NULL,
+        state_json TEXT NOT NULL,
+        state_version INTEGER NOT NULL DEFAULT 1,
+        status TEXT NOT NULL DEFAULT 'active'
+          CHECK (status IN ('active','completed','failed','abandoned')),
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        completed_at INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS idx_rpg_dungeon_v2_owner
+        ON rpg_dungeon_sessions_v2(owner_id, status, expires_at);
+
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_rpg_one_active_solo_dungeon
+        ON rpg_dungeon_sessions_v2(owner_id)
+        WHERE status = 'active';
+
+      CREATE TABLE IF NOT EXISTS rpg_dungeon_reward_claims (
+        session_id INTEGER NOT NULL REFERENCES rpg_dungeon_sessions_v2(id),
+        user_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        reward_key TEXT NOT NULL,
+        reward_json TEXT NOT NULL,
+        claimed_at INTEGER NOT NULL,
+        PRIMARY KEY (session_id, user_id, reward_key)
+      );
+    `,
+  },
 ];
 
 function quoteSql(value) {
