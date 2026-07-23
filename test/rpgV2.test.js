@@ -41,6 +41,9 @@ const {
   anonymousAlias,
   createEndgameService,
 } = require('../src/rpg/services/endgame');
+const {
+  createSocialService,
+} = require('../src/rpg/services/social');
 
 function createTestDb() {
   const db = new Database(':memory:');
@@ -103,6 +106,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 6 },
     { version: 7 },
     { version: 8 },
+    { version: 9 },
   ]);
   db.close();
 });
@@ -465,5 +469,38 @@ test('achievements and item collection derive from persistent game state', () =>
   const achievements = endgame.listAchievements('1');
   assert.equal(achievements.find(item => item.id === 'tower_10').unlocked, true);
   assert.deepEqual(endgame.collection('1'), { owned: 1, total: 2, percent: 50 });
+  db.close();
+});
+
+test('persistent party invite, membership, and owner transfer are atomic', () => {
+  const db = createTestDb();
+  const social = createSocialService(db, { now: () => 2_000_000_000 });
+  const created = social.createParty('1');
+  assert.equal(created.success, true);
+  assert.equal(social.invite('1', '2').success, true);
+  assert.equal(social.acceptInvite('2').success, true);
+  assert.equal(social.getParty('1').members.length, 2);
+  assert.equal(social.leaveParty('1').success, true);
+  const transferred = social.getParty('2');
+  assert.equal(transferred.owner_id, '2');
+  assert.equal(transferred.members[0].role, 'owner');
+  db.close();
+});
+
+test('guild creation, anonymous aliases, joining, and contributions are persistent', () => {
+  const db = createTestDb();
+  const social = createSocialService(db, { now: () => 2_000_000_000 });
+  assert.equal(social.setAlias('1', 'RyuKnight').success, true);
+  assert.equal(social.setAlias('2', 'MoonMage').success, true);
+  const created = social.createGuild('1', 'RYU', 'Ryu Adventurers');
+  assert.equal(created.success, true);
+  assert.equal(social.joinGuild('2', 'RYU').success, true);
+  assert.equal(social.contribute('2', 100).success, true);
+  const guild = social.getGuild('2');
+  assert.equal(guild.treasury, 100);
+  assert.equal(guild.members.find(member => member.user_id === '1').alias, 'RyuKnight');
+  assert.equal(guild.members.find(member => member.user_id === '2').contribution, 100);
+  assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='2'").get().gold, 900);
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 2);
   db.close();
 });

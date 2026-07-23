@@ -19,6 +19,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Tujuh profession dengan gathering, salvage, dan refinement
 - Controlled marketplace dengan escrow, pajak, expiry, dan audit ledger
 - Preseason, leaderboard anonim, Endless Tower, achievement, dan collection
+- Party persisten dan guild dengan alias karakter anonim
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
@@ -96,6 +97,10 @@ pm2 save && pm2 startup
 | `/tower`          | Menantang lantai berikutnya di Endless Tower          |
 | `/achievement`    | Melihat achievement karakter                          |
 | `/collection`     | Melihat completion koleksi item                       |
+| `/alias [nama]`   | Mengatur alias karakter internal                      |
+| `/party create`   | Membuat party persisten                               |
+| `/party invite`   | Mengundang partner chat ke party                      |
+| `/guild`          | Membuat, bergabung, dan berkontribusi ke guild        |
 | `/next`           | Putus chat dan langsung cari partner baru          |
 | `/stop`           | Mengakhiri chat atau batal antri                   |
 | `/lang [id/en]`   | Memilih preferensi bahasa (prioritas matching)     |

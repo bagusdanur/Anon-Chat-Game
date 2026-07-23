@@ -322,6 +322,74 @@ const MIGRATIONS = [
       );
     `,
   },
+  {
+    version: 9,
+    name: 'persistent_parties_and_guilds',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_character_aliases (
+        user_id TEXT PRIMARY KEY REFERENCES rpg_users(telegram_user_id),
+        alias TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS rpg_parties (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        owner_id TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active'
+          CHECK (status IN ('active','disbanded')),
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS rpg_party_members (
+        user_id TEXT PRIMARY KEY REFERENCES rpg_users(telegram_user_id),
+        party_id INTEGER NOT NULL REFERENCES rpg_parties(id),
+        role TEXT NOT NULL DEFAULT 'member'
+          CHECK (role IN ('owner','member')),
+        joined_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_party_members_party
+        ON rpg_party_members(party_id, joined_at);
+      CREATE TABLE IF NOT EXISTS rpg_party_invites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        party_id INTEGER NOT NULL REFERENCES rpg_parties(id),
+        inviter_id TEXT NOT NULL,
+        invitee_id TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending'
+          CHECK (status IN ('pending','accepted','rejected','expired')),
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_party_invite_pending
+        ON rpg_party_invites(invitee_id, status, expires_at);
+
+      CREATE TABLE IF NOT EXISTS rpg_guilds (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tag TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        owner_id TEXT NOT NULL,
+        level INTEGER NOT NULL DEFAULT 1,
+        treasury INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS rpg_guild_members (
+        user_id TEXT PRIMARY KEY REFERENCES rpg_users(telegram_user_id),
+        guild_id INTEGER NOT NULL REFERENCES rpg_guilds(id),
+        role TEXT NOT NULL DEFAULT 'member'
+          CHECK (role IN ('owner','officer','member')),
+        contribution INTEGER NOT NULL DEFAULT 0,
+        joined_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_guild_members_guild
+        ON rpg_guild_members(guild_id, contribution DESC);
+      CREATE TABLE IF NOT EXISTS rpg_guild_contributions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        guild_id INTEGER NOT NULL,
+        user_id TEXT NOT NULL,
+        amount INTEGER NOT NULL CHECK (amount > 0),
+        created_at INTEGER NOT NULL
+      );
+    `,
+  },
 ];
 
 function quoteSql(value) {
