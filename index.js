@@ -33,7 +33,7 @@ const {
 const { rateLimitMessage, rateLimitCommand, rateLimitSearch } = require('./src/middleware/rateLimit');
 const { containsBadWord } = require('./src/moderation/wordFilter');
 const { getRandomTopic } = require('./src/icebreakers');
-const { setupRpg, clearRaidSession } = require('./src/rpg/controller');
+const { setupRpg, clearRaidSession, resolveInvInput } = require('./src/rpg/controller');
 const { progressBar } = require('./src/format');
 const { CLASS_DEFS, xpToNextLevel, getCurrentHp, getCurrentEnergy, getEquipmentBonus, getInventory, getOrCreateUser, getEquippedBonus, getEquipped, equipItem, unequipSlot, CLASS_EQUIP_SLOTS } = require('./src/rpg/db_rpg');
 const { RARITY_EMOJI } = require('./src/rpg/profile');
@@ -578,8 +578,13 @@ bot.command('equip', rateLimitCommand, (ctx) => {
     return ctx.reply(msg, { parse_mode: 'HTML' });
   }
 
-  const invItem = getInventory(userId).find(i => i.item_id === input);
-  if (!invItem) return ctx.reply(`❌ Item "<code>${input}</code>" tidak ada di inventory.`, { parse_mode: 'HTML' });
+  // Support numeric ID (dari /inv) atau item_id string
+  let invItem;
+  const resolvedId = resolveInvInput(userId, input);
+  if (resolvedId) {
+    invItem = getInventory(userId).find(i => i.item_id === resolvedId);
+  }
+  if (!invItem) return ctx.reply(`❌ Item "<code>${input}</code>" tidak ada di inventory.\nKetik /inv untuk lihat nomor item.`, { parse_mode: 'HTML' });
   const result = equipItem(userId, invItem.item_id);
   if (!result.success) return ctx.reply(`❌ ${result.reason}`);
   ctx.reply(`✅ <b>${result.item}</b> terpasang di slot <b>${result.slot}</b>!`, { parse_mode: 'HTML' });
@@ -697,7 +702,7 @@ const botCommands = [
   { command: 'sell',     description: '💰 Jual item' },
   { command: 'use',      description: '🧪 Pakai item' },
   { command: 'daily',    description: '🎁 Hadiah harian' },
-  { command: 'give',     description: '💰 Kirim gold ke partner' },
+  { command: 'give',     description: '💰 Kirim gold/item ke partner' },
   { command: 'trade',    description: '📦 Kirim item ke partner' },
 ];
 

@@ -98,7 +98,7 @@ const HELP_PAGES = [
       `  🔥 Penyihir: +5 HP · +2.5 Magic · +1 DEF\n` +
       `  🗡️ Pencuri : +6 HP · +2 ATK · +1.5 DEF\n\n` +
       `<b>❤️ Regen HP:</b>\n` +
-      `  +10% MaxHP setiap 10 menit (otomatis)\n` +
+      `  +15% MaxHP setiap 5 menit (otomatis)\n` +
       `  Atau pakai 🧪 Ramuan dari /inv`,
     nav: ['grinding', 'equipment']
   },
@@ -136,7 +136,8 @@ const HELP_PAGES = [
       `  /sell [item/no]   — Jual item\n` +
       `  /use [item/no]    — Pakai item\n` +
       `  /craft            — Craft equipment\n` +
-      `  /give [jumlah]    — Kirim gold (pajak 5%)\n\n` +
+      `  /give gold [jumlah]  — Kirim gold (pajak 5%)
+  /give item [nomor]  — Kirim item (pajak 0%)\n\n` +
       `<b>🌟 Rarity:</b>\n` +
       `  ⚪ Common → 🟢 Uncommon → 🔵 Rare\n` +
       `  🟣 Epic → 🟠 Legendary\n\n` +

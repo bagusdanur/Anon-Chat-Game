@@ -10,6 +10,7 @@ const {
   equipItem, unequipSlot, getEquipped, getEquippedBonus, GOLD_CAP, INVENTORY_CAP
 } = require('./db_rpg');
 const { RARITY_EMOJI } = require('./profile');
+const { getGameSettings } = require('./config');
 
 const fs = require('fs');
 const path = require('path');
@@ -58,7 +59,15 @@ function resolveShopInput(input) {
 
 function resolveInvInput(userId, input) {
   const num = parseInt(input);
-  const cache = invCache.get(userId.toString());
+  
+  // Auto-populate cache jika kosong (biar /equip 1 tanpa /inv dulu tetep work)
+  let cache = invCache.get(userId.toString());
+  if (!cache) {
+    const items = getInventory(userId);
+    cache = items.map(i => i.item_id);
+    invCache.set(userId.toString(), cache);
+  }
+  
   if (!isNaN(num) && cache) {
     return cache[num - 1] || null; // ID 1-indexed
   }
@@ -115,6 +124,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
 
     let msg = `🛒 <b>TOKO (SHOP)</b>\n`;
+    msg += `💰 Saldo: <b>${user.gold}g</b>\n`;
     msg += `<i>Beli item dengan gold. Ketik /buy &lt;ID/Nama&gt;</i>\n\n`;
 
     const shopItems = getShopConfig();
@@ -618,9 +628,96 @@ function getSpecialShopConfig() {
   bot.command('give', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
     const args = ctx.message.text.split(' ').slice(1);
-    const amount = parseInt(args[0]);
+    const subCommand = args[0];
 
-    if (!amount || amount <= 0) return ctx.reply('Penggunaan: /give <jumlah>. Contoh: /give 100\n(Hanya bisa ke partner yang sedang paired, pajak 5%)');
+    // /give tanpa argumen → tampilkan help
+    if (!subCommand) return ctx.reply(
+      `<b>📦 GIVE — Kirim ke Partner</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `<b>Gold:</b>\n` +
+      `<code>/give gold [jumlah]</code>\n` +
+      `Contoh: <code>/give gold 100</code>\n` +
+      `Pajak: 5%\n\n` +
+      `<b>Item:</b>\n` +
+      `<code>/give item [nomor/nama] [jumlah]</code>\n` +
+      `Contoh: <code>/give item 1</code> atau <code>/give item daging_mentah 5</code>\n` +
+      `Pajak: 0%\n\n` +
+      `<i>Hanya bisa ke partner yang sedang paired.</i>`,
+      { parse_mode: 'HTML' }
+    );
+
+    // /give item [nomor/jumlah] — kirim item ke partner
+    if (subCommand === 'item') {
+      const itemInput = args[1];
+      const qty = parseInt(args[2]) || 1;
+
+      if (!itemInput) return ctx.reply(
+        `Penggunaan: <code>/give item [nomor/nama] [jumlah]</code>\n` +
+        `Contoh: <code>/give item 1</code> atau <code>/give item daging_mentah 5</code>\n\n` +
+        `<i>Tanpa pajak! Item dikirim langsung ke partner.</i>`,
+        { parse_mode: 'HTML' }
+      );
+
+      const partnerId = getPartnerId(userId);
+      if (!partnerId) return ctx.reply('❌ Kamu harus sedang terhubung dengan partner dulu (/search).');
+
+      const user = getOrCreateUser(userId);
+      if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
+      const partner = getOrCreateUser(partnerId);
+      if (!partner) return ctx.reply('❌ Partnermu belum punya karakter RPG.');
+
+      // Resolve item (support numeric ID atau string)
+      // Pakai invCache yang sama dengan /inv agar urutan konsisten
+      let itemId;
+      const inputNum = parseInt(itemInput);
+      if (!isNaN(inputNum) && inputNum > 0) {
+        const cache = invCache.get(userId.toString());
+        if (cache && cache[inputNum - 1]) {
+          itemId = cache[inputNum - 1];
+        } else {
+          // Fallback: gunakan urutan dari getInventory
+          const items = getInventory(userId);
+          const item = items[inputNum - 1];
+          itemId = item ? item.item_id : null;
+        }
+      } else {
+        itemId = itemInput.toLowerCase();
+      }
+
+      if (!itemId) return ctx.reply('❌ Nomor item tidak valid. Ketik /inv dulu untuk refresh daftar.');
+
+      const invItem = getItem(userId, itemId);
+      if (!invItem) return ctx.reply('❌ Item tidak ada di inventory.');
+      if (invItem.quantity < qty) return ctx.reply(`❌ Hanya punya ${invItem.quantity}x ${invItem.display_name}.`);
+      if (invItem.equipped) return ctx.reply('❌ Item sedang di-equip. Lepas dulu dengan /unequip.');
+
+      // Atomic transfer
+      const transferSuccess = db.transaction(() => {
+        const partnerCheck = db.prepare('SELECT telegram_user_id FROM rpg_users WHERE telegram_user_id = ?').get(partnerId.toString());
+        if (!partnerCheck) return false;
+        if (!removeItem(userId, itemId, qty)) return false;
+        addItem(partnerId, itemId, qty);
+        return true;
+      })();
+
+      if (!transferSuccess) {
+        return ctx.reply('❌ Gagal transfer! Partner belum punya karakter atau item tidak cukup.');
+      }
+
+      logTransaction(userId, partnerId, qty, 'give_item');
+      ctx.reply(`✅ Berhasil mengirim <b>${qty}x ${invItem.display_name}</b> ke partner!`, { parse_mode: 'HTML' });
+      bot.telegram.sendMessage(partnerId, `📦 Kamu menerima <b>${qty}x ${invItem.display_name}</b> dari partner!`, { parse_mode: 'HTML' }).catch(() => {});
+      return;
+    }
+
+    // /give gold [jumlah] — kirim gold
+    if (subCommand === 'gold') {
+      const amount = parseInt(args[1]);
+
+      if (!amount || amount <= 0) return ctx.reply(
+        `Penggunaan: <code>/give gold [jumlah]</code>\nContoh: <code>/give gold 100</code>`,
+        { parse_mode: 'HTML' }
+      );
 
     const partnerId = getPartnerId(userId);
     if (!partnerId) return ctx.reply('❌ Kamu harus sedang terhubung dengan partner dulu (/search).');
@@ -635,7 +732,6 @@ function getSpecialShopConfig() {
 
     // Atomic: cek partner punya karakter dulu, baru transfer
     const transferSuccess = db.transaction(() => {
-      // Pastikan partner ada di rpg_users sebelum addGold
       const partnerCheck = db.prepare('SELECT telegram_user_id FROM rpg_users WHERE telegram_user_id = ?').get(partnerId.toString());
       if (!partnerCheck) return false;
       if (!spendGold(userId, amount)) return false;
@@ -644,7 +740,6 @@ function getSpecialShopConfig() {
     })();
 
     if (!transferSuccess) {
-      // Cek apakah gagal karena gold kurang atau partner tidak punya karakter
       const freshUser = getOrCreateUser(userId);
       if (!freshUser || freshUser.gold < amount) {
         return ctx.reply(`❌ Gold tidak cukup! Butuh ${amount}g. Saldo: ${user.gold}g.`);
@@ -652,10 +747,15 @@ function getSpecialShopConfig() {
       return ctx.reply('❌ Partnermu belum punya karakter RPG. Minta dia ketik /profile dulu!');
     }
 
-    logTransaction(userId, partnerId, received, 'give_transfer');
-    logTransaction(userId, null, tax, 'give_tax');
+      logTransaction(userId, partnerId, received, 'give_transfer');
+      logTransaction(userId, null, tax, 'give_tax');
 
-    ctx.reply(`✅ Berhasil mengirim <b>${received}g</b> ke partner <i>(pajak 5% = ${tax}g)</i>.`, { parse_mode: 'HTML' });
+      ctx.reply(`✅ Berhasil mengirim <b>${received}g</b> ke partner <i>(pajak 5% = ${tax}g)</i>.`, { parse_mode: 'HTML' });
+      return;
+    }
+
+    // Fallback: tidak dikenali
+    return ctx.reply('Gunakan <code>/give gold [jumlah]</code> atau <code>/give item [nomor]</code>.', { parse_mode: 'HTML' });
     incrementQuestProgress(userId, 'give');
     bot.telegram.sendMessage(partnerId, `💰 Kamu menerima <b>${received}g</b> dari partner!`, { parse_mode: 'HTML' }).catch(() => {});
   });
@@ -732,9 +832,9 @@ function getSpecialShopConfig() {
 
 }
 
-module.exports = { setupEconomy, SHOP_ITEMS };
+const SHOP_ITEMS = getShopConfig();
+module.exports = { setupEconomy, SHOP_ITEMS, resolveInvInput };
 
 
 
 
-module.exports = { setupEconomy, SHOP_ITEMS };
