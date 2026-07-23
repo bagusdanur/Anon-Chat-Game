@@ -29,6 +29,21 @@ function setupEquipment(bot, { rateLimitCommand }) {
       const result = equipment.socketGem(ctx.chat.id, Number(args[1]), Number(args[2]), args[3]);
       return ctx.reply(result.success ? '💎 Gem berhasil dipasang.' : `❌ ${result.reason}`);
     }
+    if (action === 'upgrade') {
+      const key = `telegram:${ctx.chat.id}:${ctx.message.message_id}:gear_upgrade`;
+      const result = equipment.upgrade(ctx.chat.id, Number(args[1]), key);
+      return ctx.reply(result.success
+        ? `⚒️ Upgrade berhasil: +${result.item.upgrade_tier}, IP ${result.item.item_power}. ` +
+          `Biaya ${result.goldCost}g dan ${result.materialCost} Tembaga.`
+        : `❌ ${result.reason}`);
+    }
+    if (action === 'reforge') {
+      const key = `telegram:${ctx.chat.id}:${ctx.message.message_id}:gear_reforge`;
+      const result = equipment.reforge(ctx.chat.id, Number(args[1]), key);
+      if (!result.success) return ctx.reply(`❌ ${result.reason}`);
+      const affixes = result.item.affixes.map(affix => `${affix.stat_key} +${affix.stat_value}`).join(', ');
+      return ctx.reply(`✨ Reforge berhasil (${result.goldCost}g): ${affixes}`);
+    }
     const items = equipment.list(ctx.chat.id);
     if (!items.length) {
       return ctx.reply('Belum ada equipment v2. Gunakan /gear forge [item_id] untuk mengonversi equipment lama.');
@@ -43,7 +58,8 @@ function setupEquipment(bot, { rateLimitCommand }) {
     return ctx.reply(
       `<b>🛡 EQUIPMENT V2</b>\n\n${lines.join('\n\n')}\n\n` +
       `<i>/gear forge [item_id] · /gear equip [instance_id] · ` +
-      `/gear socket [instance_id] [slot] [gem_id]</i>`,
+      `/gear socket [instance_id] [slot] [gem_id] · /gear upgrade [instance_id] · ` +
+      `/gear reforge [instance_id]</i>`,
       { parse_mode: 'HTML' },
     );
   });

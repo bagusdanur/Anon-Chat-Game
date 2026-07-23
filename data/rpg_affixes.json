@@ -11,5 +11,24 @@
     "ruby_gem": { "stat": "atk", "value": 4 },
     "sapphire_gem": { "stat": "magic_atk", "value": 4 },
     "emerald_gem": { "stat": "def", "value": 4 }
-  }
+  },
+  "sets": [
+    {
+      "id": "dragon",
+      "name": "Dragon Regalia",
+      "items": ["pedang_naga", "armor_naga", "kalung_naga"],
+      "bonuses": {
+        "2": { "atk": 8, "def": 8 },
+        "3": { "crit_rate": 0.08, "max_hp": 40 }
+      }
+    },
+    {
+      "id": "cursed",
+      "name": "Cursed Sovereign",
+      "items": ["jubah_terkutuk", "mahkota_terkutuk"],
+      "bonuses": {
+        "2": { "magic_atk": 10, "magic_resist": 0.1 }
+      }
+    }
+  ]
 }

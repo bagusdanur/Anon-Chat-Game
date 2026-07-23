@@ -124,6 +124,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 11 },
     { version: 12 },
     { version: 13 },
+    { version: 14 },
   ]);
   db.close();
 });
@@ -680,5 +681,55 @@ test('equipping binds instances and socketed gems contribute persistent bonuses'
   assert.equal(equipped.sockets[0].gem_item_id, 'ruby_gem');
   assert.equal(equipment.bonuses('1').atk >= 6, true);
   assert.equal(equipment.socketGem('1', item.id, 1, 'ruby_gem').success, false);
+  db.close();
+});
+
+test('equipment upgrades and reforges are atomic audited gold sinks', () => {
+  const db = createTestDb();
+  db.prepare(`
+    INSERT INTO items_catalog (item_id,display_name,category,rarity,sell_price)
+    VALUES ('upgrade_blade','Upgrade Blade','weapon','epic',100)
+  `).run();
+  db.prepare(`
+    INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
+    VALUES ('1','upgrade_blade',1),('1','tembaga',10)
+  `).run();
+  const equipment = createEquipmentService(db, { random: () => 0.25, now: () => 2_000_000_000 });
+  const instance = equipment.forge('1', 'upgrade_blade').item;
+  const upgraded = equipment.upgrade('1', instance.id, 'upgrade:test:1');
+  assert.equal(upgraded.success, true);
+  assert.equal(upgraded.item.upgrade_tier, 1);
+  assert.equal(equipment.upgrade('1', instance.id, 'upgrade:test:1').success, false);
+  const reforged = equipment.reforge('1', instance.id, 'reforge:test:1');
+  assert.equal(reforged.success, true);
+  assert.equal(reforged.item.affixes.length, instance.affixes.length);
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_equipment_operations').get().count, 2);
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 2);
+  db.close();
+});
+
+test('equipped dragon pieces activate cumulative set bonuses', () => {
+  const db = createTestDb();
+  db.prepare(`
+    INSERT INTO items_catalog (item_id,display_name,category,rarity,sell_price)
+    VALUES ('pedang_naga','Dragon Sword','weapon','legendary',0),
+           ('armor_naga','Dragon Armor','armor','legendary',0),
+           ('kalung_naga','Dragon Necklace','accessory','legendary',0)
+  `).run();
+  db.prepare(`
+    INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
+    VALUES ('1','pedang_naga',1),('1','armor_naga',1),('1','kalung_naga',1)
+  `).run();
+  const equipment = createEquipmentService(db, { random: () => 0, now: () => 2_000_000_000 });
+  for (const itemId of ['pedang_naga', 'armor_naga', 'kalung_naga']) {
+    const instance = equipment.forge('1', itemId).item;
+    assert.equal(instance.set_id, 'dragon');
+    equipment.equip('1', instance.id);
+  }
+  const bonuses = equipment.bonuses('1');
+  assert.equal(bonuses.atk >= 10, true);
+  assert.equal(bonuses.def >= 10, true);
+  assert.equal(bonuses.max_hp >= 40, true);
+  assert.equal(bonuses.crit_rate >= 0.08, true);
   db.close();
 });

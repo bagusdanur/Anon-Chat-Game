@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { createLedgerService } = require('./ledger');
 
 const CONTENT_FILE = path.join(__dirname, '../../../data/rpg_affixes.json');
 const EQUIPMENT_SLOTS = ['weapon', 'staff', 'armor', 'accessory'];
@@ -13,7 +14,9 @@ const RARITY_RULES = {
 
 function loadEquipmentContent(filePath = CONTENT_FILE) {
   const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  if (!Array.isArray(content.affixes) || !content.gems) throw new Error('Content equipment tidak valid.');
+  if (!Array.isArray(content.affixes) || !content.gems || !Array.isArray(content.sets)) {
+    throw new Error('Content equipment tidak valid.');
+  }
   const ids = new Set();
   for (const affix of content.affixes) {
     if (!affix.id || ids.has(affix.id) || !affix.stat || !Array.isArray(affix.slots)) {
@@ -28,6 +31,26 @@ function createEquipmentService(db, options = {}) {
   const now = options.now || (() => Math.floor(Date.now() / 1000));
   const random = options.random || Math.random;
   const content = options.content || loadEquipmentContent();
+  const ledger = createLedgerService(db);
+
+  function setForItem(itemId) {
+    return content.sets.find(set => set.items.includes(itemId)) || null;
+  }
+
+  function rollAffixes(instanceId, category, count, quality) {
+    const available = content.affixes.filter(affix => affix.slots.includes(category));
+    const affixCount = Math.min(count, available.length);
+    for (let index = 0; index < affixCount; index++) {
+      const pickedIndex = Math.floor(random() * available.length);
+      const affix = available.splice(pickedIndex, 1)[0];
+      const tier = Math.max(1, Math.min(5, 1 + Math.floor(quality / 21)));
+      const value = affix.min + (affix.max - affix.min) * random();
+      db.prepare(`
+        INSERT INTO rpg_equipment_affixes (instance_id,affix_id,stat_key,stat_value,tier)
+        VALUES (?,?,?,?,?)
+      `).run(instanceId, affix.id, affix.stat, Number(value.toFixed(3)), tier);
+    }
+  }
 
   function getInstance(userId, instanceId) {
     const item = db.prepare(`
@@ -70,26 +93,16 @@ function createEquipmentService(db, options = {}) {
       } else {
         db.prepare('UPDATE rpg_inventory SET quantity=quantity-1 WHERE id=?').run(legacy.id);
       }
+      const set = setForItem(catalog.item_id);
       const instanceId = Number(db.prepare(`
         INSERT INTO rpg_equipment_instances
-          (owner_id,item_id,rarity,quality,item_power,upgrade_tier,created_at,updated_at)
-        VALUES (?,?,?,?,?,?,?,?)
+          (owner_id,item_id,rarity,quality,item_power,upgrade_tier,set_id,created_at,updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?)
       `).run(
         String(userId), catalog.item_id, catalog.rarity, quality, itemPower,
-        legacy.upgrade_tier || 0, now(), now(),
+        legacy.upgrade_tier || 0, set?.id || null, now(), now(),
       ).lastInsertRowid);
-      const available = [...pool];
-      const affixCount = Math.min(rule.affixes, available.length);
-      for (let index = 0; index < affixCount; index++) {
-        const pickedIndex = Math.floor(random() * available.length);
-        const affix = available.splice(pickedIndex, 1)[0];
-        const tier = Math.max(1, Math.min(5, 1 + Math.floor(quality / 21)));
-        const value = affix.min + (affix.max - affix.min) * random();
-        db.prepare(`
-          INSERT INTO rpg_equipment_affixes (instance_id,affix_id,stat_key,stat_value,tier)
-          VALUES (?,?,?,?,?)
-        `).run(instanceId, affix.id, affix.stat, Number(value.toFixed(3)), tier);
-      }
+      rollAffixes(instanceId, catalog.category, Math.min(rule.affixes, pool.length), quality);
       for (let socket = 1; socket <= rule.sockets; socket++) {
         db.prepare('INSERT INTO rpg_equipment_sockets (instance_id,socket_index) VALUES (?,?)')
           .run(instanceId, socket);
@@ -145,13 +158,96 @@ function createEquipmentService(db, options = {}) {
       JOIN rpg_equipment_instances e ON e.id=s.instance_id
       WHERE e.owner_id=? AND e.equipped_slot IS NOT NULL AND s.gem_item_id IS NOT NULL
     `).all(String(userId), String(userId));
-    return rows.reduce((total, row) => {
-      total[row.stat_key] = (total[row.stat_key] || 0) + row.stat_value;
-      return total;
+    const total = rows.reduce((result, row) => {
+      result[row.stat_key] = (result[row.stat_key] || 0) + row.stat_value;
+      return result;
     }, {});
+    const setCounts = db.prepare(`
+      SELECT set_id,count(1) pieces FROM rpg_equipment_instances
+      WHERE owner_id=? AND equipped_slot IS NOT NULL AND set_id IS NOT NULL GROUP BY set_id
+    `).all(String(userId));
+    for (const entry of setCounts) {
+      const set = content.sets.find(item => item.id === entry.set_id);
+      if (!set) continue;
+      for (const [required, bonus] of Object.entries(set.bonuses)) {
+        if (entry.pieces < Number(required)) continue;
+        for (const [stat, value] of Object.entries(bonus)) total[stat] = (total[stat] || 0) + value;
+      }
+    }
+    return total;
   }
 
-  return { getInstance, list, forge, equip, socketGem, bonuses };
+  function upgrade(userId, instanceId, operationKey) {
+    const item = getInstance(userId, instanceId);
+    if (!item) return { success: false, reason: 'Equipment instance tidak ditemukan.' };
+    if (item.upgrade_tier >= 15) return { success: false, reason: 'Upgrade sudah maksimal.' };
+    const nextTier = item.upgrade_tier + 1;
+    const goldCost = 100 + nextTier * 75;
+    const materialCost = 1 + Math.floor(nextTier / 3);
+    const user = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?').get(String(userId));
+    const material = db.prepare(`
+      SELECT * FROM rpg_inventory WHERE telegram_user_id=? AND item_id='tembaga'
+    `).get(String(userId));
+    if (!user || user.gold < goldCost) return { success: false, reason: `Butuh ${goldCost}g.` };
+    if (!material || material.quantity < materialCost) return { success: false, reason: `Butuh ${materialCost} Tembaga.` };
+    return db.transaction(() => {
+      const existing = db.prepare('SELECT id FROM rpg_equipment_operations WHERE operation_key=?').get(String(operationKey));
+      if (existing) return { success: false, reason: 'Operasi ini sudah diproses.' };
+      db.prepare('UPDATE rpg_users SET gold=gold-?,updated_at=? WHERE telegram_user_id=?')
+        .run(goldCost, now(), String(userId));
+      if (material.quantity === materialCost) db.prepare('DELETE FROM rpg_inventory WHERE id=?').run(material.id);
+      else db.prepare('UPDATE rpg_inventory SET quantity=quantity-? WHERE id=?').run(materialCost, material.id);
+      const powerGain = 5 + nextTier * 2;
+      db.prepare(`
+        UPDATE rpg_equipment_instances SET upgrade_tier=?,item_power=item_power+?,updated_at=?
+        WHERE id=? AND owner_id=?
+      `).run(nextTier, powerGain, now(), item.id, String(userId));
+      db.prepare(`
+        INSERT INTO rpg_equipment_operations
+          (operation_key,instance_id,owner_id,operation,gold_cost,materials_json,result_json,created_at)
+        VALUES (?,?,?,'upgrade',?,?,?,?)
+      `).run(String(operationKey), item.id, String(userId), goldCost,
+        JSON.stringify({ tembaga: materialCost }), JSON.stringify({ tier: nextTier, powerGain }), now());
+      ledger.record({
+        entryKey: `equipment_upgrade:${operationKey}`, userId, amount: -goldCost,
+        balanceAfter: user.gold - goldCost, reason: 'equipment_upgrade',
+        referenceType: 'equipment', referenceId: item.id,
+      });
+      return { success: true, goldCost, materialCost, item: getInstance(userId, item.id) };
+    })();
+  }
+
+  function reforge(userId, instanceId, operationKey) {
+    const item = getInstance(userId, instanceId);
+    if (!item) return { success: false, reason: 'Equipment instance tidak ditemukan.' };
+    if (!item.affixes.length) return { success: false, reason: 'Equipment ini tidak memiliki affix.' };
+    const goldCost = 150 + item.item_power * 2;
+    const user = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?').get(String(userId));
+    if (!user || user.gold < goldCost) return { success: false, reason: `Butuh ${goldCost}g.` };
+    return db.transaction(() => {
+      const existing = db.prepare('SELECT id FROM rpg_equipment_operations WHERE operation_key=?').get(String(operationKey));
+      if (existing) return { success: false, reason: 'Operasi ini sudah diproses.' };
+      db.prepare('UPDATE rpg_users SET gold=gold-?,updated_at=? WHERE telegram_user_id=?')
+        .run(goldCost, now(), String(userId));
+      db.prepare('DELETE FROM rpg_equipment_affixes WHERE instance_id=?').run(item.id);
+      rollAffixes(item.id, item.category, item.affixes.length, item.quality);
+      const result = getInstance(userId, item.id);
+      db.prepare(`
+        INSERT INTO rpg_equipment_operations
+          (operation_key,instance_id,owner_id,operation,gold_cost,result_json,created_at)
+        VALUES (?,?,?,'reforge',?,?,?)
+      `).run(String(operationKey), item.id, String(userId), goldCost,
+        JSON.stringify({ affixes: result.affixes }), now());
+      ledger.record({
+        entryKey: `equipment_reforge:${operationKey}`, userId, amount: -goldCost,
+        balanceAfter: user.gold - goldCost, reason: 'equipment_reforge',
+        referenceType: 'equipment', referenceId: item.id,
+      });
+      return { success: true, goldCost, item: result };
+    })();
+  }
+
+  return { getInstance, list, forge, equip, socketGem, bonuses, upgrade, reforge };
 }
 
 module.exports = {

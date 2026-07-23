@@ -559,6 +559,25 @@ const MIGRATIONS = [
         ('emerald_gem','Emerald Gem','material','rare',25,'{"socket_stat":"def","value":4}');
     `,
   },
+  {
+    version: 14,
+    name: 'equipment_upgrades_reforge_and_sets',
+    up: `
+      ALTER TABLE rpg_equipment_instances ADD COLUMN set_id TEXT;
+
+      CREATE TABLE IF NOT EXISTS rpg_equipment_operations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        operation_key TEXT NOT NULL UNIQUE,
+        instance_id INTEGER NOT NULL REFERENCES rpg_equipment_instances(id),
+        owner_id TEXT NOT NULL,
+        operation TEXT NOT NULL CHECK (operation IN ('upgrade','reforge')),
+        gold_cost INTEGER NOT NULL CHECK (gold_cost >= 0),
+        materials_json TEXT NOT NULL DEFAULT '{}',
+        result_json TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+    `,
+  },
 ];
 
 function quoteSql(value) {
