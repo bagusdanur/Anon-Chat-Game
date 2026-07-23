@@ -10,6 +10,7 @@ const { getGameSettings } = require('./config');
 const { db } = require('../db');
 const { createProfessionService } = require('./services/professions');
 const { createEquipmentService } = require('./services/equipment');
+const { buildHuntMonster, simulateHuntBattle } = require('./services/combatBalance');
 
 const professionService = createProfessionService(db);
 const equipmentV2 = createEquipmentService(db);
@@ -79,18 +80,6 @@ function getLootTable(activity, user) {
   return config.hunt_loot;
 }
 
-function simulateBattle(playerAtk, playerDef, playerHp, monsterHp, monsterAtk, monsterDef, className) {
-  let pHp = playerHp, mHp = monsterHp, rounds = 0;
-  while (pHp > 0 && mHp > 0 && rounds < 20) {
-    const playerDmg  = Math.max(1, playerAtk - Math.floor(monsterDef / 2) + randInt(-1, 2));
-    const monsterDmg = Math.max(1, monsterAtk - Math.floor(playerDef / 2) + randInt(-1, 2));
-    mHp -= playerDmg;
-    if (mHp > 0) pHp -= monsterDmg;
-    rounds++;
-  }
-  return { win: mHp <= 0, remainingHp: Math.max(0, pHp), damageTaken: playerHp - Math.max(0, pHp) };
-}
-
 function setupGrind(bot, { rateLimitCommand }) {
   const cmdCooldown = new Map();
   function isOnCooldown(userId, cmd, ms = 2000) {
@@ -142,9 +131,14 @@ function setupGrind(bot, { rateLimitCommand }) {
     const playerDef = user.def + legacyBonus.defBonus + (instanceBonus.def || 0);
     const tier = getMonsterTier(user.level);
     const monster = pickRandom(tier.list);
-    const mHp  = randInt(...tier.hp);
-    const mAtk = randInt(...tier.atk);
-    const result = simulateBattle(playerAtk, playerDef, currentHp, mHp, mAtk, 1, user.class_name);
+    const scaledMonster = buildHuntMonster(user.level);
+    const result = simulateHuntBattle({
+      hp: currentHp,
+      attack: playerAtk,
+      defense: playerDef,
+      critRate: user.crit_rate + legacyBonus.critBonus + (instanceBonus.crit_rate || 0),
+      critMulti: user.crit_multi,
+    }, scaledMonster);
 
     let msg = `<b>⚔️ BERBURU</b>\n`;
     msg += `━━━━━━━━━━━━━━━━━━━━\n`;
@@ -167,6 +161,7 @@ function setupGrind(bot, { rateLimitCommand }) {
       const item      = pickRandom(itemOpts);
 
       msg += `✅ <b>MENANG!</b>\n`;
+      msg += `⏱️ Pertarungan: <b>${result.rounds} turn</b>\n`;
       msg += `💥 Damage diterima: <b>${result.damageTaken}</b>\n`;
       msg += `✨ +<b>${xpGain}</b> XP   💰 +<b>${goldGain}</b>g\n`;
       if (item) {

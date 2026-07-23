@@ -17,7 +17,7 @@
       "name": "Warden of the Ruins",
       "type": "party",
       "minLevel": 3,
-      "maxHp": 6000,
+      "maxHp": 320,
       "duration": "weekly",
       "attemptLimit": 5,
       "baseGold": 300,

@@ -10,6 +10,7 @@
     "dashboard:dev": "cd dashboard && npx vite",
     "dashboard:build": "cd dashboard && npx vite build",
     "simulate:economy": "node scripts/economySimulation.js",
+    "simulate:combat": "node scripts/combatBalanceSimulation.js",
     "migration:dry-run": "node scripts/migrationDryRun.js",
     "feature:set": "node scripts/setFeatureFlag.js"
   },

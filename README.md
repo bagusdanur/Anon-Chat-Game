@@ -29,11 +29,19 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Direct trade dua tahap dengan snapshot, expiry, settlement atomik, pajak, dan ledger
 - Dungeon panjang duo dengan checkpoint bersama, optimistic version, dan reward individual
 - Simulasi ekonomi deterministik untuk ribuan pemain virtual (`npm run simulate:economy`)
+- Simulasi balance combat lintas class dan level (`npm run simulate:combat`)
 - Dry-run migrasi pada backup konsisten SQLite (`npm run migration:dry-run -- [source] [target]`)
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
 - Moderasi media (foto/video) belum ada di versi ini.
+
+## Catatan Balance RPG
+
+- Hunt memakai scaling monster per level; gear pemain tidak ikut menaikkan stat musuh.
+- Hunt dari HP penuh ditargetkan 3–8 turn dengan konsumsi rata-rata 10–45% HP.
+- Reruntuhan Goblin dapat dicoba sejak awal, tetapi boss solo secara eksplisit direkomendasikan mulai level 5.
+- Weekly raid duo disetel agar masih dapat dituntaskan oleh dua karakter pada level minimum bila seluruh attempt digunakan.
 
 ## Cara Pakai
 

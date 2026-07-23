@@ -240,11 +240,19 @@ function createLongDungeonService(db, options = {}) {
   return {
     list(level) {
       return db.prepare(`
-        SELECT dungeon_id, name, min_level
+        SELECT dungeon_id, name, min_level, definition_json
         FROM rpg_dungeon_definitions
         WHERE published = 1 AND min_level <= ?
         ORDER BY min_level, dungeon_id
-      `).all(level);
+      `).all(level).map(row => {
+        const definition = JSON.parse(row.definition_json);
+        return {
+          dungeon_id: row.dungeon_id,
+          name: row.name,
+          min_level: row.min_level,
+          recommended_level: definition.recommended_level || row.min_level,
+        };
+      });
     },
     startSolo(userId, dungeonId) {
       if (getActive(userId)) return { success: false, reason: 'Masih ada ekspedisi aktif.' };

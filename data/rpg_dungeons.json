@@ -4,6 +4,7 @@
     "name": "🏚️ Reruntuhan Goblin",
     "description": "Kompleks bawah tanah di balik kabut Aldenmoor. Setiap jalur menyimpan bahaya dan hadiah berbeda.",
     "min_level": 1,
+    "recommended_level": 5,
     "version": 1,
     "published": true,
     "entry_room": "gate",

@@ -120,7 +120,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     }
     const dungeons = service.list(user.level);
     const list = dungeons.map((item, index) =>
-      `<code>[${index + 1}]</code> <b>${item.name}</b> · Lv.${item.min_level}`,
+      `<code>[${index + 1}]</code> <b>${item.name}</b> · masuk Lv.${item.min_level} · rekomendasi Lv.${item.recommended_level}`,
     ).join('\n');
     return ctx.reply(
       `<b>🏰 ADVENTURE — DUNGEON TURN-BASED</b>\n\n${list}\n\n` +
