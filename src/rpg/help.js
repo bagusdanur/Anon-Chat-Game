@@ -8,7 +8,7 @@ const HELP_PAGES = [
     text:
       'Progress karakter tersimpan permanen dan tidak bergantung pada partner chat.\n\n' +
       '<b>Langkah awal</b>\n' +
-      '1. /guide — lihat langkah progresmu saat ini\n' +
+      '1. /guide — tracker world/campaign: posisi, objective, tindakan, dan unlock berikutnya\n' +
       '2. /profile — buat atau lihat karakter\n' +
       '3. /rpg — buka dunia RPG\n' +
       '4. /campaign dan /explore — jalankan cerita\n' +

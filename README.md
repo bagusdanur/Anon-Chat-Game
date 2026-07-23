@@ -12,7 +12,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Preferensi Bahasa (`/lang id` atau `/lang en`)
 - Sistem *Report* dan *Ban* untuk menangani penyalahgunaan
 - Dunia RPG persisten dengan region, campaign, dan eksplorasi (`/rpg`, `/world`, `/explore`)
-- Panduan progres dinamis yang menunjukkan langkah karakter berikutnya (`/guide`)
+- Tracker progres dinamis untuk posisi world/campaign, objective aktif, tindakan sekarang, checkpoint, dan unlock berikutnya (`/guide`)
 - Skill tree dan loadout per class (`/skill`, `/build`)
 - Loadout skill aktif digunakan dalam combat dungeon dan duel, dengan cooldown per skill
 - Dungeon solo/duo multi-room dengan jalur bercabang dan checkpoint persisten (`/dungeon`)
