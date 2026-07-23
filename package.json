@@ -9,7 +9,8 @@
     "test": "node --test test/*.test.js",
     "dashboard:dev": "cd dashboard && npx vite",
     "dashboard:build": "cd dashboard && npx vite build",
-    "simulate:economy": "node scripts/economySimulation.js"
+    "simulate:economy": "node scripts/economySimulation.js",
+    "migration:dry-run": "node scripts/migrationDryRun.js"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",

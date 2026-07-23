@@ -29,6 +29,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Direct trade dua tahap dengan snapshot, expiry, settlement atomik, pajak, dan ledger
 - Dungeon panjang duo dengan checkpoint bersama, optimistic version, dan reward individual
 - Simulasi ekonomi deterministik untuk ribuan pemain virtual (`npm run simulate:economy`)
+- Dry-run migrasi pada backup konsisten SQLite (`npm run migration:dry-run -- [source] [target]`)
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
