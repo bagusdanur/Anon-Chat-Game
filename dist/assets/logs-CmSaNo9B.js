@@ -1,4 +1,4 @@
-import{c as e,l as t,u as n}from"./index-25s4ACC6.js";async function r(e){e.innerHTML=`<div class="page-enter"><div class="card">
+import{c as e,l as t,u as n}from"./index-DygV-4TP.js";async function r(e){e.innerHTML=`<div class="page-enter"><div class="card">
     <div class="card-header">
       <div class="card-title">${s(`file-text`)} Bot Logs <span style="font-size:12px;color:var(--muted);font-weight:500">(last 100 lines)</span></div>
       <div style="display:flex;gap:8px;align-items:center">

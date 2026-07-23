@@ -1,4 +1,4 @@
-import{a as e,c as t,l as n,r,u as i}from"./index-25s4ACC6.js";async function a(t){t.innerHTML=`<div class="page-enter"><div class="card">
+import{a as e,c as t,l as n,r,u as i}from"./index-DygV-4TP.js";async function a(t){t.innerHTML=`<div class="page-enter"><div class="card">
     <div class="card-header">
       <div class="card-title">${c(`scroll-text`)} Quests</div>
       <button class="btn btn-outline btn-sm" id="q-refresh">${c(`refresh-cw`)}</button>

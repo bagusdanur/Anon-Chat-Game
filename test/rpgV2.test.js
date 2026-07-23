@@ -60,6 +60,7 @@ const {
 const {
   createDirectTradeService,
 } = require('../src/rpg/services/directTrade');
+const { collectRpgTelemetry } = require('../src/rpg/services/telemetry');
 
 function createTestDb() {
   const db = new Database(':memory:');
@@ -821,5 +822,18 @@ test('duo long dungeon shares checkpoints and grants idempotent rewards to both 
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 2);
   assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='1'").get().gold, 1067);
   assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='2'").get().gold, 1067);
+  db.close();
+});
+
+test('RPG operations telemetry reports economy and invariant anomalies without user identities', () => {
+  const db = createTestDb();
+  const flags = createFeatureFlagService(db);
+  const telemetry = collectRpgTelemetry(db, flags);
+  assert.equal(telemetry.economy.totalGold, 2000);
+  assert.equal(telemetry.anomalies.negativeGold, 0);
+  assert.equal(telemetry.anomalies.invalidInventory, 0);
+  assert.equal(telemetry.migrations[0].version, 15);
+  assert.equal(Array.isArray(telemetry.featureFlags), true);
+  assert.equal(JSON.stringify(telemetry).includes('telegram_user_id'), false);
   db.close();
 });

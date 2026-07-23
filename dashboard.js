@@ -6,6 +6,7 @@ const { db } = require('./src/db');
 const { getWords, FILTER_PATH } = require('./src/moderation/wordFilter');
 const { getGameSettings, saveGameSettings } = require('./src/rpg/config');
 const { createFeatureFlagService } = require('./src/rpg/services/featureFlags');
+const { collectRpgTelemetry } = require('./src/rpg/services/telemetry');
 
 const app = express();
 const PORT = process.env.DASHBOARD_PORT || 3001;
@@ -351,6 +352,11 @@ app.post('/api/rpg-feature-flags/:key', auth, (req, res) => {
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }
+});
+
+// ===== RPG OPERATIONS & ECONOMY TELEMETRY =====
+app.get('/api/rpg-operations', auth, (req, res) => {
+  res.json(collectRpgTelemetry(db, featureFlags));
 });
 
 // ===== DYNAMIC RPG CLASSES =====

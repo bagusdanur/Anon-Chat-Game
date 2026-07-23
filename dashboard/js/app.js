@@ -22,6 +22,7 @@ const pages = {
   classes:      () => import('./pages/classes.js'),
   gamedata:     () => import('./pages/gamedata.js'),
   maintenance:  () => import('./pages/maintenance.js'),
+  rpgops:       () => import('./pages/rpgops.js'),
 };
 
 let currentPage = null;
