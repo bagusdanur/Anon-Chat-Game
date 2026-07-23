@@ -6,6 +6,12 @@ const { createFeatureFlagService } = require('../src/rpg/services/featureFlags')
 const { createLedgerService } = require('../src/rpg/services/ledger');
 const { loadRegions, publishRegions } = require('../src/rpg/services/contentRegistry');
 const { weightedPick, createWorldService } = require('../src/rpg/services/world');
+const {
+  loadSkills,
+  publishSkills,
+  totalSkillPoints,
+  createSkillService,
+} = require('../src/rpg/services/skills');
 
 function createTestDb() {
   const db = new Database(':memory:');
@@ -13,10 +19,13 @@ function createTestDb() {
   db.exec(`
     CREATE TABLE rpg_users (
       telegram_user_id TEXT PRIMARY KEY,
+      class_name TEXT NOT NULL DEFAULT 'ksatria',
       level INTEGER NOT NULL DEFAULT 1,
-      gold INTEGER NOT NULL DEFAULT 0
+      gold INTEGER NOT NULL DEFAULT 0,
+      updated_at INTEGER NOT NULL DEFAULT 0
     );
-    INSERT INTO rpg_users (telegram_user_id, level, gold) VALUES ('1', 1, 0);
+    INSERT INTO rpg_users (telegram_user_id, class_name, level, gold)
+    VALUES ('1', 'ksatria', 1, 1000);
   `);
   runRpgMigrations(db, { backup: false });
   return db;
@@ -29,7 +38,7 @@ test('migrations are ordered and idempotent', () => {
   const versions = db.prepare(
     "SELECT version FROM schema_migrations WHERE scope = 'rpg' ORDER BY version",
   ).all();
-  assert.deepEqual(versions, [{ version: 1 }, { version: 2 }]);
+  assert.deepEqual(versions, [{ version: 1 }, { version: 2 }, { version: 3 }]);
   db.close();
 });
 
@@ -84,4 +93,45 @@ test('weighted encounter selection honors boundaries', () => {
   const items = [{ id: 'a', weight: 1 }, { id: 'b', weight: 3 }];
   assert.equal(weightedPick(items, () => 0).id, 'a');
   assert.equal(weightedPick(items, () => 0.99).id, 'b');
+});
+
+test('skill points grow every two levels', () => {
+  assert.equal(totalSkillPoints(1), 1);
+  assert.equal(totalSkillPoints(2), 1);
+  assert.equal(totalSkillPoints(3), 2);
+  assert.equal(totalSkillPoints(10), 5);
+});
+
+test('skill learning enforces level, class, points, and loadout slots', () => {
+  const db = createTestDb();
+  publishSkills(db, loadSkills());
+  const skills = createSkillService(db);
+  const first = skills.learn('1', 'ksatria_guard_stance');
+  assert.equal(first.success, true);
+  assert.equal(skills.availablePoints('1'), 0);
+  assert.equal(skills.learn('1', 'penyihir_fireball').success, false);
+  assert.equal(skills.learn('1', 'ksatria_heavy_slash').success, false);
+  assert.equal(skills.equip('1', 'ksatria_guard_stance', 1).success, true);
+  assert.equal(skills.getTree('1').skills.find(s => s.id === 'ksatria_guard_stance').equipped_slot, 1);
+  db.close();
+});
+
+test('skill respec is atomic, audited, and cooldown protected', () => {
+  const db = createTestDb();
+  publishSkills(db, loadSkills());
+  const clock = 2_000_000_000;
+  const skills = createSkillService(db, { now: () => clock });
+  assert.equal(skills.learn('1', 'ksatria_guard_stance').success, true);
+  let result;
+  try {
+    result = skills.respec('1');
+  } catch (error) {
+    assert.fail(error.stack || error.message);
+  }
+  assert.equal(result.success, true);
+  assert.equal(skills.getLearned('1').length, 0);
+  assert.equal(db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id = ?').get('1').gold, 725);
+  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM rpg_currency_ledger').get().count, 1);
+  assert.equal(skills.respecQuote('1').remaining > 0, true);
+  db.close();
 });

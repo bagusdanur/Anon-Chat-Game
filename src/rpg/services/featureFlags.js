@@ -1,6 +1,6 @@
 const DEFAULT_FLAGS = {
   world_v2: true,
-  character_builds_v2: false,
+  character_builds_v2: true,
   marketplace_v2: false,
   recoverable_sessions_v2: false,
   seasons_v2: false,

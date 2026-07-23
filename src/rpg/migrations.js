@@ -121,6 +121,21 @@ const MIGRATIONS = [
       );
     `,
   },
+  {
+    version: 3,
+    name: 'rpg_skill_progression',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_respec_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        gold_cost INTEGER NOT NULL,
+        refunded_points INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_rpg_respec_user
+        ON rpg_respec_history(user_id, created_at);
+    `,
+  },
 ];
 
 function quoteSql(value) {

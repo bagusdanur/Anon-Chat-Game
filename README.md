@@ -12,6 +12,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Preferensi Bahasa (`/lang id` atau `/lang en`)
 - Sistem *Report* dan *Ban* untuk menangani penyalahgunaan
 - Dunia RPG persisten dengan region, campaign, dan eksplorasi (`/rpg`, `/world`, `/explore`)
+- Skill tree dan loadout per class (`/skill`, `/build`)
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
@@ -74,6 +75,8 @@ pm2 save && pm2 startup
 | `/world`          | Melihat region dan progress campaign RPG            |
 | `/explore`        | Menjelajahi region aktif                             |
 | `/travel [region]`| Berpindah ke region yang sudah terbuka               |
+| `/skill`          | Melihat, mempelajari, dan memasang skill             |
+| `/build`          | Melihat skill tree dan loadout aktif                 |
 | `/next`           | Putus chat dan langsung cari partner baru          |
 | `/stop`           | Mengakhiri chat atau batal antri                   |
 | `/lang [id/en]`   | Memilih preferensi bahasa (prioritas matching)     |

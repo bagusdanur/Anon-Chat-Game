@@ -1,0 +1,95 @@
+[
+  {
+    "id": "ksatria_guard_stance",
+    "class_id": "ksatria",
+    "name": "🛡️ Guard Stance",
+    "role": "tank",
+    "max_rank": 3,
+    "min_level": 1,
+    "description": "Mengurangi damage yang diterima selama satu turn.",
+    "effect": { "type": "guard", "reduction": [0.35, 0.45, 0.55], "cooldown": 2 }
+  },
+  {
+    "id": "ksatria_heavy_slash",
+    "class_id": "ksatria",
+    "name": "⚔️ Tebasan Berat",
+    "role": "damage",
+    "max_rank": 3,
+    "min_level": 3,
+    "description": "Serangan fisik kuat dengan penetrasi armor.",
+    "effect": { "type": "physical_damage", "multiplier": [1.7, 2.0, 2.3], "armor_penetration": 0.15, "cooldown": 2 }
+  },
+  {
+    "id": "ksatria_provoke",
+    "class_id": "ksatria",
+    "name": "📣 Provokasi",
+    "role": "control",
+    "max_rank": 2,
+    "min_level": 6,
+    "requires": "ksatria_guard_stance",
+    "description": "Menaikkan threat dan melindungi partner dari serangan berikutnya.",
+    "effect": { "type": "provoke", "reduction": [0.25, 0.4], "cooldown": 3 }
+  },
+  {
+    "id": "penyihir_fireball",
+    "class_id": "penyihir",
+    "name": "🔥 Bola Api",
+    "role": "damage",
+    "max_rank": 3,
+    "min_level": 1,
+    "description": "Magic damage dan efek burn.",
+    "effect": { "type": "magic_damage", "multiplier": [1.8, 2.15, 2.5], "status": "burn", "cooldown": 2 }
+  },
+  {
+    "id": "penyihir_frost_barrier",
+    "class_id": "penyihir",
+    "name": "❄️ Frost Barrier",
+    "role": "support",
+    "max_rank": 3,
+    "min_level": 3,
+    "description": "Memberi shield kepada diri sendiri atau partner.",
+    "effect": { "type": "shield", "power": [0.15, 0.22, 0.3], "cooldown": 3 }
+  },
+  {
+    "id": "penyihir_arcane_surge",
+    "class_id": "penyihir",
+    "name": "🔮 Arcane Surge",
+    "role": "damage",
+    "max_rank": 2,
+    "min_level": 6,
+    "requires": "penyihir_fireball",
+    "description": "Ledakan magic besar dengan cooldown panjang.",
+    "effect": { "type": "magic_damage", "multiplier": [2.6, 3.2], "cooldown": 4 }
+  },
+  {
+    "id": "pencuri_backstab",
+    "class_id": "pencuri",
+    "name": "🗡️ Backstab",
+    "role": "damage",
+    "max_rank": 3,
+    "min_level": 1,
+    "description": "Serangan fisik dengan peluang critical sangat tinggi.",
+    "effect": { "type": "physical_damage", "multiplier": [1.5, 1.8, 2.1], "guaranteed_crit": true, "cooldown": 2 }
+  },
+  {
+    "id": "pencuri_smoke_bomb",
+    "class_id": "pencuri",
+    "name": "💨 Bom Asap",
+    "role": "control",
+    "max_rank": 3,
+    "min_level": 3,
+    "description": "Mengurangi akurasi musuh dan damage turn berikutnya.",
+    "effect": { "type": "weaken", "power": [0.15, 0.22, 0.3], "cooldown": 3 }
+  },
+  {
+    "id": "pencuri_flurry",
+    "class_id": "pencuri",
+    "name": "🌪️ Flurry",
+    "role": "damage",
+    "max_rank": 2,
+    "min_level": 6,
+    "requires": "pencuri_backstab",
+    "description": "Serangkaian serangan cepat yang menembus pertahanan.",
+    "effect": { "type": "physical_damage", "multiplier": [2.3, 2.8], "armor_penetration": 0.3, "cooldown": 4 }
+  }
+]
