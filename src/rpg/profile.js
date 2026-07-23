@@ -12,7 +12,7 @@ const { db } = require('../db');
 const { createSkillService } = require('./services/skills');
 const { createEquipmentService } = require('./services/equipment');
 const { createSocialService } = require('./services/social');
-const { formatStat } = require('./equipment');
+const { formatNumberId, formatStat } = require('./equipment');
 
 const RARITY_EMOJI = { common: '⚪', uncommon: '🟢', rare: '🔵', epic: '🟣', legendary: '🟠' };
 const skillService = createSkillService(db);
@@ -143,11 +143,11 @@ function renderProfile(user) {
 
   // ── Stats ────────────────────────────────────
   msg += `<b>📊 Stats</b>\n`;
-  msg += `⚔️ ATK <b>${effectiveAtk}</b>${totalAtkBonus > 0 ? `  <i>(+${totalAtkBonus} eq)</i>` : ''}   `;
-  msg += `🛡️ DEF <b>${effectiveDef}</b>${totalDefBonus > 0 ? `  <i>(+${totalDefBonus} eq)</i>` : ''}\n`;
+  msg += `⚔️ ATK <b>${formatNumberId(effectiveAtk)}</b>${totalAtkBonus > 0 ? `  <i>(+${formatNumberId(totalAtkBonus)} eq)</i>` : ''}   `;
+  msg += `🛡️ DEF <b>${formatNumberId(effectiveDef)}</b>${totalDefBonus > 0 ? `  <i>(+${formatNumberId(totalDefBonus)} eq)</i>` : ''}\n`;
   if (effectiveMagic > 0) {
-    const shownMagic = Number(effectiveMagic.toFixed(2));
-    const shownMagicBonus = Number(totalMagicBonus.toFixed(2));
+    const shownMagic = formatNumberId(effectiveMagic);
+    const shownMagicBonus = formatNumberId(totalMagicBonus);
     msg += `🔮 Magic <b>${shownMagic}</b>${totalMagicBonus > 0 ? `  <i>(+${shownMagicBonus} eq)</i>` : ''}\n`;
   }
   msg += `💥 Crit <b>${totalCrit}%</b> × <b>${totalCritMulti}%</b>   🎯 ${dmgType}\n`;

@@ -12,12 +12,19 @@ const CATEGORY_LABELS = {
   weapon: 'Senjata', staff: 'Tongkat', armor: 'Armor', accessory: 'Aksesori',
 };
 
+function formatNumberId(value, maximumFractionDigits = 2) {
+  return Number(value).toLocaleString('id-ID', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits,
+  });
+}
+
 function formatStat(statKey, value) {
   const label = STAT_LABELS[statKey] || statKey.replace(/_/g, ' ');
   if (['crit_rate', 'phys_resist', 'magic_resist'].includes(statKey)) {
-    return `${label} +${(value * 100).toFixed(1).replace(/\.0$/, '')}%`;
+    return `${label} +${formatNumberId(value * 100, 1)}%`;
   }
-  return `${label} +${Number(value.toFixed(2))}`;
+  return `${label} +${formatNumberId(value)}`;
 }
 
 function setupEquipment(bot, { rateLimitCommand }) {
@@ -159,4 +166,4 @@ function setupEquipment(bot, { rateLimitCommand }) {
   });
 }
 
-module.exports = { setupEquipment, formatStat };
+module.exports = { setupEquipment, formatNumberId, formatStat };
