@@ -774,17 +774,19 @@ function getSpecialShopConfig() {
   bot.command('trade', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
     const args = ctx.message.text.split(' ').slice(1);
-    const input = args[0];
-    const qty = parseInt(args[1]) || 1;
 
     const action = args[0]?.toLowerCase() || 'status';
     if (action === 'offer') {
       const partnerId = getPartnerId(userId);
       if (!partnerId) return ctx.reply('❌ Kamu harus terhubung dengan partner chat.');
       const type = args[1]?.toLowerCase();
+      const numberedItemId = type === 'item' ? resolveInvInput(userId, args[2]) : null;
+      if (type === 'item' && !numberedItemId) {
+        return ctx.reply('❌ Nomor item tidak valid. Buka /inv lalu gunakan /trade offer item [nomor] [jumlah].');
+      }
       const offer = type === 'gold'
         ? { type, amount: Number(args[2]) }
-        : { type, itemId: args[2]?.toLowerCase(), quantity: Number(args[3] || 1) };
+        : { type, itemId: numberedItemId, quantity: Number(args[3] || 1) };
       const result = directTrade.createOffer(userId, partnerId, offer);
       if (!result.success) return ctx.reply(`❌ ${result.reason}`);
       bot.telegram.sendMessage(
@@ -807,7 +809,7 @@ function getSpecialShopConfig() {
       const trade = directTrade.getPending(userId);
       if (!trade) {
         return ctx.reply(
-          'Tidak ada trade pending.\n/trade offer gold [jumlah]\n/trade offer item [item_id] [jumlah]',
+          'Tidak ada trade pending.\n/trade offer gold [jumlah]\n/trade offer item [nomor dari /inv] [jumlah]',
         );
       }
       const description = trade.offer.type === 'gold'
@@ -822,70 +824,8 @@ function getSpecialShopConfig() {
     }
     return ctx.reply(
       'Format trade baru:\n/trade offer gold [jumlah]\n' +
-      '/trade offer item [item_id] [jumlah]\n/trade accept [id]\n/trade cancel [id]',
+      '/trade offer item [nomor dari /inv] [jumlah]\n/trade accept [id]\n/trade cancel [id]',
     );
-
-    if (!input) return ctx.reply(
-      `Penggunaan: <code>/trade [item_id/nomor] [jumlah]</code>\n` +
-      `Contoh: <code>/trade daging_mentah 5</code>\n\n` +
-      `<i>Pajak 10% (partner dapat 90%)</i>\n` +
-      `<i>Hanya material & consumable</i>`,
-      { parse_mode: 'HTML' }
-    );
-
-    const user = getOrCreateUser(userId);
-    if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
-
-    const partnerId = getPartnerId(userId);
-    if (!partnerId) return ctx.reply('❌ Kamu harus sedang terhubung dengan partner (/search).');
-    const partner = getOrCreateUser(partnerId);
-    if (!partner) return ctx.reply('❌ Partnermu belum punya karakter RPG.');
-
-    // Resolve item
-    const itemId = resolveInvInput(userId, input);
-    if (!itemId) return ctx.reply('❌ Nomor item tidak valid. Ketik /inv dulu.');
-
-    const invItem = getItem(userId, itemId);
-    if (!invItem) return ctx.reply('❌ Item tidak ada di inventory.');
-    if (invItem.quantity < qty) return ctx.reply(`❌ Hanya punya ${invItem.quantity}x ${invItem.display_name}.`);
-    if (invItem.equipped) return ctx.reply('❌ Item sedang di-equip. Lepas dulu dengan /unequip.');
-    if (!['material', 'consumable'].includes(invItem.category)) {
-      return ctx.reply('❌ Hanya material & consumable yang bisa di-trade.');
-    }
-
-    // Tax 10%
-    const tax = Math.max(1, Math.floor(qty * 0.10));
-    const received = qty - tax;
-
-    // Atomic trade
-    const tradeSuccess = db.transaction(() => {
-      if (!removeItem(userId, itemId, qty)) return false;
-      // Cek inventory cap partner
-      const partnerCount = db.prepare('SELECT COUNT(*) as cnt FROM rpg_inventory WHERE telegram_user_id = ?').get(partnerId.toString());
-      const partnerHasItem = db.prepare('SELECT quantity FROM rpg_inventory WHERE telegram_user_id = ? AND item_id = ?').get(partnerId.toString(), itemId);
-      if (!partnerHasItem && partnerCount.cnt >= INVENTORY_CAP) return false;
-      addItem(partnerId, itemId, received);
-      return true;
-    })();
-
-    if (!tradeSuccess) {
-      return ctx.reply('❌ Gagal trade! Inventory partner penuh atau item tidak cukup.');
-    }
-
-    invCache.delete(userId.toString());
-    invCache.delete(partnerId.toString());
-
-    ctx.reply(
-      `✅ Trade berhasil!\n` +
-      `📦 <b>${invItem.display_name}</b> x${qty}\n` +
-      `→ Partner menerima: <b>${received}x</b> (pajak ${tax}x)`,
-      { parse_mode: 'HTML' }
-    );
-    incrementQuestProgress(userId, 'give');
-    bot.telegram.sendMessage(partnerId,
-      `📦 Kamu menerima <b>${received}x ${invItem.display_name}</b> dari partner!`,
-      { parse_mode: 'HTML' }
-    ).catch(() => {});
   });
 
 }

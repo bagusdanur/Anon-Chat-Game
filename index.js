@@ -439,8 +439,8 @@ bot.command('quest', rateLimitCommand, (ctx) => {
   return ctx.reply(msg, { parse_mode: 'HTML' });
 });
 
-// ===== PARTY STATS =====
-bot.command('party', rateLimitCommand, (ctx) => {
+// ===== PARTNER STATS LEGACY =====
+bot.command('partnerstats', rateLimitCommand, (ctx) => {
   const userId = ctx.chat.id;
   const partnerId = getPartnerId(userId);
   if (!partnerId) return ctx.reply('❌ Kamu harus sedang terhubung dengan partner (/search) untuk melihat party stats.');
@@ -684,6 +684,7 @@ const botCommands = [
   { command: 'profile',  description: '⚔️ Profil karakter' },
   { command: 'alias',    description: '🎭 Atur alias karakter anonim' },
   { command: 'world',    description: '🗺️ Dunia dan region' },
+  { command: 'travel',   description: '🧭 Pindah region bernomor' },
   { command: 'campaign', description: '📜 Campaign utama' },
   { command: 'explore',  description: '🧭 Eksplorasi region' },
   { command: 'skill',    description: '✨ Skill tree dan loadout' },
@@ -709,15 +710,20 @@ const botCommands = [
   { command: 'fish',     description: '🎣 Memancing' },
   { command: 'mine',     description: '⛏️ Menambang' },
   { command: 'profession', description: '🧰 Progress profession' },
+  { command: 'gather',   description: '🌿 Gathering material' },
   // === ECONOMY ===
   { command: 'inv',      description: '🎒 Inventaris' },
   { command: 'shop',     description: '🏪 Toko NPC' },
+  { command: 'buy',      description: '🛒 Beli item toko' },
+  { command: 'sell',     description: '💰 Jual item bernomor' },
+  { command: 'use',      description: '🧪 Gunakan item bernomor' },
   { command: 'craft',    description: '⚒️ Crafting' },
   { command: 'market',   description: '🏬 Marketplace anonim' },
   { command: 'trade',    description: '🤝 Direct trade aman' },
   { command: 'salvage',  description: '♻️ Bongkar equipment' },
   { command: 'refine',   description: '🔥 Refinement material' },
   { command: 'equip',    description: '🗡️ Equip item legacy' },
+  { command: 'unequip',  description: '📤 Lepas equipment legacy' },
   { command: 'upgrade',  description: '⬆️ Upgrade item legacy' },
   { command: 'daily',    description: '🎁 Hadiah harian' },
 ];

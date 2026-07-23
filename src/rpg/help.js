@@ -95,7 +95,7 @@ const HELP_PAGES = [
       '/party accept, /party info, /party leave\n\n' +
       '<b>Direct trade aman</b>\n' +
       '/trade offer gold [jumlah]\n' +
-      '/trade offer item [item_id] [jumlah]\n' +
+      '/trade offer item [nomor /inv] [jumlah]\n' +
       '/trade accept [id]\n' +
       '/trade cancel [id]\n\n' +
       'Isi trade dibekukan sebagai snapshot dan baru dipindahkan setelah konfirmasi partner.',
@@ -110,7 +110,7 @@ const HELP_PAGES = [
       '/guild quest — quest kolektif mingguan\n' +
       '/guild quest claim — naikkan level guild\n' +
       '/guild upgrade — naikkan level & kapasitas\n' +
-      '/guild shop — fasilitas treasury\n' +
+      '/guild shop heal — pulihkan HP anggota dari treasury\n' +
       '/guild promote [nomor]\n' +
       '/guild demote [nomor]\n' +
       '/guild kick [nomor]\n' +

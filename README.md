@@ -124,6 +124,7 @@ pm2 save && pm2 startup
 | `/alias [nama]`   | Mengatur alias karakter internal                      |
 | `/party create`   | Membuat party persisten                               |
 | `/party invite`   | Mengundang partner chat ke party                      |
+| `/coop`           | Pusat dungeon duo, bounty, campaign, raid, dan duel   |
 | `/guild`          | Guild, anggota bernomor, treasury, upgrade, dan shop  |
 | `/guild quest`    | Melihat atau mengklaim guild quest mingguan           |
 | `/worldboss`      | Melihat, menyerang, dan mengklaim hadiah world boss   |
@@ -131,7 +132,7 @@ pm2 save && pm2 startup
 | `/bounty`         | Duo bounty harian dengan kontribusi bersama            |
 | `/coopcampaign`   | Melihat dan menjalankan campaign bersama party          |
 | `/gear`           | Mengelola equipment instance, affix, equip, dan gem      |
-| `/trade`          | Penawaran trade dua tahap dengan konfirmasi partner      |
+| `/trade`          | Trade dua tahap; item dipilih memakai nomor dari `/inv`  |
 | `/next`           | Putus chat dan langsung cari partner baru          |
 | `/stop`           | Mengakhiri chat atau batal antri                   |
 | `/lang [id/en]`   | Memilih preferensi bahasa (prioritas matching)     |

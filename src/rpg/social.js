@@ -15,7 +15,32 @@ function setupSocial(bot, { getPartnerId, rateLimitCommand }) {
 
   bot.command('party', (ctx, next) => {
     const args = ctx.message.text.trim().split(/\s+/).slice(1);
-    if (args.length === 0) return next();
+    if (args.length === 0) {
+      return rateLimitCommand(ctx, () => {
+        if (!getOrCreateUser(ctx.chat.id)) return ctx.reply('Buat karakter terlebih dahulu dengan /profile.');
+        const party = social.getParty(ctx.chat.id);
+        if (!party) {
+          return ctx.reply(
+            '<b>👥 PARTY ANONYMOUS</b>\n\n' +
+            'Belum memiliki party.\n\n' +
+            '1. Hubungkan partner dengan /search\n' +
+            '2. /party create\n' +
+            '3. /party invite\n' +
+            '4. Partner menggunakan /party accept\n\n' +
+            '<i>Setelah aktif, buka /coop atau /dungeon duo 1.</i>',
+            { parse_mode: 'HTML' },
+          );
+        }
+        const lines = party.members.map(member =>
+          `${member.role === 'owner' ? '👑' : '•'} <b>${member.alias}</b>`,
+        );
+        return ctx.reply(
+          `<b>👥 PARTY #${party.id}</b>\n\n${lines.join('\n')}\n\n` +
+          '<i>/coop · /dungeon duo 1 · /bounty · /raid\n/party info · /party leave</i>',
+          { parse_mode: 'HTML' },
+        );
+      });
+    }
     return rateLimitCommand(ctx, () => {
       if (!getOrCreateUser(ctx.chat.id)) return ctx.reply('Buat karakter terlebih dahulu dengan /profile.');
       const action = args[0].toLowerCase();
