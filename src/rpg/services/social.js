@@ -36,11 +36,15 @@ function createSocialService(db, options = {}) {
     return { ...party, members };
   }
 
-  function resolveGuildMember(guildId, alias) {
-    const wanted = String(alias || '').toLowerCase();
-    return db.prepare('SELECT * FROM rpg_guild_members WHERE guild_id=?')
-      .all(guildId)
-      .find(member => getAlias(member.user_id).toLowerCase() === wanted);
+  function resolveGuildMember(guildId, input) {
+    const members = db.prepare(`
+      SELECT * FROM rpg_guild_members
+      WHERE guild_id=? ORDER BY contribution DESC, joined_at
+    `).all(guildId);
+    const number = Number(input);
+    if (Number.isInteger(number) && number >= 1) return members[number - 1] || null;
+    const wanted = String(input || '').toLowerCase();
+    return members.find(member => getAlias(member.user_id).toLowerCase() === wanted);
   }
 
   function recordGuildQuest(guildId, amount, eventKey) {
@@ -198,7 +202,7 @@ function createSocialService(db, options = {}) {
           });
           return id;
         })();
-        return { success: true, guildId };
+        return { success: true, guildId, tag: cleanTag, name: cleanName };
       } catch (error) {
         if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') return { success: false, reason: 'Tag atau nama guild sudah dipakai.' };
         throw error;
@@ -209,7 +213,8 @@ function createSocialService(db, options = {}) {
       const guild = db.prepare('SELECT * FROM rpg_guilds WHERE tag = ? COLLATE NOCASE').get(tag);
       if (!guild) return { success: false, reason: 'Guild tidak ditemukan.' };
       const count = db.prepare('SELECT count(1) count FROM rpg_guild_members WHERE guild_id = ?').get(guild.id).count;
-      if (count >= GUILD_CAPACITY) return { success: false, reason: 'Guild sudah penuh.' };
+      const capacity = Math.min(50, GUILD_CAPACITY + Math.max(0, guild.level - 1) * 2);
+      if (count >= capacity) return { success: false, reason: `Guild sudah penuh (${capacity} anggota).` };
       db.prepare(`
         INSERT INTO rpg_guild_members (user_id, guild_id, role, joined_at)
         VALUES (?, ?, 'member', ?)
@@ -262,6 +267,64 @@ function createSocialService(db, options = {}) {
         });
       })();
       return { success: true, guildId: guild.id };
+    },
+    upgradeGuild(userId) {
+      const guild = this.getGuild(userId);
+      if (!guild) return { success: false, reason: 'Kamu belum memiliki guild.' };
+      if (!['owner', 'officer'].includes(guild.role)) {
+        return { success: false, reason: 'Hanya owner atau officer yang dapat upgrade.' };
+      }
+      const cost = guild.level * 1000;
+      if (guild.treasury < cost) {
+        return { success: false, reason: `Treasury kurang. Butuh ${cost}g.` };
+      }
+      return db.transaction(() => {
+        const changed = db.prepare(`
+          UPDATE rpg_guilds
+          SET treasury=treasury-?, level=level+1, updated_at=?
+          WHERE id=? AND treasury>=?
+        `).run(cost, now(), guild.id, cost);
+        if (changed.changes === 0) return { success: false, reason: 'Treasury berubah, coba lagi.' };
+        const balanceAfter = guild.treasury - cost;
+        db.prepare(`
+          INSERT INTO rpg_guild_treasury_ledger
+            (entry_key,guild_id,actor_id,amount,balance_after,reason,created_at)
+          VALUES (?,?,?,?,?,'guild_upgrade',?)
+        `).run(`guild_upgrade:${guild.id}:${guild.level + 1}`, guild.id, String(userId), -cost, balanceAfter, now());
+        return {
+          success: true,
+          cost,
+          newLevel: guild.level + 1,
+          capacity: Math.min(50, GUILD_CAPACITY + guild.level * 2),
+        };
+      })();
+    },
+    healGuild(userId) {
+      const guild = this.getGuild(userId);
+      if (!guild) return { success: false, reason: 'Kamu belum memiliki guild.' };
+      if (!['owner', 'officer'].includes(guild.role)) {
+        return { success: false, reason: 'Hanya owner atau officer yang dapat memakai treasury.' };
+      }
+      const cost = 250;
+      if (guild.treasury < cost) return { success: false, reason: `Treasury kurang. Butuh ${cost}g.` };
+      return db.transaction(() => {
+        const changed = db.prepare(`
+          UPDATE rpg_guilds SET treasury=treasury-?,updated_at=?
+          WHERE id=? AND treasury>=?
+        `).run(cost, now(), guild.id, cost);
+        if (changed.changes === 0) return { success: false, reason: 'Treasury berubah, coba lagi.' };
+        db.prepare(`
+          UPDATE rpg_users SET hp=max_hp,updated_at=?
+          WHERE telegram_user_id IN (SELECT user_id FROM rpg_guild_members WHERE guild_id=?)
+        `).run(now(), guild.id);
+        const entryKey = `guild_heal:${guild.id}:${now()}`;
+        db.prepare(`
+          INSERT INTO rpg_guild_treasury_ledger
+            (entry_key,guild_id,actor_id,amount,balance_after,reason,created_at)
+          VALUES (?,?,?,?,?,'guild_heal',?)
+        `).run(entryKey, guild.id, String(userId), -cost, guild.treasury - cost, now());
+        return { success: true, cost };
+      })();
     },
     getGuildQuest(userId) {
       const guild = this.getGuild(userId);

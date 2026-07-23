@@ -60,7 +60,9 @@ function setupSocial(bot, { getPartnerId, rateLimitCommand }) {
     const action = args[0]?.toLowerCase();
     if (action === 'create') {
       const result = social.createGuild(ctx.chat.id, args[1], args.slice(2).join(' '));
-      return ctx.reply(result.success ? `✅ Guild #${result.guildId} dibuat.` : `❌ ${result.reason}`);
+      return ctx.reply(result.success
+        ? `✅ Guild [${result.tag}] ${result.name} dibuat.`
+        : `❌ ${result.reason}`);
     }
     if (action === 'join') {
       const result = social.joinGuild(ctx.chat.id, args[1]);
@@ -69,6 +71,24 @@ function setupSocial(bot, { getPartnerId, rateLimitCommand }) {
     if (action === 'contribute') {
       const result = social.contribute(ctx.chat.id, Number(args[1]));
       return ctx.reply(result.success ? '✅ Kontribusi masuk treasury guild.' : `❌ ${result.reason}`);
+    }
+    if (action === 'upgrade') {
+      const result = social.upgradeGuild(ctx.chat.id);
+      return ctx.reply(result.success
+        ? `✅ Guild naik ke level ${result.newLevel}! Kapasitas sekarang ${result.capacity} anggota. Treasury -${result.cost}g.`
+        : `❌ ${result.reason}`);
+    }
+    if (action === 'shop') {
+      if (args[1]?.toLowerCase() !== 'heal') {
+        return ctx.reply(
+          '<b>🏪 GUILD SHOP</b>\n\n<code>/guild shop heal</code> — pulihkan HP seluruh anggota (250g treasury)',
+          { parse_mode: 'HTML' },
+        );
+      }
+      const result = social.healGuild(ctx.chat.id);
+      return ctx.reply(result.success
+        ? `✅ HP seluruh anggota dipulihkan. Treasury -${result.cost}g.`
+        : `❌ ${result.reason}`);
     }
     if (action === 'quest') {
       const result = args[1]?.toLowerCase() === 'claim'
@@ -101,14 +121,18 @@ function setupSocial(bot, { getPartnerId, rateLimitCommand }) {
         { parse_mode: 'HTML' },
       );
     }
-    const members = guild.members.map(member =>
+    const members = guild.members.map((member, index) =>
       `${member.role === 'owner' ? '👑' : member.role === 'officer' ? '⭐' : '•'} ` +
-      `${member.alias} · ${member.contribution}g`,
+      `<code>[${index + 1}]</code> ${member.alias} · ${member.contribution}g`,
     );
+    const capacity = Math.min(50, 20 + Math.max(0, guild.level - 1) * 2);
+    const upgradeCost = guild.level * 1000;
     return ctx.reply(
       `<b>🏛 [${guild.tag}] ${guild.name}</b>\n` +
-      `Level ${guild.level} · Treasury ${guild.treasury}g\n\n${members.join('\n')}\n\n` +
-      `<i>/guild contribute [gold] · /guild quest · /guild promote|demote|kick [alias] · /guild leave</i>`,
+      `Level ${guild.level} · Anggota ${guild.members.length}/${capacity}\n` +
+      `Treasury ${guild.treasury}g · Upgrade ${upgradeCost}g\n\n${members.join('\n')}\n\n` +
+      `<i>/guild contribute [gold] · /guild upgrade · /guild shop\n` +
+      `/guild quest · /guild promote|demote|kick [nomor] · /guild leave</i>`,
       { parse_mode: 'HTML' },
     );
   });

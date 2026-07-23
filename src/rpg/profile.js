@@ -11,10 +11,12 @@ const { progressBar, hpBar, statLine, divider, kvPair, footer, sectionHeader } =
 const { db } = require('../db');
 const { createSkillService } = require('./services/skills');
 const { createEquipmentService } = require('./services/equipment');
+const { createSocialService } = require('./services/social');
 
 const RARITY_EMOJI = { common: '⚪', uncommon: '🟢', rare: '🔵', epic: '🟣', legendary: '🟠' };
 const skillService = createSkillService(db);
 const equipmentV2 = createEquipmentService(db);
+const socialService = createSocialService(db);
 
 function renderHpBar(hp, maxHp, len = 8) {
   return progressBar(hp, maxHp, len) + ` ${Math.max(0, hp)}/${maxHp}`;
@@ -129,6 +131,28 @@ function renderProfile(user) {
 }
 
 function setupProfile(bot, { rateLimitCommand }) {
+  bot.on('text', async (ctx, next) => {
+    if (ctx.message.text.startsWith('/')) return next();
+    const pending = db.prepare(
+      "SELECT step FROM rpg_character_onboarding WHERE user_id=? AND step='alias'",
+    ).get(String(ctx.chat.id));
+    if (!pending) return next();
+
+    const result = socialService.setAlias(ctx.chat.id, ctx.message.text.trim());
+    if (!result.success) {
+      return ctx.reply(
+        `❌ ${result.reason}\n\nKirim alias baru tanpa command.\nContoh: <code>RyuKnight</code>`,
+        { parse_mode: 'HTML' },
+      );
+    }
+    db.prepare('DELETE FROM rpg_character_onboarding WHERE user_id=?')
+      .run(String(ctx.chat.id));
+    return ctx.reply(
+      `✅ Alias <b>${result.alias}</b> tersimpan!\n\nKarakter siap dimainkan. Ketik /profile atau /rpg.`,
+      { parse_mode: 'HTML' },
+    );
+  });
+
   bot.command('profile', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
     let user = getOrCreateUser(userId);
@@ -168,18 +192,25 @@ function setupProfile(bot, { rateLimitCommand }) {
 
       createUser(userId, className);
       const cls = CLASS_DEFS[className];
+      const timestamp = Math.floor(Date.now() / 1000);
+      db.prepare(`
+        INSERT INTO rpg_character_onboarding (user_id,step,created_at,updated_at)
+        VALUES (?,'alias',?,?)
+        ON CONFLICT(user_id) DO UPDATE SET step='alias',updated_at=excluded.updated_at
+      `).run(String(userId), timestamp, timestamp);
       ctx.answerCbQuery(`${cls.name} dipilih!`);
-      ctx.editMessageText(
+      await ctx.editMessageText(
         `<b>🎉 ${cls.name} — Karakter Dibuat!</b>\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `Selamat datang, Petualang! ⚔️\n\n` +
-        `<b>Langkah pertama:</b>\n` +
-        `1. /profile — Lihat stats karakter\n` +
-        `2. /hunt — Berburu monster (2 ⚡)\n` +
-        `3. /daily — Ambil hadiah harian\n` +
-        `4. /helprpg — Panduan lengkap\n\n` +
-        `<i>Selamat bertualang! 🎮</i>`,
+        `<b>Langkah terakhir: buat alias karakter anonim.</b>\n` +
+        `Alias digunakan di party, guild, ranking, dan aktivitas co-op—bukan nama Telegram.\n\n` +
+        `<i>Kirim alias 3–16 karakter (huruf, angka, underscore).</i>`,
         { parse_mode: 'HTML' }
+      );
+      return ctx.reply(
+        'Ketik alias karaktermu sekarang.\nContoh: <code>RyuKnight</code>',
+        { parse_mode: 'HTML', ...Markup.forceReply() },
       );
     });
   });

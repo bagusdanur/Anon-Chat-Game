@@ -104,9 +104,11 @@ const HELP_PAGES = [
       '/guild contribute [gold]\n' +
       '/guild quest — quest kolektif mingguan\n' +
       '/guild quest claim — naikkan level guild\n' +
-      '/guild promote [alias]\n' +
-      '/guild demote [alias]\n' +
-      '/guild kick [alias]\n' +
+      '/guild upgrade — naikkan level & kapasitas\n' +
+      '/guild shop — fasilitas treasury\n' +
+      '/guild promote [nomor]\n' +
+      '/guild demote [nomor]\n' +
+      '/guild kick [nomor]\n' +
       '/guild leave\n\n' +
       'Role owner/officer/member memiliki permission berbeda dan seluruh perubahan role diaudit.',
   },

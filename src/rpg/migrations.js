@@ -607,6 +607,30 @@ const MIGRATIONS = [
       );
     `,
   },
+  {
+    version: 16,
+    name: 'character_onboarding_and_guild_treasury_audit',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_character_onboarding (
+        user_id TEXT PRIMARY KEY REFERENCES rpg_users(telegram_user_id),
+        step TEXT NOT NULL CHECK (step IN ('alias')),
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS rpg_guild_treasury_ledger (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        entry_key TEXT NOT NULL UNIQUE,
+        guild_id INTEGER NOT NULL REFERENCES rpg_guilds(id),
+        actor_id TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        balance_after INTEGER NOT NULL CHECK (balance_after >= 0),
+        reason TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_guild_treasury_ledger
+        ON rpg_guild_treasury_ledger(guild_id, created_at DESC);
+    `,
+  },
 ];
 
 function quoteSql(value) {

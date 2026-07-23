@@ -131,6 +131,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 13 },
     { version: 14 },
     { version: 15 },
+    { version: 16 },
   ]);
   db.close();
 });
@@ -587,6 +588,30 @@ test('guild owner manages officer role with a persistent audit trail', () => {
   db.close();
 });
 
+test('guild member numbers, treasury upgrades, and guild healing are functional', () => {
+  const db = createTestDb();
+  let clock = 2_000_000_000;
+  const social = createSocialService(db, { now: () => clock++ });
+  social.setAlias('1', 'GuildOwner');
+  social.setAlias('2', 'GuildMate');
+  social.createGuild('1', 'UXG', 'UX Guild');
+  social.joinGuild('2', 'UXG');
+  db.prepare("UPDATE rpg_users SET gold=3000,hp=1 WHERE telegram_user_id='2'").run();
+  assert.equal(social.changeGuildRole('1', '2', 'promote').success, true);
+  assert.equal(social.contribute('2', 1500).success, true);
+  const upgraded = social.upgradeGuild('1');
+  assert.deepEqual(
+    { success: upgraded.success, newLevel: upgraded.newLevel, capacity: upgraded.capacity },
+    { success: true, newLevel: 2, capacity: 22 },
+  );
+  const healed = social.healGuild('2');
+  assert.equal(healed.success, true);
+  assert.equal(db.prepare("SELECT hp=max_hp healed FROM rpg_users WHERE telegram_user_id='2'").get().healed, 1);
+  assert.equal(social.getGuild('1').treasury, 250);
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_guild_treasury_ledger').get().count, 2);
+  db.close();
+});
+
 test('weekly guild quest follows contributions and can only level the guild once', () => {
   const db = createTestDb();
   const social = createSocialService(db, { now: () => 2_000_000_000 });
@@ -833,7 +858,7 @@ test('RPG operations telemetry reports economy and invariant anomalies without u
   assert.equal(telemetry.economy.totalGold, 2000);
   assert.equal(telemetry.anomalies.negativeGold, 0);
   assert.equal(telemetry.anomalies.invalidInventory, 0);
-  assert.equal(telemetry.migrations[0].version, 15);
+  assert.equal(telemetry.migrations[0].version, 16);
   assert.equal(Array.isArray(telemetry.featureFlags), true);
   assert.equal(JSON.stringify(telemetry).includes('telegram_user_id'), false);
   db.close();

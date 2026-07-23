@@ -111,7 +111,7 @@ pm2 save && pm2 startup
 | `/alias [nama]`   | Mengatur alias karakter internal                      |
 | `/party create`   | Membuat party persisten                               |
 | `/party invite`   | Mengundang partner chat ke party                      |
-| `/guild`          | Membuat, bergabung, dan berkontribusi ke guild        |
+| `/guild`          | Guild, anggota bernomor, treasury, upgrade, dan shop  |
 | `/guild quest`    | Melihat atau mengklaim guild quest mingguan           |
 | `/worldboss`      | Melihat, menyerang, dan mengklaim hadiah world boss   |
 | `/raid`           | Weekly raid asynchronous untuk party minimal 2 pemain |
