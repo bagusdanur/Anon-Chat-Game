@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "affixes": [
+    { "id": "power", "name": "Power", "stat": "atk", "slots": ["weapon", "staff", "accessory"], "min": 2, "max": 8 },
+    { "id": "warding", "name": "Warding", "stat": "def", "slots": ["armor", "accessory"], "min": 2, "max": 8 },
+    { "id": "arcane", "name": "Arcane", "stat": "magic_atk", "slots": ["staff", "accessory"], "min": 2, "max": 8 },
+    { "id": "vitality", "name": "Vitality", "stat": "max_hp", "slots": ["armor", "accessory"], "min": 5, "max": 25 },
+    { "id": "precision", "name": "Precision", "stat": "crit_rate", "slots": ["weapon", "staff", "accessory"], "min": 0.01, "max": 0.05 }
+  ],
+  "gems": {
+    "ruby_gem": { "stat": "atk", "value": 4 },
+    "sapphire_gem": { "stat": "magic_atk", "value": 4 },
+    "emerald_gem": { "stat": "def", "value": 4 }
+  }
+}

@@ -53,6 +53,10 @@ const {
 const {
   createCoopActivityService,
 } = require('../src/rpg/services/coopActivities');
+const {
+  loadEquipmentContent,
+  createEquipmentService,
+} = require('../src/rpg/services/equipment');
 
 function createTestDb() {
   const db = new Database(':memory:');
@@ -119,6 +123,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 10 },
     { version: 11 },
     { version: 12 },
+    { version: 13 },
   ]);
   db.close();
 });
@@ -480,7 +485,7 @@ test('achievements and item collection derive from persistent game state', () =>
   `).run();
   const achievements = endgame.listAchievements('1');
   assert.equal(achievements.find(item => item.id === 'tower_10').unlocked, true);
-  assert.deepEqual(endgame.collection('1'), { owned: 1, total: 2, percent: 50 });
+  assert.deepEqual(endgame.collection('1'), { owned: 1, total: 5, percent: 20 });
   db.close();
 });
 
@@ -627,5 +632,53 @@ test('co-op campaign exploration advances only the acting character', () => {
   const second = campaign.list('2')[0];
   assert.equal(first.progress.explore_outskirts, 1);
   assert.equal(second.progress.explore_outskirts || 0, 0);
+  db.close();
+});
+
+test('equipment forge creates a unique instance with deterministic affixes and sockets', () => {
+  const db = createTestDb();
+  db.prepare(`
+    INSERT INTO items_catalog (item_id,display_name,category,rarity,sell_price)
+    VALUES ('blade_epic','Epic Blade','weapon','epic',100)
+  `).run();
+  db.prepare(`
+    INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity,upgrade_tier)
+    VALUES ('1','blade_epic',1,2)
+  `).run();
+  const equipment = createEquipmentService(db, {
+    random: () => 0.5,
+    now: () => 2_000_000_000,
+    content: loadEquipmentContent(),
+  });
+  const forged = equipment.forge('1', 'blade_epic');
+  assert.equal(forged.success, true);
+  assert.equal(forged.item.quality, 75);
+  assert.equal(forged.item.upgrade_tier, 2);
+  assert.equal(forged.item.affixes.length, 2);
+  assert.equal(forged.item.sockets.length, 1);
+  assert.equal(db.prepare("SELECT count(1) count FROM rpg_inventory WHERE item_id='blade_epic'").get().count, 0);
+  db.close();
+});
+
+test('equipping binds instances and socketed gems contribute persistent bonuses', () => {
+  const db = createTestDb();
+  db.prepare(`
+    INSERT INTO items_catalog (item_id,display_name,category,rarity,sell_price)
+    VALUES ('blade_rare','Rare Blade','weapon','rare',50)
+  `).run();
+  db.prepare(`
+    INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
+    VALUES ('1','blade_rare',1),('1','ruby_gem',1)
+  `).run();
+  const equipment = createEquipmentService(db, { random: () => 0, now: () => 2_000_000_000 });
+  const item = equipment.forge('1', 'blade_rare').item;
+  assert.equal(equipment.equip('1', item.id).success, true);
+  assert.equal(equipment.socketGem('1', item.id, 1, 'ruby_gem').success, true);
+  const equipped = equipment.getInstance('1', item.id);
+  assert.equal(equipped.bind_status, 'account_bound');
+  assert.equal(equipped.equipped_slot, 'weapon');
+  assert.equal(equipped.sockets[0].gem_item_id, 'ruby_gem');
+  assert.equal(equipment.bonuses('1').atk >= 6, true);
+  assert.equal(equipment.socketGem('1', item.id, 1, 'ruby_gem').success, false);
   db.close();
 });

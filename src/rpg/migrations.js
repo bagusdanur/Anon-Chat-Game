@@ -510,6 +510,55 @@ const MIGRATIONS = [
       );
     `,
   },
+  {
+    version: 13,
+    name: 'equipment_instances_affixes_and_sockets',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_equipment_instances (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        owner_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        item_id TEXT NOT NULL,
+        rarity TEXT NOT NULL,
+        quality INTEGER NOT NULL CHECK (quality BETWEEN 1 AND 100),
+        item_power INTEGER NOT NULL CHECK (item_power > 0),
+        upgrade_tier INTEGER NOT NULL DEFAULT 0 CHECK (upgrade_tier BETWEEN 0 AND 15),
+        bind_status TEXT NOT NULL DEFAULT 'unbound'
+          CHECK (bind_status IN ('unbound','account_bound')),
+        equipped_slot TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_equipment_owner
+        ON rpg_equipment_instances(owner_id, equipped_slot, item_power DESC);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_equipment_one_per_slot
+        ON rpg_equipment_instances(owner_id, equipped_slot)
+        WHERE equipped_slot IS NOT NULL;
+
+      CREATE TABLE IF NOT EXISTS rpg_equipment_affixes (
+        instance_id INTEGER NOT NULL REFERENCES rpg_equipment_instances(id) ON DELETE CASCADE,
+        affix_id TEXT NOT NULL,
+        stat_key TEXT NOT NULL,
+        stat_value REAL NOT NULL,
+        tier INTEGER NOT NULL CHECK (tier BETWEEN 1 AND 5),
+        PRIMARY KEY (instance_id, affix_id)
+      );
+      CREATE TABLE IF NOT EXISTS rpg_equipment_sockets (
+        instance_id INTEGER NOT NULL REFERENCES rpg_equipment_instances(id) ON DELETE CASCADE,
+        socket_index INTEGER NOT NULL,
+        gem_item_id TEXT,
+        stat_key TEXT,
+        stat_value REAL,
+        PRIMARY KEY (instance_id, socket_index)
+      );
+
+      INSERT OR IGNORE INTO items_catalog
+        (item_id,display_name,category,rarity,sell_price,effect_json)
+      VALUES
+        ('ruby_gem','Ruby Gem','material','rare',25,'{"socket_stat":"atk","value":4}'),
+        ('sapphire_gem','Sapphire Gem','material','rare',25,'{"socket_stat":"magic_atk","value":4}'),
+        ('emerald_gem','Emerald Gem','material','rare',25,'{"socket_stat":"def","value":4}');
+    `,
+  },
 ];
 
 function quoteSql(value) {
