@@ -2,65 +2,146 @@
   {
     "id": "goblin_ruins",
     "name": "🏚️ Reruntuhan Goblin",
-    "description": "Kompleks bawah tanah di balik kabut Aldenmoor. Setiap jalur menyimpan bahaya dan hadiah berbeda.",
+    "description": "Ekspedisi panjang bercabang dengan beberapa gerombolan, elite, dua checkpoint istirahat, harta, dan boss.",
     "min_level": 1,
-    "recommended_level": 5,
-    "version": 1,
+    "recommended_level": 7,
+    "version": 2,
     "published": true,
     "entry_room": "gate",
-    "rewards": { "xp": 90, "gold": 55, "item": "besi_rongsok", "quantity": 2 },
+    "rewards": { "xp": 160, "gold": 85, "item": "besi_rongsok", "quantity": 3 },
     "rooms": [
       {
         "id": "gate",
         "type": "event",
         "name": "Gerbang Retak",
-        "text": "Dua jalur terbuka di balik gerbang. Lorong kiri terdengar ramai; lorong kanan dipenuhi perangkap tua.",
+        "text": "Jejak banyak goblin mengarah ke dua pintu. Jalur penjaga lebih aman dibaca; aula perangkap menyimpan harta.",
         "options": [
-          { "id": "left", "label": "⚔️ Lorong Penjaga", "next": "guard_post" },
-          { "id": "right", "label": "🧭 Lorong Perangkap", "next": "trap_hall" }
+          { "id": "left", "label": "⚔️ Hadapi Patroli", "next": "guard_post" },
+          { "id": "right", "label": "🧭 Masuk Aula Perangkap", "next": "trap_hall" }
         ]
       },
       {
         "id": "guard_post",
         "type": "combat",
         "name": "Pos Penjaga",
-        "text": "Sekelompok goblin menghadang jalan.",
-        "enemy": { "name": "Penjaga Goblin", "power": 12, "damage": 7 },
-        "success": "camp",
+        "text": "Tiga penjaga goblin menutup lorong. Ini baru gerombolan pertama.",
+        "enemy": { "name": "Patroli Goblin", "power": 12, "damage": 6 },
+        "success": "crossroads",
         "failure": "failed"
       },
       {
         "id": "trap_hall",
         "type": "event",
         "name": "Aula Perangkap",
-        "text": "Lantai batu memiliki pola mencurigakan.",
+        "text": "Lantai batu memiliki pola mencurigakan dan suara langkah terdengar dari bawah.",
         "options": [
-          { "id": "careful", "label": "🔍 Bergerak hati-hati", "next": "hidden_cache", "damage": 2 },
-          { "id": "rush", "label": "🏃 Berlari menerobos", "next": "camp", "damage": 9 }
+          { "id": "careful", "label": "🔍 Bergerak Hati-hati", "next": "hidden_cache", "damage": 2 },
+          { "id": "rush", "label": "🏃 Terobos Cepat", "next": "crossroads", "damage": 9 }
         ]
       },
       {
         "id": "hidden_cache",
         "type": "treasure",
-        "name": "Ruang Penyimpanan",
-        "text": "Peti tua masih menyimpan bekal para perampok.",
-        "reward": { "gold": 12, "item": "ramuan_kecil", "quantity": 1 },
-        "next": "camp"
+        "name": "Gudang Penyelundup",
+        "text": "Peti tua berisi bekal sebelum jalan kembali menyatu.",
+        "reward": { "gold": 16, "item": "ramuan_kecil", "quantity": 1 },
+        "next": "crossroads"
+      },
+      {
+        "id": "crossroads",
+        "type": "event",
+        "name": "Persimpangan Bawah Tanah",
+        "text": "Jalur kiri dipenuhi tulang. Jalur kanan menuju barak yang ramai. Keduanya menuju kuil tua.",
+        "options": [
+          { "id": "crypt", "label": "💀 Jalur Makam", "next": "bone_pack" },
+          { "id": "barracks", "label": "🛡 Serbu Barak", "next": "goblin_pack" }
+        ]
+      },
+      {
+        "id": "bone_pack",
+        "type": "combat",
+        "name": "Makam yang Bangkit",
+        "text": "Kabut menggerakkan tulang para perampok menjadi satu gerombolan.",
+        "enemy": { "name": "Kawanan Kerangka Kabut", "power": 15, "damage": 7 },
+        "success": "shrine",
+        "failure": "failed"
+      },
+      {
+        "id": "goblin_pack",
+        "type": "combat",
+        "name": "Barak Goblin",
+        "text": "Pemanah dan petarung goblin menyerang bersamaan dari dua sisi.",
+        "enemy": { "name": "Gerombolan Barak", "power": 16, "damage": 8 },
+        "success": "armory",
+        "failure": "failed"
+      },
+      {
+        "id": "armory",
+        "type": "treasure",
+        "name": "Gudang Senjata",
+        "text": "Barak menyimpan logam dan ramuan yang belum sempat dibawa kabur.",
+        "reward": { "gold": 10, "item": "besi_rongsok", "quantity": 1 },
+        "next": "shrine"
+      },
+      {
+        "id": "shrine",
+        "type": "rest",
+        "name": "Kuil Mata Air",
+        "text": "Air jernih memberi checkpoint pertama sebelum turun lebih dalam.",
+        "heal_percent": 30,
+        "next": "deep_fork"
+      },
+      {
+        "id": "deep_fork",
+        "type": "event",
+        "name": "Lorong Kedalaman",
+        "text": "Raungan binatang datang dari kiri, sementara mantra goblin bergema dari kanan.",
+        "options": [
+          { "id": "beast", "label": "🐺 Hadapi Kandang Buas", "next": "wolf_pack" },
+          { "id": "shaman", "label": "🔮 Hentikan Ritual", "next": "shaman_guard" }
+        ]
+      },
+      {
+        "id": "wolf_pack",
+        "type": "combat",
+        "name": "Kandang Warg",
+        "text": "Dua warg lapis baja menerkam bergantian dan memaksa party menjaga tempo.",
+        "enemy": { "name": "Warg Lapis Baja", "power": 18, "damage": 9 },
+        "success": "elite_gate",
+        "failure": "failed"
+      },
+      {
+        "id": "shaman_guard",
+        "type": "combat",
+        "name": "Ruang Ritual",
+        "text": "Dukun goblin dilindungi kabut dan dua pengawal tombak.",
+        "enemy": { "name": "Dukun dan Pengawal", "power": 19, "damage": 9 },
+        "success": "elite_gate",
+        "failure": "failed"
+      },
+      {
+        "id": "elite_gate",
+        "type": "combat",
+        "name": "Gerbang Elite",
+        "text": "Kapten penjaga menghadang. Menang di sini membuka checkpoint terakhir.",
+        "enemy": { "name": "Kapten Goblin Kabut", "power": 21, "damage": 10 },
+        "success": "camp",
+        "failure": "failed"
       },
       {
         "id": "camp",
         "type": "rest",
-        "name": "Api Unggun Padam",
-        "text": "Tempat aman untuk menarik napas sebelum masuk lebih dalam.",
-        "heal_percent": 25,
+        "name": "Api Unggun Terakhir",
+        "text": "Checkpoint terakhir. Di balik pintu batu, Kepala Suku menunggu.",
+        "heal_percent": 35,
         "next": "chieftain"
       },
       {
         "id": "chieftain",
         "type": "boss",
         "name": "Ruang Kepala Suku",
-        "text": "Kepala Goblin mengangkat kapaknya dan menutup jalan keluar.",
-        "enemy": { "name": "Kepala Goblin Kabut", "power": 22, "damage": 14 },
+        "text": "Kepala Goblin memanggil kabut dan mengangkat kapak raksasa. Gunakan defend dan combo pada waktu yang tepat.",
+        "enemy": { "name": "Kepala Goblin Kabut", "power": 25, "damage": 13 },
         "success": "victory",
         "failure": "failed"
       },
@@ -68,13 +149,13 @@
         "id": "victory",
         "type": "finish",
         "name": "Reruntuhan Ditaklukkan",
-        "text": "Kabut menipis. Jalur dagang Aldenmoor kembali aman."
+        "text": "Lima lapis pertahanan runtuh dan jalur dagang Aldenmoor kembali aman."
       },
       {
         "id": "failed",
         "type": "failure",
         "name": "Ekspedisi Gagal",
-        "text": "Kamu mundur sebelum seluruh bekal habis. Checkpoint ekspedisi ditutup."
+        "text": "Party mundur sebelum seluruh bekal habis. Susun build, pulihkan HP, lalu gunakan checkpoint baru."
       }
     ]
   }

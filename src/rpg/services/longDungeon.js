@@ -108,6 +108,16 @@ function createLongDungeonService(db, options = {}) {
       Math.floor(user.level * 1.5);
   }
 
+  function getAlias(userId) {
+    return db.prepare('SELECT alias FROM rpg_character_aliases WHERE user_id = ?')
+      .get(String(userId))?.alias || 'Petualang Anonim';
+  }
+
+  function enemyMaxHp(session, room) {
+    const base = Math.max(8, room.enemy.power * (room.type === 'boss' ? 4 : 3));
+    return Math.floor(base * (session.mode === 'duo' ? 1.8 : 1));
+  }
+
   function awardCompletion(session) {
     const baseReward = session.definition.rewards || {};
     const treasureRewards = Object.values(session.state.collected || {});
@@ -192,10 +202,12 @@ function createLongDungeonService(db, options = {}) {
     return success && state.hp > 0 ? room.success : room.failure;
   }
 
-  function resolveTacticalTurn(session, room, user, action) {
+  function resolveTacticalTurn(session, room, actor, ally, action) {
     const state = session.state;
-    const power = calculatePower(user);
-    const maxEnemyHp = Math.max(8, room.enemy.power * (room.type === 'boss' ? 4 : 3));
+    const actorPower = calculatePower(actor);
+    const allyPower = ally ? calculatePower(ally) : Math.floor(actorPower * 0.15);
+    const power = actorPower + Math.floor(allyPower * (ally ? 0.3 : 1));
+    const maxEnemyHp = enemyMaxHp(session, room);
     if (!state.combat || state.combat.roomId !== room.id) {
       state.combat = {
         roomId: room.id,
@@ -203,27 +215,42 @@ function createLongDungeonService(db, options = {}) {
         maxEnemyHp,
         turn: 1,
         skillCooldown: 0,
+        combo: 0,
       };
     }
     const combat = state.combat;
-    if (!['attack', 'defend', 'skill'].includes(action)) {
-      return { success: false, reason: 'Pilih Attack, Defend, atau Skill.' };
+    if (!['attack', 'defend', 'skill', 'combo'].includes(action)) {
+      return { success: false, reason: 'Pilih Attack, Defend, Skill, atau Combo.' };
     }
     if (action === 'skill' && combat.skillCooldown > 0) {
       return { success: false, reason: `Skill masih cooldown ${combat.skillCooldown} turn.` };
     }
+    if (action === 'combo' && (session.mode !== 'duo' || combat.combo < 3)) {
+      return { success: false, reason: 'Combo duo membutuhkan 3 energi kerja sama.' };
+    }
 
-    const multiplier = action === 'skill' ? 0.8 : action === 'defend' ? 0.25 : 0.5;
-    const dealt = Math.max(1, Math.floor(power * multiplier * (0.9 + random() * 0.2)));
+    const multiplier = action === 'combo' ? 1.1
+      : action === 'skill' ? 0.8 : action === 'defend' ? 0.25 : 0.5;
+    let dealt = Math.max(1, Math.floor(power * multiplier * (0.9 + random() * 0.2)));
+    const critRate = Math.min(0.5, Math.max(0, actor.crit_rate || 0));
+    const critical = random() < critRate;
+    if (critical) dealt = Math.max(1, Math.floor(dealt * (actor.crit_multi || 1.5)));
     combat.enemyHp = Math.max(0, combat.enemyHp - dealt);
     if (action === 'skill') combat.skillCooldown = 2;
+    if (session.mode === 'duo') {
+      combat.combo = action === 'combo' ? 0 : Math.min(3, combat.combo + 1);
+    }
     const defeated = combat.enemyHp <= 0;
+    const incomingScale = session.mode === 'duo' ? 1.2 : 1;
     const incoming = defeated
       ? 0
-      : Math.max(1, Math.floor(room.enemy.damage * (action === 'defend' ? 0.35 : 1)));
+      : Math.max(1, Math.floor(
+        room.enemy.damage * incomingScale *
+        (action === 'defend' ? 0.35 : action === 'combo' ? 0.5 : 1),
+      ));
     state.hp = Math.max(0, state.hp - incoming);
     if (action !== 'skill' && combat.skillCooldown > 0) combat.skillCooldown--;
-    state.log = `Turn ${combat.turn}: ${action} memberi ${dealt} damage · menerima ${incoming} damage`;
+    state.log = `Turn ${combat.turn}: ${action}${critical ? ' CRIT' : ''} memberi ${dealt} damage · menerima ${incoming} damage`;
     combat.turn++;
 
     if (state.hp <= 0) {
@@ -313,6 +340,9 @@ function createLongDungeonService(db, options = {}) {
       const state = {
         hp: maxHp, maxHp, companion: 'Partner Party', collected: {},
         visited: [definition.entry_room], log: 'Ekspedisi duo dimulai.',
+        turnOrder: [String(userId), String(partner.user_id)],
+        turnAliases: [getAlias(userId), getAlias(partner.user_id)],
+        turnIndex: 0,
       };
       const info = db.prepare(`
         INSERT INTO rpg_dungeon_sessions_v2
@@ -334,19 +364,17 @@ function createLongDungeonService(db, options = {}) {
     },
     getActive,
     getRoom,
+    enemyMaxHp,
     advance(userId, sessionId, expectedVersion, optionId) {
       const session = this.get(sessionId, userId);
       if (!session || session.status !== 'active') return { success: false, reason: 'Ekspedisi tidak aktif.' };
       if (session.expires_at <= now()) return { success: false, reason: 'Checkpoint sudah kedaluwarsa.' };
       if (session.state_version !== expectedVersion) return { success: false, reason: 'Room ini sudah diselesaikan.' };
       const room = getRoom(session);
-      let user = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(session.owner_id);
-      if (session.partner_id) {
-        const partner = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(session.partner_id);
-        user = {
-          _calculatedPower: calculatePower(user) + calculatePower(partner),
-        };
-      }
+      const owner = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(session.owner_id);
+      const partner = session.partner_id
+        ? db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(session.partner_id)
+        : null;
       let nextRoomId;
       if (room.type === 'event') {
         const option = room.options?.find(item => item.id === optionId);
@@ -357,11 +385,28 @@ function createLongDungeonService(db, options = {}) {
         // `fight` dipertahankan untuk callback lama; UI baru selalu memakai
         // tactical action per turn.
         if (optionId === 'fight') {
-          nextRoomId = autoResolve(session, room, user);
+          const combined = partner
+            ? { _calculatedPower: calculatePower(owner) + calculatePower(partner) }
+            : owner;
+          nextRoomId = autoResolve(session, room, combined);
         } else {
-          const tactical = resolveTacticalTurn(session, room, user, optionId);
+          if (session.mode === 'duo') {
+            const expectedActor = session.state.turnOrder?.[session.state.turnIndex || 0];
+            if (expectedActor && expectedActor !== String(userId)) {
+              const alias = session.state.turnAliases?.[session.state.turnIndex || 0] || 'partner';
+              return { success: false, reason: `Sekarang giliran ${alias}.` };
+            }
+          }
+          const actor = String(userId) === String(session.owner_id) ? owner : partner;
+          const ally = actor === owner ? partner : owner;
+          const tactical = resolveTacticalTurn(session, room, actor, ally, optionId);
           if (!tactical.success) return tactical;
           nextRoomId = tactical.nextRoomId;
+          if (session.mode === 'duo' && !tactical.transitioned) {
+            session.state.turnIndex = ((session.state.turnIndex || 0) + 1) % 2;
+            const nextAlias = session.state.turnAliases?.[session.state.turnIndex] || 'partner';
+            session.state.log += ` · berikutnya ${nextAlias}`;
+          }
         }
       } else if (room.type === 'treasure') {
         const reward = room.reward || {};

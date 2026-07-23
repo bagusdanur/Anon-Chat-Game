@@ -30,12 +30,14 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
       `❤️ HP <b>${session.state.hp}/${session.state.maxHp}</b>\n` +
       `🤝 Companion: <b>${session.state.companion}</b>`;
     if (['combat', 'boss'].includes(room.type)) {
-      const maxEnemyHp = combat?.maxEnemyHp || Math.max(8, room.enemy.power * (room.type === 'boss' ? 4 : 3));
+      const maxEnemyHp = combat?.maxEnemyHp || service.enemyMaxHp(session, room);
       const enemyHp = combat?.enemyHp ?? maxEnemyHp;
       text += `\n👹 ${room.enemy.name}: <b>${enemyHp}/${maxEnemyHp} HP</b>`;
       text += `\n\n💡 <i>Attack stabil · Defend mengurangi damage · Skill kuat dengan cooldown.</i>`;
       if (session.mode === 'duo') {
-        text += `\n🤝 <i>Kedua anggota party dapat bergantian menekan aksi.</i>`;
+        const turnAlias = session.state.turnAliases?.[session.state.turnIndex || 0] || 'partner';
+        text += `\n🤝 Giliran: <b>${turnAlias}</b> · Energi Combo: <b>${combat?.combo || 0}/3</b>`;
+        text += `\n🤝 <i>Aksi wajib bergantian. Isi energi lalu gunakan Combo bersama.</i>`;
       }
     }
     if (session.state.log) text += `\n📝 ${session.state.log}`;
@@ -55,6 +57,9 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
       ]);
       buttons.push([
         Markup.button.callback('✨ Skill', `ld:${session.id}:${session.state_version}:skill`),
+        ...(session.mode === 'duo'
+          ? [Markup.button.callback('🤝 Combo', `ld:${session.id}:${session.state_version}:combo`)]
+          : []),
       ]);
     } else if (room.type === 'treasure') {
       buttons.push([Markup.button.callback(

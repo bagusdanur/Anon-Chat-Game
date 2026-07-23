@@ -42,7 +42,7 @@ test('hunt tidak kembali menjadi pertarungan satu turn tanpa tekanan HP', () => 
 
 test('dungeon pertama menyatakan level rekomendasi boss dengan jujur', () => {
   const firstDungeon = dungeons.find(dungeon => dungeon.id === 'goblin_ruins');
-  assert.ok(firstDungeon.recommended_level >= 5);
+  assert.ok(firstDungeon.recommended_level >= 7);
 });
 
 test('weekly duo raid dapat diselesaikan pada level minimum dengan seluruh attempt', () => {

@@ -20,6 +20,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Controlled marketplace dengan escrow, pajak, expiry, dan audit ledger
 - Preseason, leaderboard anonim, Endless Tower, achievement, dan collection
 - Party persisten dan guild dengan alias karakter anonim
+- Pusat anonymous co-op (`/coop`) untuk party, dungeon duo, bounty, campaign, raid, dan duel
 - World boss asynchronous harian dan weekly party raid dengan kontribusi persisten
 - Guild quest mingguan serta role owner/officer/member dengan audit perubahan
 - Duo bounty harian dan co-op campaign dengan progress karakter independen
@@ -40,8 +41,9 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 
 - Hunt memakai scaling monster per level; gear pemain tidak ikut menaikkan stat musuh.
 - Hunt dari HP penuh ditargetkan 3–8 turn dengan konsumsi rata-rata 10–45% HP.
-- Reruntuhan Goblin dapat dicoba sejak awal, tetapi boss solo secara eksplisit direkomendasikan mulai level 5.
+- Reruntuhan Goblin dapat dicoba sejak awal, tetapi ekspedisi penuh solo direkomendasikan mulai level 7; level lebih rendah diarahkan ke duo.
 - Weekly raid duo disetel agar masih dapat dituntaskan oleh dua karakter pada level minimum bila seluruh attempt digunakan.
+- Reruntuhan Goblin memiliki lima lapis combat; mode duo memakai giliran bergantian dan energi Combo bersama.
 
 ## Cara Pakai
 

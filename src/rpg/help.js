@@ -54,7 +54,7 @@ const HELP_PAGES = [
       '/dungeon solo — alias mode solo\n' +
       '/dungeon duo — mode checkpoint bersama\n' +
       '/dungeon — raid co-op combat lama\n\n' +
-      'Dungeon memiliki jalur bercabang, combat, event, treasure, rest point, boss, checkpoint 24 jam, dan proteksi callback ganda.',
+      'Dungeon memiliki banyak gerombolan, elite, jalur bercabang, treasure, dua rest point, boss, dan checkpoint 24 jam. Mode duo mewajibkan giliran bergantian; 3 aksi mengisi serangan Combo bersama.',
   },
   {
     id: 'equipment',
@@ -90,6 +90,7 @@ const HELP_PAGES = [
     title: '🤝 PARTY & TRADE',
     text:
       '/alias [nama] — alias anonim karakter\n' +
+      '/coop — pusat seluruh aktivitas anonymous co-op\n' +
       '/party create — buat party\n' +
       '/party invite — undang partner chat\n' +
       '/party accept, /party info, /party leave\n\n' +
