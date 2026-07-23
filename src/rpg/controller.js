@@ -13,6 +13,7 @@ const { setupSkills } = require('./skills');
 const { setupLongDungeon } = require('./longDungeon');
 const { setupCampaign } = require('./campaign');
 const { setupProfessions } = require('./professions');
+const { setupMarketplace } = require('./marketplace');
 
 function setupRpg(bot, { getPartnerId, rateLimitCommand }) {
   // RPG v2: menu utama, region, campaign, dan eksplorasi.
@@ -21,6 +22,7 @@ function setupRpg(bot, { getPartnerId, rateLimitCommand }) {
   setupLongDungeon(bot, { rateLimitCommand });
   setupCampaign(bot, { rateLimitCommand });
   setupProfessions(bot, { rateLimitCommand });
+  setupMarketplace(bot, { rateLimitCommand });
 
   // Fase 1: Profile & Character Creation
   setupProfile(bot, { rateLimitCommand });

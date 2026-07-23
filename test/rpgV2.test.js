@@ -33,6 +33,10 @@ const {
   professionXpToNext,
   createProfessionService,
 } = require('../src/rpg/services/professions');
+const {
+  LISTING_TTL_SECONDS,
+  createMarketplaceService,
+} = require('../src/rpg/services/marketplace');
 
 function createTestDb() {
   const db = new Database(':memory:');
@@ -58,10 +62,26 @@ function createTestDb() {
       telegram_user_id TEXT NOT NULL,
       item_id TEXT NOT NULL,
       quantity INTEGER NOT NULL DEFAULT 1,
+      upgrade_tier INTEGER NOT NULL DEFAULT 0,
+      equipped INTEGER NOT NULL DEFAULT 0,
       UNIQUE(telegram_user_id, item_id)
+    );
+    CREATE TABLE items_catalog (
+      item_id TEXT PRIMARY KEY,
+      display_name TEXT NOT NULL,
+      category TEXT NOT NULL,
+      rarity TEXT NOT NULL,
+      sell_price INTEGER NOT NULL DEFAULT 0,
+      effect_json TEXT
     );
     INSERT INTO rpg_users (telegram_user_id, class_name, level, gold)
     VALUES ('1', 'ksatria', 1, 1000);
+    INSERT INTO rpg_users (telegram_user_id, class_name, level, gold)
+    VALUES ('2', 'penyihir', 1, 1000);
+    INSERT INTO items_catalog (item_id, display_name, category, rarity, sell_price)
+    VALUES ('tembaga', 'Tembaga', 'material', 'common', 8);
+    INSERT INTO items_catalog (item_id, display_name, category, rarity, sell_price)
+    VALUES ('fragmen_naga', 'Fragmen Naga', 'material', 'legendary', 0);
   `);
   runRpgMigrations(db, { backup: false });
   return db;
@@ -77,6 +97,7 @@ test('migrations are ordered and idempotent', () => {
   assert.deepEqual(versions, [
     { version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }, { version: 5 },
     { version: 6 },
+    { version: 7 },
   ]);
   db.close();
 });
@@ -345,5 +366,51 @@ test('profession XP levels independently and rejects duplicate Telegram events',
   const mining = professions.list('1').find(item => item.id === 'mining');
   assert.equal(mining.level, 2);
   assert.equal(mining.xp, 5);
+  db.close();
+});
+
+test('marketplace escrows items and settles buyer, seller, tax atomically', () => {
+  const db = createTestDb();
+  db.prepare(`
+    INSERT INTO rpg_inventory (telegram_user_id, item_id, quantity)
+    VALUES ('1', 'tembaga', 10)
+  `).run();
+  const market = createMarketplaceService(db);
+  const listing = market.createListing('1', 'tembaga', 5, 10);
+  assert.equal(listing.success, true);
+  assert.equal(db.prepare(
+    "SELECT quantity FROM rpg_inventory WHERE telegram_user_id='1' AND item_id='tembaga'",
+  ).get().quantity, 5);
+  const purchase = market.buy('2', listing.listingId);
+  assert.equal(purchase.success, true);
+  assert.equal(purchase.gross, 50);
+  assert.equal(purchase.tax, 2);
+  assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='1'").get().gold, 1048);
+  assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='2'").get().gold, 950);
+  assert.equal(db.prepare(
+    "SELECT quantity FROM rpg_inventory WHERE telegram_user_id='2' AND item_id='tembaga'",
+  ).get().quantity, 5);
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 3);
+  assert.equal(market.buy('2', listing.listingId).success, false);
+  db.close();
+});
+
+test('market expiry returns escrow and bound items cannot be listed', () => {
+  const db = createTestDb();
+  db.prepare(`
+    INSERT INTO rpg_inventory (telegram_user_id, item_id, quantity)
+    VALUES ('1', 'tembaga', 10), ('1', 'fragmen_naga', 1)
+  `).run();
+  let clock = 2_000_000_000;
+  const market = createMarketplaceService(db, { now: () => clock });
+  const listing = market.createListing('1', 'tembaga', 4, 10);
+  assert.equal(listing.success, true);
+  assert.equal(market.createListing('1', 'fragmen_naga', 1, 10).success, false);
+  clock += LISTING_TTL_SECONDS + 1;
+  assert.equal(market.expireListings(), 1);
+  assert.equal(db.prepare(
+    "SELECT quantity FROM rpg_inventory WHERE telegram_user_id='1' AND item_id='tembaga'",
+  ).get().quantity, 10);
+  assert.equal(db.prepare('SELECT status FROM rpg_market_listings WHERE id = ?').get(listing.listingId).status, 'expired');
   db.close();
 });

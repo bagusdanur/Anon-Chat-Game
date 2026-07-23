@@ -235,6 +235,43 @@ const MIGRATIONS = [
         ON rpg_profession_events(user_id, profession_id, created_at);
     `,
   },
+  {
+    version: 7,
+    name: 'controlled_marketplace',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_market_listings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        seller_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        item_id TEXT NOT NULL,
+        quantity INTEGER NOT NULL CHECK (quantity > 0),
+        unit_price INTEGER NOT NULL CHECK (unit_price > 0),
+        upgrade_tier INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'active'
+          CHECK (status IN ('active','sold','cancelled','expired')),
+        buyer_id TEXT,
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        completed_at INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS idx_market_active
+        ON rpg_market_listings(status, item_id, unit_price, expires_at);
+      CREATE INDEX IF NOT EXISTS idx_market_seller
+        ON rpg_market_listings(seller_id, status, created_at);
+
+      CREATE TABLE IF NOT EXISTS rpg_market_sales (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        listing_id INTEGER NOT NULL UNIQUE REFERENCES rpg_market_listings(id),
+        seller_id TEXT NOT NULL,
+        buyer_id TEXT NOT NULL,
+        item_id TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        gross_amount INTEGER NOT NULL,
+        tax_amount INTEGER NOT NULL,
+        seller_proceeds INTEGER NOT NULL,
+        sold_at INTEGER NOT NULL
+      );
+    `,
+  },
 ];
 
 function quoteSql(value) {

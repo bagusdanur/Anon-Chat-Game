@@ -17,6 +17,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Dungeon solo multi-room dengan jalur bercabang dan checkpoint persisten (`/adventure`)
 - Campaign Aldenmoor berbasis objective dengan event idempotent (`/campaign`)
 - Tujuh profession dengan gathering, salvage, dan refinement
+- Controlled marketplace dengan escrow, pajak, expiry, dan audit ledger
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
@@ -88,6 +89,7 @@ pm2 save && pm2 startup
 | `/gather herb`    | Mengumpulkan tanaman dan Herbalism XP                 |
 | `/salvage [item]` | Membongkar equipment menjadi material                 |
 | `/refine [ore]`   | Memurnikan lima material menjadi tier berikutnya      |
+| `/market`         | Marketplace anonim untuk material dan consumable      |
 | `/next`           | Putus chat dan langsung cari partner baru          |
 | `/stop`           | Mengakhiri chat atau batal antri                   |
 | `/lang [id/en]`   | Memilih preferensi bahasa (prioritas matching)     |
