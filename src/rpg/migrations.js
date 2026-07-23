@@ -272,6 +272,56 @@ const MIGRATIONS = [
       );
     `,
   },
+  {
+    version: 8,
+    name: 'season_and_endgame',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_seasons (
+        season_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        starts_at INTEGER NOT NULL,
+        ends_at INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active'
+          CHECK (status IN ('scheduled','active','ended')),
+        modifiers_json TEXT NOT NULL DEFAULT '{}',
+        created_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS rpg_season_progress (
+        season_id TEXT NOT NULL REFERENCES rpg_seasons(season_id),
+        user_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        points INTEGER NOT NULL DEFAULT 0,
+        currency INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (season_id, user_id)
+      );
+      CREATE TABLE IF NOT EXISTS rpg_season_events (
+        event_key TEXT PRIMARY KEY,
+        season_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        points INTEGER NOT NULL,
+        currency INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_season_rank
+        ON rpg_season_progress(season_id, points DESC);
+
+      CREATE TABLE IF NOT EXISTS rpg_tower_progress (
+        user_id TEXT PRIMARY KEY REFERENCES rpg_users(telegram_user_id),
+        best_floor INTEGER NOT NULL DEFAULT 0,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        wins INTEGER NOT NULL DEFAULT 0,
+        last_attempt_at INTEGER,
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS rpg_achievement_unlocks (
+        user_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        achievement_id TEXT NOT NULL,
+        unlocked_at INTEGER NOT NULL,
+        PRIMARY KEY (user_id, achievement_id)
+      );
+    `,
+  },
 ];
 
 function quoteSql(value) {

@@ -37,6 +37,10 @@ const {
   LISTING_TTL_SECONDS,
   createMarketplaceService,
 } = require('../src/rpg/services/marketplace');
+const {
+  anonymousAlias,
+  createEndgameService,
+} = require('../src/rpg/services/endgame');
 
 function createTestDb() {
   const db = new Database(':memory:');
@@ -98,6 +102,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }, { version: 5 },
     { version: 6 },
     { version: 7 },
+    { version: 8 },
   ]);
   db.close();
 });
@@ -412,5 +417,53 @@ test('market expiry returns escrow and bound items cannot be listed', () => {
     "SELECT quantity FROM rpg_inventory WHERE telegram_user_id='1' AND item_id='tembaga'",
   ).get().quantity, 10);
   assert.equal(db.prepare('SELECT status FROM rpg_market_listings WHERE id = ?').get(listing.listingId).status, 'expired');
+  db.close();
+});
+
+test('season points are idempotent and leaderboard exposes only anonymous aliases', () => {
+  const db = createTestDb();
+  const endgame = createEndgameService(db, { now: () => 2_000_000_000 });
+  assert.equal(endgame.addSeasonPoints('1', 25, 2, 'event:season:1').processed, true);
+  assert.equal(endgame.addSeasonPoints('1', 25, 2, 'event:season:1').processed, false);
+  const progress = endgame.getProgress('1').progress;
+  assert.equal(progress.points, 25);
+  assert.equal(progress.currency, 2);
+  const rank = endgame.leaderboard(10)[0];
+  assert.equal(rank.points, 25);
+  assert.equal(rank.alias, anonymousAlias('1'));
+  assert.match(rank.alias, /^Petualang-[A-F0-9]{6}$/);
+  assert.notEqual(rank.alias, '1');
+  db.close();
+});
+
+test('tower rewards, cooldown, and floor progress are persistent', () => {
+  const db = createTestDb();
+  let clock = 2_000_000_000;
+  const endgame = createEndgameService(db, { now: () => clock, random: () => 1 });
+  const first = endgame.attemptTower('1');
+  assert.equal(first.success, true);
+  assert.equal(first.win, true);
+  assert.equal(first.floor, 1);
+  assert.equal(endgame.getTower('1').best_floor, 1);
+  assert.equal(endgame.attemptTower('1').success, false);
+  clock += 61;
+  assert.equal(endgame.attemptTower('1').floor, 2);
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 2);
+  assert.equal(endgame.getProgress('1').progress.points, 23);
+  db.close();
+});
+
+test('achievements and item collection derive from persistent game state', () => {
+  const db = createTestDb();
+  const endgame = createEndgameService(db);
+  endgame.getTower('1');
+  db.prepare("UPDATE rpg_tower_progress SET best_floor = 10 WHERE user_id = '1'").run();
+  db.prepare(`
+    INSERT INTO rpg_inventory (telegram_user_id, item_id, quantity)
+    VALUES ('1', 'tembaga', 1)
+  `).run();
+  const achievements = endgame.listAchievements('1');
+  assert.equal(achievements.find(item => item.id === 'tower_10').unlocked, true);
+  assert.deepEqual(endgame.collection('1'), { owned: 1, total: 2, percent: 50 });
   db.close();
 });

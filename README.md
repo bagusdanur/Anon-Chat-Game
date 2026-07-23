@@ -18,6 +18,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Campaign Aldenmoor berbasis objective dengan event idempotent (`/campaign`)
 - Tujuh profession dengan gathering, salvage, dan refinement
 - Controlled marketplace dengan escrow, pajak, expiry, dan audit ledger
+- Preseason, leaderboard anonim, Endless Tower, achievement, dan collection
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
@@ -90,6 +91,11 @@ pm2 save && pm2 startup
 | `/salvage [item]` | Membongkar equipment menjadi material                 |
 | `/refine [ore]`   | Memurnikan lima material menjadi tier berikutnya      |
 | `/market`         | Marketplace anonim untuk material dan consumable      |
+| `/season`         | Melihat seasonal points dan token                     |
+| `/rank`           | Leaderboard season dengan alias anonim                |
+| `/tower`          | Menantang lantai berikutnya di Endless Tower          |
+| `/achievement`    | Melihat achievement karakter                          |
+| `/collection`     | Melihat completion koleksi item                       |
 | `/next`           | Putus chat dan langsung cari partner baru          |
 | `/stop`           | Mengakhiri chat atau batal antri                   |
 | `/lang [id/en]`   | Memilih preferensi bahasa (prioritas matching)     |
