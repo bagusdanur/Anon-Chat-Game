@@ -798,3 +798,28 @@ test('direct gold trade applies tax with balanced immutable ledger entries', () 
   assert.equal(sum, -5);
   db.close();
 });
+
+test('duo long dungeon shares checkpoints and grants idempotent rewards to both players', () => {
+  const db = createTestDb();
+  publishDungeons(db, loadDungeons());
+  const social = createSocialService(db, { now: () => 2_000_000_000 });
+  social.createParty('1');
+  social.invite('1', '2');
+  social.acceptInvite('2');
+  const dungeon = createLongDungeonService(db, { random: () => 1, now: () => 2_000_000_000 });
+  let session = dungeon.startDuo('1', 'goblin_ruins').session;
+  assert.equal(dungeon.getActive('2').id, session.id);
+  const actors = ['1', '2', '1', '2', '1'];
+  const choices = ['right', 'careful', 'claim', 'rest', 'fight'];
+  for (let index = 0; index < choices.length; index++) {
+    const result = dungeon.advance(actors[index], session.id, session.state_version, choices[index]);
+    assert.equal(result.success, true);
+    session = result.session;
+  }
+  assert.equal(session.status, 'completed');
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_dungeon_reward_claims').get().count, 2);
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 2);
+  assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='1'").get().gold, 1067);
+  assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='2'").get().gold, 1067);
+  db.close();
+});

@@ -27,6 +27,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Upgrade hingga +15, reforge affix, dan bonus equipment set
 - Bonus equipment v2 aktif pada dungeon, duel, tower, bounty, world boss, dan raid
 - Direct trade dua tahap dengan snapshot, expiry, settlement atomik, pajak, dan ledger
+- Dungeon panjang duo dengan checkpoint bersama, optimistic version, dan reward individual
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
@@ -92,6 +93,7 @@ pm2 save && pm2 startup
 | `/skill`          | Melihat, mempelajari, dan memasang skill             |
 | `/build`          | Melihat skill tree dan loadout aktif                 |
 | `/adventure`      | Memulai atau melanjutkan dungeon solo panjang        |
+| `/adventure duo` | Memulai atau melanjutkan dungeon panjang bersama party |
 | `/dungeon solo`   | Alias dungeon solo dengan checkpoint persisten       |
 | `/campaign`       | Melihat chapter dan objective campaign               |
 | `/profession`     | Melihat level dan mastery seluruh profession          |

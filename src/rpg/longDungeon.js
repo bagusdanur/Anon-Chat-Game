@@ -69,7 +69,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     return false;
   }
 
-  function startOrResume(ctx, dungeonId = 'goblin_ruins') {
+  function startOrResume(ctx, dungeonId = 'goblin_ruins', mode = 'solo') {
     if (!requireEnabled(ctx)) return;
     const user = getOrCreateUser(ctx.chat.id);
     if (!user) return ctx.reply('Buat karakter terlebih dahulu dengan /profile.');
@@ -78,22 +78,28 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
       ctx.reply('♻️ Melanjutkan checkpoint ekspedisi terakhir.');
       return showSession(ctx, active);
     }
-    const result = service.startSolo(ctx.chat.id, dungeonId);
+    const result = mode === 'duo'
+      ? service.startDuo(ctx.chat.id, dungeonId)
+      : service.startSolo(ctx.chat.id, dungeonId);
     if (!result.success) return ctx.reply(`❌ ${result.reason}`);
     return showSession(ctx, result.session);
   }
 
   bot.command('adventure', rateLimitCommand, ctx => {
-    const dungeonId = ctx.message.text.trim().split(/\s+/)[1] || 'goblin_ruins';
-    return startOrResume(ctx, dungeonId);
+    const args = ctx.message.text.trim().split(/\s+/).slice(1);
+    const mode = args[0]?.toLowerCase() === 'duo' ? 'duo' : 'solo';
+    const dungeonId = mode === 'duo' ? (args[1] || 'goblin_ruins') : (args[0] || 'goblin_ruins');
+    return startOrResume(ctx, dungeonId, mode);
   });
 
   // Intercept hanya `/dungeon solo`; command `/dungeon` biasa diteruskan ke
   // handler raid co-op legacy yang didaftarkan setelah modul ini.
   bot.command('dungeon', (ctx, next) => {
     const args = ctx.message.text.trim().split(/\s+/).slice(1);
-    if (args[0]?.toLowerCase() !== 'solo') return next();
-    return rateLimitCommand(ctx, () => startOrResume(ctx, args[1] || 'goblin_ruins'));
+    if (!['solo', 'duo'].includes(args[0]?.toLowerCase())) return next();
+    return rateLimitCommand(ctx, () => startOrResume(
+      ctx, args[1] || 'goblin_ruins', args[0].toLowerCase(),
+    ));
   });
 
   bot.action(/^ld:(\d+):(\d+):([a-z0-9_]+)$/, rateLimitCommand, ctx => {

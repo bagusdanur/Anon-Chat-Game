@@ -86,9 +86,9 @@ function createLongDungeonService(db, options = {}) {
       SELECT s.*, d.definition_json
       FROM rpg_dungeon_sessions_v2 s
       JOIN rpg_dungeon_definitions d ON d.dungeon_id = s.dungeon_id
-      WHERE s.owner_id = ? AND s.status = 'active'
+      WHERE (s.owner_id = ? OR s.partner_id = ?) AND s.status = 'active'
       ORDER BY s.id DESC LIMIT 1
-    `).get(String(userId));
+    `).get(String(userId), String(userId));
     if (!row) return null;
     if (row.expires_at <= now()) {
       db.prepare(
@@ -100,6 +100,7 @@ function createLongDungeonService(db, options = {}) {
   }
 
   function calculatePower(user) {
+    if (user._calculatedPower) return user._calculatedPower;
     const bonus = equipment.bonuses(user.telegram_user_id);
     return user.atk + (bonus.atk || 0) +
       user.def + (bonus.def || 0) +
@@ -121,36 +122,40 @@ function createLongDungeonService(db, options = {}) {
     };
     const rewardKey = `completion:v${session.definition.version || 1}`;
     const timestamp = now();
-    const claim = db.prepare(`
-      INSERT OR IGNORE INTO rpg_dungeon_reward_claims
-        (session_id, user_id, reward_key, reward_json, claimed_at)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(session.id, session.owner_id, rewardKey, JSON.stringify(reward), timestamp);
-    if (claim.changes === 0) return false;
-    if (reward.gold) {
+    const recipients = [session.owner_id, session.partner_id].filter(Boolean);
+    let claimed = false;
+    for (const recipientId of recipients) {
+      const claim = db.prepare(`
+        INSERT OR IGNORE INTO rpg_dungeon_reward_claims
+          (session_id, user_id, reward_key, reward_json, claimed_at)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(session.id, recipientId, rewardKey, JSON.stringify(reward), timestamp);
+      if (claim.changes === 0) continue;
+      claimed = true;
+      if (reward.gold) {
       db.prepare('UPDATE rpg_users SET gold = MIN(50000, gold + ?), updated_at = ? WHERE telegram_user_id = ?')
-        .run(reward.gold, timestamp, session.owner_id);
-      const balance = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id = ?').get(session.owner_id).gold;
+          .run(reward.gold, timestamp, recipientId);
+        const balance = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id = ?').get(recipientId).gold;
       ledger.record({
-        entryKey: `long_dungeon:${session.id}:${session.owner_id}:gold`,
-        userId: session.owner_id,
+          entryKey: `long_dungeon:${session.id}:${recipientId}:gold`,
+          userId: recipientId,
         amount: reward.gold,
         balanceAfter: balance,
         reason: 'long_dungeon_reward',
         referenceType: 'dungeon_session',
         referenceId: session.id,
       });
-    }
-    for (const item of reward.items) {
+      }
+      for (const item of reward.items) {
       db.prepare(`
         INSERT INTO rpg_inventory (telegram_user_id, item_id, quantity)
         VALUES (?, ?, ?)
         ON CONFLICT(telegram_user_id, item_id)
         DO UPDATE SET quantity = quantity + excluded.quantity
-      `).run(session.owner_id, item.item, item.quantity);
-    }
-    if (reward.xp) {
-      const user = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(session.owner_id);
+        `).run(recipientId, item.item, item.quantity);
+      }
+      if (reward.xp) {
+        const user = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(recipientId);
       let level = user.level;
       let xp = user.xp + reward.xp;
       while (xp >= xpToNextLevel(level)) {
@@ -165,15 +170,16 @@ function createLongDungeonService(db, options = {}) {
               crit_rate = ?, crit_multi = ?, updated_at = ?
           WHERE telegram_user_id = ?
         `).run(
-          level, xp, stats.max_hp, stats.atk, stats.def, stats.magic_atk,
-          stats.crit_rate, stats.crit_multi, timestamp, session.owner_id,
+            level, xp, stats.max_hp, stats.atk, stats.def, stats.magic_atk,
+            stats.crit_rate, stats.crit_multi, timestamp, recipientId,
         );
       } else {
         db.prepare('UPDATE rpg_users SET level = ?, xp = ?, updated_at = ? WHERE telegram_user_id = ?')
-          .run(level, xp, timestamp, session.owner_id);
+            .run(level, xp, timestamp, recipientId);
+        }
       }
     }
-    return true;
+    return claimed;
   }
 
   function autoResolve(session, room, user) {
@@ -227,13 +233,51 @@ function createLongDungeonService(db, options = {}) {
       );
       return { success: true, session: this.get(info.lastInsertRowid, userId) };
     },
+    startDuo(userId, dungeonId) {
+      if (getActive(userId)) return { success: false, reason: 'Masih ada ekspedisi aktif.' };
+      const party = db.prepare(`
+        SELECT p.id FROM rpg_parties p JOIN rpg_party_members m ON m.party_id=p.id
+        WHERE m.user_id=? AND p.status='active'
+      `).get(String(userId));
+      if (!party) return { success: false, reason: 'Buat party berisi dua pemain terlebih dahulu.' };
+      const partner = db.prepare(`
+        SELECT m.user_id,u.* FROM rpg_party_members m JOIN rpg_users u ON u.telegram_user_id=m.user_id
+        WHERE m.party_id=? AND m.user_id<>? ORDER BY m.joined_at LIMIT 1
+      `).get(party.id, String(userId));
+      if (!partner) return { success: false, reason: 'Duo dungeon memerlukan partner party.' };
+      if (getActive(partner.user_id)) return { success: false, reason: 'Partner masih memiliki ekspedisi aktif.' };
+      const owner = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id=?').get(String(userId));
+      const definitionRow = db.prepare(`
+        SELECT * FROM rpg_dungeon_definitions WHERE dungeon_id=? AND published=1
+      `).get(dungeonId);
+      if (!definitionRow) return { success: false, reason: 'Dungeon tidak ditemukan.' };
+      if (owner.level < definitionRow.min_level || partner.level < definitionRow.min_level) {
+        return { success: false, reason: `Semua anggota membutuhkan level ${definitionRow.min_level}.` };
+      }
+      const timestamp = now();
+      const definition = JSON.parse(definitionRow.definition_json);
+      const maxHp = owner.max_hp + partner.max_hp;
+      const state = {
+        hp: maxHp, maxHp, companion: 'Partner Party', collected: {},
+        visited: [definition.entry_room], log: 'Ekspedisi duo dimulai.',
+      };
+      const info = db.prepare(`
+        INSERT INTO rpg_dungeon_sessions_v2
+          (dungeon_id,owner_id,partner_id,mode,current_room_id,state_json,expires_at,created_at,updated_at)
+        VALUES (?,?,?,'duo',?,?,?,?,?)
+      `).run(
+        dungeonId, String(userId), partner.user_id, definition.entry_room,
+        JSON.stringify(state), timestamp + SESSION_TTL_SECONDS, timestamp, timestamp,
+      );
+      return { success: true, session: this.get(info.lastInsertRowid, userId) };
+    },
     get(sessionId, userId) {
       return hydrate(db.prepare(`
         SELECT s.*, d.definition_json
         FROM rpg_dungeon_sessions_v2 s
         JOIN rpg_dungeon_definitions d ON d.dungeon_id = s.dungeon_id
-        WHERE s.id = ? AND s.owner_id = ?
-      `).get(sessionId, String(userId)));
+        WHERE s.id = ? AND (s.owner_id = ? OR s.partner_id = ?)
+      `).get(sessionId, String(userId), String(userId)));
     },
     getActive,
     getRoom,
@@ -243,7 +287,13 @@ function createLongDungeonService(db, options = {}) {
       if (session.expires_at <= now()) return { success: false, reason: 'Checkpoint sudah kedaluwarsa.' };
       if (session.state_version !== expectedVersion) return { success: false, reason: 'Room ini sudah diselesaikan.' };
       const room = getRoom(session);
-      const user = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(String(userId));
+      let user = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(session.owner_id);
+      if (session.partner_id) {
+        const partner = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(session.partner_id);
+        user = {
+          _calculatedPower: calculatePower(user) + calculatePower(partner),
+        };
+      }
       let nextRoomId;
       if (room.type === 'event') {
         const option = room.options?.find(item => item.id === optionId);
@@ -273,11 +323,11 @@ function createLongDungeonService(db, options = {}) {
         UPDATE rpg_dungeon_sessions_v2
         SET current_room_id = ?, state_json = ?, state_version = state_version + 1,
             status = ?, updated_at = ?, completed_at = ?
-        WHERE id = ? AND owner_id = ? AND status = 'active' AND state_version = ?
+        WHERE id = ? AND status = 'active' AND state_version = ?
       `).run(
         nextRoomId, JSON.stringify(session.state), terminalStatus, timestamp,
         terminalStatus === 'active' ? null : timestamp,
-        session.id, String(userId), expectedVersion,
+        session.id, expectedVersion,
       );
       if (update.changes !== 1) return { success: false, reason: 'Aksi sudah diproses.' };
       const updated = this.get(session.id, userId);
@@ -290,6 +340,12 @@ function createLongDungeonService(db, options = {}) {
           target: session.dungeon_id,
           amount: 1,
         });
+        if (session.partner_id) {
+          onEvent(session.partner_id, {
+            key: `dungeon_complete:${session.id}:${session.partner_id}`,
+            type: 'dungeon_complete', target: session.dungeon_id, amount: 1,
+          });
+        }
       }
       return { success: true, session: updated, room: nextRoom, rewarded };
     },
