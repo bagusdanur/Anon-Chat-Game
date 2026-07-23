@@ -16,6 +16,7 @@ const { setupProfessions } = require('./professions');
 const { setupMarketplace } = require('./marketplace');
 const { setupEndgame } = require('./endgame');
 const { setupSocial } = require('./social');
+const { setupRaids } = require('./raids');
 
 function setupRpg(bot, { getPartnerId, rateLimitCommand }) {
   // RPG v2: menu utama, region, campaign, dan eksplorasi.
@@ -27,6 +28,7 @@ function setupRpg(bot, { getPartnerId, rateLimitCommand }) {
   setupMarketplace(bot, { rateLimitCommand });
   setupEndgame(bot, { rateLimitCommand });
   setupSocial(bot, { getPartnerId, rateLimitCommand });
+  setupRaids(bot, { rateLimitCommand });
 
   // Fase 1: Profile & Character Creation
   setupProfile(bot, { rateLimitCommand });

@@ -390,6 +390,57 @@ const MIGRATIONS = [
       );
     `,
   },
+  {
+    version: 10,
+    name: 'asynchronous_world_boss_and_weekly_raid',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_raid_definitions (
+        raid_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        raid_type TEXT NOT NULL CHECK (raid_type IN ('world','party')),
+        definition_json TEXT NOT NULL,
+        published INTEGER NOT NULL DEFAULT 0 CHECK (published IN (0, 1)),
+        content_version INTEGER NOT NULL DEFAULT 1,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS rpg_raid_instances (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        raid_id TEXT NOT NULL REFERENCES rpg_raid_definitions(raid_id),
+        period_key TEXT NOT NULL,
+        scope_key TEXT NOT NULL,
+        max_hp INTEGER NOT NULL CHECK (max_hp > 0),
+        current_hp INTEGER NOT NULL CHECK (current_hp >= 0),
+        status TEXT NOT NULL DEFAULT 'active'
+          CHECK (status IN ('active','defeated','expired')),
+        starts_at INTEGER NOT NULL,
+        ends_at INTEGER NOT NULL,
+        defeated_at INTEGER,
+        created_at INTEGER NOT NULL,
+        UNIQUE (raid_id, period_key, scope_key)
+      );
+      CREATE INDEX IF NOT EXISTS idx_raid_instances_active
+        ON rpg_raid_instances(raid_id, status, ends_at);
+
+      CREATE TABLE IF NOT EXISTS rpg_raid_contributions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_key TEXT NOT NULL UNIQUE,
+        instance_id INTEGER NOT NULL REFERENCES rpg_raid_instances(id),
+        user_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        damage INTEGER NOT NULL CHECK (damage > 0),
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_raid_contribution_rank
+        ON rpg_raid_contributions(instance_id, damage DESC);
+
+      CREATE TABLE IF NOT EXISTS rpg_raid_reward_claims (
+        instance_id INTEGER NOT NULL REFERENCES rpg_raid_instances(id),
+        user_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        reward_json TEXT NOT NULL,
+        claimed_at INTEGER NOT NULL,
+        PRIMARY KEY (instance_id, user_id)
+      );
+    `,
+  },
 ];
 
 function quoteSql(value) {

@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "raids": [
+    {
+      "id": "mist_colossus",
+      "name": "Mist Colossus",
+      "type": "world",
+      "minLevel": 1,
+      "maxHp": 250000,
+      "duration": "daily",
+      "attemptLimit": 3,
+      "baseGold": 120,
+      "seasonPoints": 20
+    },
+    {
+      "id": "warden_of_ruins",
+      "name": "Warden of the Ruins",
+      "type": "party",
+      "minLevel": 3,
+      "maxHp": 6000,
+      "duration": "weekly",
+      "attemptLimit": 5,
+      "baseGold": 300,
+      "seasonPoints": 50
+    }
+  ]
+}

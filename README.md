@@ -20,6 +20,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Controlled marketplace dengan escrow, pajak, expiry, dan audit ledger
 - Preseason, leaderboard anonim, Endless Tower, achievement, dan collection
 - Party persisten dan guild dengan alias karakter anonim
+- World boss asynchronous harian dan weekly party raid dengan kontribusi persisten
 
 ## Keterbatasan Saat Ini (Known Limitations)
 
@@ -101,6 +102,8 @@ pm2 save && pm2 startup
 | `/party create`   | Membuat party persisten                               |
 | `/party invite`   | Mengundang partner chat ke party                      |
 | `/guild`          | Membuat, bergabung, dan berkontribusi ke guild        |
+| `/worldboss`      | Melihat, menyerang, dan mengklaim hadiah world boss   |
+| `/raid`           | Weekly raid asynchronous untuk party minimal 2 pemain |
 | `/next`           | Putus chat dan langsung cari partner baru          |
 | `/stop`           | Mengakhiri chat atau batal antri                   |
 | `/lang [id/en]`   | Memilih preferensi bahasa (prioritas matching)     |

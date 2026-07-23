@@ -44,6 +44,12 @@ const {
 const {
   createSocialService,
 } = require('../src/rpg/services/social');
+const {
+  loadRaids,
+  publishRaids,
+  periodFor,
+  createRaidService,
+} = require('../src/rpg/services/raids');
 
 function createTestDb() {
   const db = new Database(':memory:');
@@ -107,6 +113,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 7 },
     { version: 8 },
     { version: 9 },
+    { version: 10 },
   ]);
   db.close();
 });
@@ -502,5 +509,47 @@ test('guild creation, anonymous aliases, joining, and contributions are persiste
   assert.equal(guild.members.find(member => member.user_id === '2').contribution, 100);
   assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='2'").get().gold, 900);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 2);
+  db.close();
+});
+
+test('raid periods are stable for daily and weekly instances', () => {
+  const timestamp = Math.floor(Date.parse('2026-07-23T12:00:00Z') / 1000);
+  assert.equal(periodFor(timestamp, 'daily').key, '2026-07-23');
+  assert.equal(periodFor(timestamp, 'weekly').key, '2026-07-20');
+});
+
+test('world boss damage is persistent and duplicate Telegram attacks are rejected', () => {
+  const db = createTestDb();
+  publishRaids(db, loadRaids(), 2_000_000_000);
+  const raids = createRaidService(db, { now: () => 2_000_000_000, random: () => 0 });
+  const first = raids.attack('1', 'world', 'telegram:1:100:world');
+  assert.equal(first.success, true);
+  assert.equal(first.damage > 0, true);
+  const duplicate = raids.attack('1', 'world', 'telegram:1:100:world');
+  assert.equal(duplicate.success, false);
+  assert.equal(raids.getInstance('1', 'world').contribution.attempts, 1);
+  db.close();
+});
+
+test('weekly party raid requires a duo and rewards can only be claimed once', () => {
+  const db = createTestDb();
+  const payload = loadRaids();
+  payload.raids.find(raid => raid.type === 'party').maxHp = 1;
+  publishRaids(db, payload, 2_000_000_000);
+  const raids = createRaidService(db, { now: () => 2_000_000_000, random: () => 0 });
+  assert.equal(raids.getInstance('1', 'party').success, false);
+  const social = createSocialService(db, { now: () => 2_000_000_000 });
+  social.createParty('1');
+  social.invite('1', '2');
+  social.acceptInvite('2');
+  db.prepare("UPDATE rpg_users SET level=3 WHERE telegram_user_id IN ('1','2')").run();
+  const attack = raids.attack('1', 'party', 'telegram:1:101:party');
+  assert.equal(attack.success, true);
+  assert.equal(attack.instance.status, 'defeated');
+  const claim = raids.claim('1', 'party');
+  assert.equal(claim.success, true);
+  assert.equal(raids.claim('1', 'party').success, false);
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_raid_reward_claims').get().count, 1);
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 1);
   db.close();
 });

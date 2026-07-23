@@ -5,6 +5,7 @@ const DEFAULT_FLAGS = {
   recoverable_sessions_v2: false,
   long_dungeons_v2: true,
   seasons_v2: true,
+  asynchronous_raids_v2: true,
 };
 
 function createFeatureFlagService(db) {
