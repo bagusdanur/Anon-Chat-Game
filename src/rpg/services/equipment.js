@@ -12,6 +12,12 @@ const RARITY_RULES = {
   legendary: { affixes: 3, sockets: 2, multiplier: 1.85 },
 };
 
+function calculateItemPower(level, quality, rarity, upgradeTier = 0) {
+  const rule = RARITY_RULES[rarity] || RARITY_RULES.common;
+  const base = Number(level) * 3 + Math.round(Number(quality) / 10);
+  return Math.max(1, Math.floor(base * rule.multiplier) + Number(upgradeTier) * 3);
+}
+
 function loadEquipmentContent(filePath = CONTENT_FILE) {
   const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
   if (!Array.isArray(content.affixes) || !content.gems || !Array.isArray(content.sets)) {
@@ -37,8 +43,13 @@ function createEquipmentService(db, options = {}) {
     return content.sets.find(set => set.items.includes(itemId)) || null;
   }
 
-  function rollAffixes(instanceId, category, count, quality) {
-    const available = content.affixes.filter(affix => affix.slots.includes(category));
+  function rollAffixes(instanceId, category, count, quality, className = null) {
+    const available = content.affixes.filter(affix => {
+      if (!affix.slots.includes(category)) return false;
+      if (['ksatria', 'pencuri'].includes(className) && affix.stat === 'magic_atk') return false;
+      if (className === 'penyihir' && affix.stat === 'atk') return false;
+      return true;
+    });
     const affixCount = Math.min(count, available.length);
     for (let index = 0; index < affixCount; index++) {
       const pickedIndex = Math.floor(random() * available.length);
@@ -84,8 +95,8 @@ function createEquipmentService(db, options = {}) {
     if (legacy.equipped) return { success: false, reason: 'Lepas equipment legacy terlebih dahulu.' };
     const rule = RARITY_RULES[catalog.rarity] || RARITY_RULES.common;
     const quality = 50 + Math.floor(random() * 51);
-    const user = db.prepare('SELECT level FROM rpg_users WHERE telegram_user_id=?').get(String(userId));
-    const itemPower = Math.max(1, Math.floor((user.level * 10 + quality) * rule.multiplier));
+    const user = db.prepare('SELECT level,class_name FROM rpg_users WHERE telegram_user_id=?').get(String(userId));
+    const itemPower = calculateItemPower(user.level, quality, catalog.rarity, legacy.upgrade_tier || 0);
     const pool = content.affixes.filter(affix => affix.slots.includes(catalog.category));
     return db.transaction(() => {
       if (legacy.quantity === 1) {
@@ -102,7 +113,7 @@ function createEquipmentService(db, options = {}) {
         String(userId), catalog.item_id, catalog.rarity, quality, itemPower,
         legacy.upgrade_tier || 0, set?.id || null, now(), now(),
       ).lastInsertRowid);
-      rollAffixes(instanceId, catalog.category, Math.min(rule.affixes, pool.length), quality);
+      rollAffixes(instanceId, catalog.category, Math.min(rule.affixes, pool.length), quality, user.class_name);
       for (let socket = 1; socket <= rule.sockets; socket++) {
         db.prepare('INSERT INTO rpg_equipment_sockets (instance_id,socket_index) VALUES (?,?)')
           .run(instanceId, socket);
@@ -197,7 +208,7 @@ function createEquipmentService(db, options = {}) {
         .run(goldCost, now(), String(userId));
       if (material.quantity === materialCost) db.prepare('DELETE FROM rpg_inventory WHERE id=?').run(material.id);
       else db.prepare('UPDATE rpg_inventory SET quantity=quantity-? WHERE id=?').run(materialCost, material.id);
-      const powerGain = 5 + nextTier * 2;
+      const powerGain = 3;
       db.prepare(`
         UPDATE rpg_equipment_instances SET upgrade_tier=?,item_power=item_power+?,updated_at=?
         WHERE id=? AND owner_id=?
@@ -230,7 +241,9 @@ function createEquipmentService(db, options = {}) {
       db.prepare('UPDATE rpg_users SET gold=gold-?,updated_at=? WHERE telegram_user_id=?')
         .run(goldCost, now(), String(userId));
       db.prepare('DELETE FROM rpg_equipment_affixes WHERE instance_id=?').run(item.id);
-      rollAffixes(item.id, item.category, item.affixes.length, item.quality);
+      const owner = db.prepare('SELECT class_name FROM rpg_users WHERE telegram_user_id=?')
+        .get(String(userId));
+      rollAffixes(item.id, item.category, item.affixes.length, item.quality, owner?.class_name);
       const result = getInstance(userId, item.id);
       db.prepare(`
         INSERT INTO rpg_equipment_operations
@@ -252,5 +265,5 @@ function createEquipmentService(db, options = {}) {
 
 module.exports = {
   CONTENT_FILE, EQUIPMENT_SLOTS, RARITY_RULES,
-  loadEquipmentContent, createEquipmentService,
+  calculateItemPower, loadEquipmentContent, createEquipmentService,
 };

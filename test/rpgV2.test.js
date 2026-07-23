@@ -55,6 +55,7 @@ const {
 } = require('../src/rpg/services/coopActivities');
 const {
   loadEquipmentContent,
+  calculateItemPower,
   createEquipmentService,
 } = require('../src/rpg/services/equipment');
 const {
@@ -132,6 +133,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 14 },
     { version: 15 },
     { version: 16 },
+    { version: 17 },
   ]);
   db.close();
 });
@@ -716,6 +718,27 @@ test('equipment forge creates a unique instance with deterministic affixes and s
   db.close();
 });
 
+test('equipment power uses a compact scale and class-relevant affixes', () => {
+  assert.equal(calculateItemPower(7, 61, 'rare'), 33);
+  assert.equal(calculateItemPower(7, 61, 'rare', 2), 39);
+  const db = createTestDb();
+  db.prepare("UPDATE rpg_users SET level=7,class_name='ksatria' WHERE telegram_user_id='1'").run();
+  db.prepare(`
+    INSERT INTO items_catalog (item_id,display_name,category,rarity,sell_price)
+    VALUES ('cincin_keberuntungan','Cincin Keberuntungan','accessory','rare',100)
+  `).run();
+  db.prepare(`
+    INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
+    VALUES ('1','cincin_keberuntungan',1)
+  `).run();
+  const equipment = createEquipmentService(db, { random: () => 0.5 });
+  const forged = equipment.forge('1', 'cincin_keberuntungan');
+  assert.equal(forged.success, true);
+  assert.equal(forged.item.item_power < 50, true);
+  assert.equal(forged.item.affixes.some(affix => affix.stat_key === 'magic_atk'), false);
+  db.close();
+});
+
 test('equipping binds instances and socketed gems contribute persistent bonuses', () => {
   const db = createTestDb();
   db.prepare(`
@@ -882,7 +905,7 @@ test('RPG operations telemetry reports economy and invariant anomalies without u
   assert.equal(telemetry.economy.totalGold, 2000);
   assert.equal(telemetry.anomalies.negativeGold, 0);
   assert.equal(telemetry.anomalies.invalidInventory, 0);
-  assert.equal(telemetry.migrations[0].version, 16);
+  assert.equal(telemetry.migrations[0].version, 17);
   assert.equal(Array.isArray(telemetry.featureFlags), true);
   assert.equal(JSON.stringify(telemetry).includes('telegram_user_id'), false);
   db.close();

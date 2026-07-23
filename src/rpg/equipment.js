@@ -47,7 +47,7 @@ function setupEquipment(bot, { rateLimitCommand }) {
       return ctx.reply(
         `<b>📘 PANDUAN EQUIPMENT V2</b>\n\n` +
         `<b>IP (Item Power)</b> adalah skor untuk membandingkan kekuatan item. ` +
-        `IP 163 bukan berarti +163 damage.\n\n` +
+        `IP bukan tambahan damage langsung dan memakai skala ringkas berdasarkan level, rarity, Quality, dan upgrade.\n\n` +
         `<b>Quality</b> adalah kualitas hasil forge 50–100. Quality tinggi memberi IP awal dan tier affix lebih baik.\n\n` +
         `<b>Affix</b> adalah bonus stat acak. <b>Socket</b> dapat diisi gem. ` +
         `<b>Terikat akun</b> berarti gear sudah dipakai dan tidak dapat diperdagangkan.\n\n` +

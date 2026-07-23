@@ -631,6 +631,43 @@ const MIGRATIONS = [
         ON rpg_guild_treasury_ledger(guild_id, created_at DESC);
     `,
   },
+  {
+    version: 17,
+    name: 'normalize_equipment_power_and_class_affixes',
+    up: `
+      UPDATE rpg_equipment_affixes
+      SET stat_key='atk'
+      WHERE stat_key='magic_atk' AND instance_id IN (
+        SELECT e.id FROM rpg_equipment_instances e
+        JOIN rpg_users u ON u.telegram_user_id=e.owner_id
+        WHERE u.class_name IN ('ksatria','pencuri')
+      );
+
+      UPDATE rpg_equipment_affixes
+      SET stat_key='magic_atk'
+      WHERE stat_key='atk' AND instance_id IN (
+        SELECT e.id FROM rpg_equipment_instances e
+        JOIN rpg_users u ON u.telegram_user_id=e.owner_id
+        WHERE u.class_name='penyihir'
+      );
+
+      UPDATE rpg_equipment_instances
+      SET item_power = (
+        SELECT MAX(1, CAST(
+          ((u.level * 3) + ROUND(rpg_equipment_instances.quality / 10.0)) *
+          CASE rpg_equipment_instances.rarity
+            WHEN 'uncommon' THEN 1.10
+            WHEN 'rare' THEN 1.25
+            WHEN 'epic' THEN 1.50
+            WHEN 'legendary' THEN 1.85
+            ELSE 1.0
+          END
+        AS INTEGER) + (rpg_equipment_instances.upgrade_tier * 3))
+        FROM rpg_users u
+        WHERE u.telegram_user_id=rpg_equipment_instances.owner_id
+      );
+    `,
+  },
 ];
 
 function quoteSql(value) {

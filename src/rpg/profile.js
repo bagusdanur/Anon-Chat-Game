@@ -145,7 +145,11 @@ function renderProfile(user) {
   msg += `<b>📊 Stats</b>\n`;
   msg += `⚔️ ATK <b>${effectiveAtk}</b>${totalAtkBonus > 0 ? `  <i>(+${totalAtkBonus} eq)</i>` : ''}   `;
   msg += `🛡️ DEF <b>${effectiveDef}</b>${totalDefBonus > 0 ? `  <i>(+${totalDefBonus} eq)</i>` : ''}\n`;
-  if (effectiveMagic > 0) msg += `🔮 Magic <b>${effectiveMagic}</b>${totalMagicBonus > 0 ? `  <i>(+${totalMagicBonus} eq)</i>` : ''}\n`;
+  if (effectiveMagic > 0) {
+    const shownMagic = Number(effectiveMagic.toFixed(2));
+    const shownMagicBonus = Number(totalMagicBonus.toFixed(2));
+    msg += `🔮 Magic <b>${shownMagic}</b>${totalMagicBonus > 0 ? `  <i>(+${shownMagicBonus} eq)</i>` : ''}\n`;
+  }
   msg += `💥 Crit <b>${totalCrit}%</b> × <b>${totalCritMulti}%</b>   🎯 ${dmgType}\n`;
   if ((user.phys_resist || 0) > 0 || (user.magic_resist || 0) > 0) {
     msg += `🛡 Resist  Phys <b>${Math.round((user.phys_resist||0)*100)}%</b>  Magic <b>${Math.round((user.magic_resist||0)*100)}%</b>\n`;
