@@ -25,6 +25,11 @@ repo ini. Baca file ini SEBELUM mulai edit kode.
 - **Jaga `/profile` sebagai pusat ringkasan pemain.** Saat menambah sistem
   player-facing yang memiliki status/progres penting, tampilkan ringkasan
   singkatnya di `/profile` tanpa membuat pesan melewati batas Telegram.
+- **Gunakan nomor untuk input pemain.** Daftar item, gear, skill, anggota,
+  quest, region, listing, trade, dan pilihan lain yang terlihat pemain harus
+  menampilkan nomor 1-based dan command utamanya menerima nomor tersebut.
+  ID internal boleh tetap didukung untuk kompatibilitas, tetapi jangan
+  diwajibkan atau ditampilkan sebagai instruksi utama.
 
 ## Aturan Keamanan & Privasi (non-negotiable)
 - Jangan pernah kirim `username`, `first_name`, `last_name`, atau foto profil

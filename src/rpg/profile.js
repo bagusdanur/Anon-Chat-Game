@@ -39,7 +39,8 @@ function renderProfile(user) {
   const equip = getEquippedBonus(user.telegram_user_id);
   const equipped = getEquipped(user.telegram_user_id);
   const v2Bonus = equipmentV2.bonuses(user.telegram_user_id);
-  const v2Equipped = equipmentV2.list(user.telegram_user_id)
+  const v2Items = equipmentV2.list(user.telegram_user_id);
+  const v2Equipped = v2Items
     .filter(item => item.equipped_slot);
   const skillLoadout = skillService.getCombatLoadout(user.telegram_user_id);
   const alias = socialService.getAlias(userId);
@@ -161,7 +162,8 @@ function renderProfile(user) {
   if (v2Equipped.length > 0) {
     msg += `\n<b>💠 Equipment V2</b>\n`;
     for (const item of v2Equipped) {
-      msg += `✅ ${item.equipped_slot}: <b>#${item.id} ${item.display_name}</b> · IP ${item.item_power}\n`;
+      const gearNumber = v2Items.findIndex(candidate => candidate.id === item.id) + 1;
+      msg += `✅ ${item.equipped_slot}: <code>[${gearNumber}]</code> <b>${item.display_name}</b> · IP ${item.item_power}\n`;
     }
   }
 

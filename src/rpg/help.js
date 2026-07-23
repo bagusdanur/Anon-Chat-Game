@@ -59,12 +59,12 @@ const HELP_PAGES = [
     id: 'equipment',
     title: '🛡 EQUIPMENT V2',
     text:
-      '/gear — daftar equipment instance\n' +
-      '/gear forge [item_id] — konversi equipment lama\n' +
-      '/gear equip [instance_id] — pasang dan bind\n' +
-      '/gear socket [id] [slot] [gem_id] — pasang gem\n' +
-      '/gear upgrade [id] — upgrade hingga +15\n' +
-      '/gear reforge [id] — roll ulang affix\n\n' +
+      '/gear — daftar Equipment V2 bernomor\n' +
+      '/gear forge [nomor /inv] — konversi equipment lama\n' +
+      '/gear equip [nomor gear] — pasang dan bind\n' +
+      '/gear socket [gear] [slot] [nomor gem /inv]\n' +
+      '/gear upgrade [nomor gear] — upgrade hingga +15\n' +
+      '/gear reforge [nomor gear] — roll ulang affix\n\n' +
       'Set tersedia: Dragon Regalia dan Cursed Sovereign. Sistem /equip dan /upgrade lama tetap kompatibel.',
   },
   {
