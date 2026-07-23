@@ -14,13 +14,14 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Dunia RPG persisten dengan region, campaign, dan eksplorasi (`/rpg`, `/world`, `/explore`)
 - Skill tree dan loadout per class (`/skill`, `/build`)
 - Loadout skill aktif digunakan dalam combat dungeon dan duel, dengan cooldown per skill
-- Dungeon solo multi-room dengan jalur bercabang dan checkpoint persisten (`/adventure`)
+- Dungeon solo/duo multi-room dengan jalur bercabang dan checkpoint persisten (`/dungeon`)
 - Campaign Aldenmoor berbasis objective dengan event idempotent (`/campaign`)
 - Tujuh profession dengan gathering, salvage, dan refinement
 - Controlled marketplace dengan escrow, pajak, expiry, dan audit ledger
 - Preseason, leaderboard anonim, Endless Tower, achievement, dan collection
 - Party persisten dan guild dengan alias karakter anonim
 - Pusat anonymous co-op (`/coop`) untuk party, dungeon duo, bounty, campaign, raid, dan duel
+- `/dungeon` membuka dungeon panjang baru; raid boss klasik dipindahkan ke `/dungeon raid`
 - World boss asynchronous harian dan weekly party raid dengan kontribusi persisten
 - Guild quest mingguan serta role owner/officer/member dengan audit perubahan
 - Duo bounty harian dan co-op campaign dengan progress karakter independen
@@ -105,8 +106,9 @@ pm2 save && pm2 startup
 | `/travel [nomor]` | Berpindah ke region bernomor yang sudah terbuka      |
 | `/skill`          | Melihat, mempelajari, dan memasang skill             |
 | `/build`          | Melihat skill tree dan loadout aktif                 |
-| `/adventure`      | Panduan dungeon tactical solo/duo                    |
-| `/adventure duo [nomor]` | Dungeon turn-based bersama party              |
+| `/dungeon`      | Panduan dungeon tactical solo/duo                      |
+| `/dungeon duo [nomor]` | Dungeon turn-based bersama party                  |
+| `/adventure` | Alias kompatibilitas untuk menu dungeon                    |
 | `/dungeon solo`   | Alias dungeon solo dengan checkpoint persisten       |
 | `/campaign`       | Melihat chapter dan objective campaign               |
 | `/profession`     | Melihat level dan mastery seluruh profession          |

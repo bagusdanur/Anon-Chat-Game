@@ -59,7 +59,7 @@ function setupCoopActivities(bot, { rateLimitCommand }) {
   bot.action(/^coop:guide:(party|dungeon|bounty|campaign|raid|duel)$/, ctx => {
     const guides = {
       party: '👥 Saat terhubung anonymous chat: /party create → /party invite. Partner menekan /party accept.',
-      dungeon: '🏰 Gunakan /adventure duo 1. Aksi wajib bergantian; kumpulkan 3 energi lalu tekan 🤝 Combo.',
+      dungeon: '🏰 Gunakan /dungeon duo 1. Aksi wajib bergantian; kumpulkan 3 energi lalu tekan 🤝 Combo.',
       bounty: '🎯 Kedua pemain gunakan /bounty hunt, lalu masing-masing /bounty claim setelah target selesai.',
       campaign: '📖 Gunakan /coopcampaign. Kedua pemain melakukan /coopcampaign explore agar progress masing-masing naik.',
       raid: '🔥 Gunakan /raid attack sampai boss tumbang, lalu masing-masing /raid claim.',

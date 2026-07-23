@@ -186,14 +186,14 @@ function setupGrind(bot, { rateLimitCommand }) {
       if (leveled && leveled.length > 0) {
         msg += `\n\n🎉 <b>LEVEL UP!</b> → Lv <b>${newLevel}</b>! Stats meningkat!`;
       }
-      msg += `\n\n<i>💡 Hunt cepat untuk XP. Untuk combat pilihan Attack/Defend/Skill gunakan /adventure.</i>`;
+      msg += `\n\n<i>💡 Hunt cepat untuk XP. Untuk combat pilihan Attack/Defend/Skill gunakan /dungeon.</i>`;
     } else {
       const newHp = Math.max(1, Math.floor(currentHp * 0.3));
       updateHp(userId, newHp);
       msg += `💀 <b>KABUR!</b>\n`;
       msg += `Musuh terlalu kuat, kamu terpaksa kabur!\n`;
       msg += `❤️ HP tersisa: <b>${newHp}/${user.max_hp}</b>`;
-      msg += `\n\n<i>💡 Pulihkan HP, cek /gear dan /skill, atau main duo lewat /adventure.</i>`;
+      msg += `\n\n<i>💡 Pulihkan HP, cek /gear dan /skill, atau main duo lewat /dungeon.</i>`;
     }
 
     ctx.reply(msg, { parse_mode: 'HTML' });

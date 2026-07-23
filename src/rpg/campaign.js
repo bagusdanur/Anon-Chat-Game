@@ -22,7 +22,7 @@ function setupCampaign(bot, { rateLimitCommand }) {
     });
     const active = quests.find(quest => quest.status === 'active');
     const suggestion = active
-      ? 'Mulai dari /world. Eksplorasi mengisi objective; saat petunjuk lengkap lanjut /adventure.'
+      ? 'Mulai dari /world. Eksplorasi mengisi objective; saat petunjuk lengkap lanjut /dungeon.'
       : 'Objective selesai. Buka /world untuk melihat langkah berikutnya.';
     return ctx.reply(
       `<b>📖 CAMPAIGN ALDENMOOR</b>\n\n${lines.join('\n\n')}\n\n` +

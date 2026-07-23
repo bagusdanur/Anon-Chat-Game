@@ -48,12 +48,11 @@ const HELP_PAGES = [
     id: 'dungeon',
     title: '🏰 DUNGEON PANJANG',
     text:
-      '/adventure — panduan dan daftar dungeon\n' +
-      '/adventure solo [nomor] — turn-based dengan companion\n' +
-      '/adventure duo [nomor] — turn-based bersama party\n' +
-      '/dungeon solo — alias mode solo\n' +
-      '/dungeon duo — mode checkpoint bersama\n' +
-      '/dungeon — raid co-op combat lama\n\n' +
+      '/dungeon — menu utama dungeon panjang\n' +
+      '/dungeon solo [nomor] — turn-based dengan companion\n' +
+      '/dungeon duo [nomor] — turn-based bersama party\n' +
+      '/dungeon raid — raid boss co-op klasik\n' +
+      '/adventure — alias menu dungeon panjang\n\n' +
       'Dungeon memiliki banyak gerombolan, elite, jalur bercabang, treasure, dua rest point, boss, dan checkpoint 24 jam. Mode duo mewajibkan giliran bergantian; 3 aksi mengisi serangan Combo bersama.',
   },
   {

@@ -104,7 +104,7 @@ function setupWorld(bot, { rateLimitCommand }) {
       event: '📜 Peristiwa',
     };
     const stepUnlocked = result.progress.campaign_step >= 2
-      ? '\n\n🔓 Petunjuk cukup! Langkah berikutnya: buka /adventure dan pilih mode duo atau solo.'
+      ? '\n\n🔓 Petunjuk cukup! Langkah berikutnya: buka /dungeon dan pilih mode duo atau solo.'
       : `\n\n➡️ Cari ${Math.max(0, 3 - result.progress.exploration_points)} poin lagi.`;
     return ctx.reply(
       `<b>${labels[encounter.type] || '🧭 Eksplorasi'}: ${encounter.name}</b>\n` +
@@ -146,7 +146,7 @@ function setupWorld(bot, { rateLimitCommand }) {
   });
   bot.action('world:adventure', async ctx => {
     await ctx.answerCbQuery();
-    return ctx.reply('🏰 Ketik /adventure untuk memilih dungeon dan mode turn-based.');
+    return ctx.reply('🏰 Ketik /dungeon untuk memilih dungeon dan mode turn-based.');
   });
 }
 

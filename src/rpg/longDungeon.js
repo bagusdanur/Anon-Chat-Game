@@ -112,7 +112,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     const active = service.getActive(ctx.chat.id);
     if (active) {
       return ctx.reply(
-        `<b>🏰 ADVENTURE</b>\n\n♻️ Ada checkpoint aktif: <b>${active.definition.name}</b>\n` +
+        `<b>🏰 DUNGEON PANJANG</b>\n\n♻️ Ada checkpoint aktif: <b>${active.definition.name}</b>\n` +
         `Mode: <b>${active.mode === 'duo' ? 'DUO' : 'SOLO'}</b>\n\n` +
         `<i>Tekan lanjut untuk kembali ke room terakhir.</i>`,
         {
@@ -128,10 +128,10 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
       `<code>[${index + 1}]</code> <b>${item.name}</b> · masuk Lv.${item.min_level} · rekomendasi Lv.${item.recommended_level}`,
     ).join('\n');
     return ctx.reply(
-      `<b>🏰 ADVENTURE — DUNGEON TURN-BASED</b>\n\n${list}\n\n` +
+      `<b>🏰 DUNGEON PANJANG — TURN-BASED</b>\n\n${list}\n\n` +
       `<b>Pilih mode:</b>\n🧍 Solo memakai companion NPC.\n` +
       `🤝 Duo direkomendasikan: HP digabung dan kedua pemain bergantian aksi.\n\n` +
-      `<i>Contoh: /adventure solo 1 atau /adventure duo 1</i>`,
+      `<i>Contoh: /dungeon solo 1 atau /dungeon duo 1</i>`,
       {
         parse_mode: 'HTML',
         ...Markup.inlineKeyboard([
@@ -149,7 +149,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     const user = getOrCreateUser(ctx.chat.id);
     const dungeonNumber = Number(args[1] || (mode === 'solo' && args[0] !== 'solo' ? args[0] : 1));
     const dungeonId = service.list(user?.level || 1)[dungeonNumber - 1]?.dungeon_id;
-    if (!dungeonId) return ctx.reply('❌ Nomor dungeon tidak valid. Ketik /adventure.');
+    if (!dungeonId) return ctx.reply('❌ Nomor dungeon tidak valid. Ketik /dungeon.');
     return startOrResume(ctx, dungeonId, mode);
   });
 
@@ -167,14 +167,25 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     return showSession(ctx, session);
   });
 
-  // Intercept hanya `/dungeon solo`; command `/dungeon` biasa diteruskan ke
-  // handler raid co-op legacy yang didaftarkan setelah modul ini.
+  // `/dungeon` adalah pintu utama dungeon panjang. Raid boss lama tetap
+  // tersedia secara eksplisit melalui `/dungeon raid`.
   bot.command('dungeon', (ctx, next) => {
     const args = ctx.message.text.trim().split(/\s+/).slice(1);
-    if (!['solo', 'duo'].includes(args[0]?.toLowerCase())) return next();
-    return rateLimitCommand(ctx, () => startOrResume(
-      ctx, args[1] || 'goblin_ruins', args[0].toLowerCase(),
-    ));
+    const action = args[0]?.toLowerCase();
+    if (action === 'raid') return next();
+    return rateLimitCommand(ctx, () => {
+      if (!action) return adventureMenu(ctx);
+      if (!['solo', 'duo'].includes(action)) {
+        return ctx.reply(
+          '❌ Gunakan /dungeon, /dungeon solo [nomor], /dungeon duo [nomor], atau /dungeon raid.',
+        );
+      }
+      const user = getOrCreateUser(ctx.chat.id);
+      const dungeonNumber = Number(args[1] || 1);
+      const dungeonId = service.list(user?.level || 1)[dungeonNumber - 1]?.dungeon_id;
+      if (!dungeonId) return ctx.reply('❌ Nomor dungeon tidak valid. Ketik /dungeon.');
+      return startOrResume(ctx, dungeonId, action);
+    });
   });
 
   bot.action(/^ld:(\d+):(\d+):([a-z0-9_]+)$/, rateLimitCommand, ctx => {
@@ -199,7 +210,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     if (result.session.status === 'failed') {
       return ctx.editMessageText(
         `<b>💀 EKSPEDISI GAGAL</b>\n\n${result.room.text}\n\n` +
-        `Gunakan /adventure untuk mencoba ekspedisi baru.`,
+        `Gunakan /dungeon untuk mencoba ekspedisi baru.`,
         { parse_mode: 'HTML' },
       );
     }
