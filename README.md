@@ -101,8 +101,8 @@ pm2 save && pm2 startup
 | `/campaign`       | Melihat chapter dan objective campaign               |
 | `/profession`     | Melihat level dan mastery seluruh profession          |
 | `/gather herb`    | Mengumpulkan tanaman dan Herbalism XP                 |
-| `/salvage [item]` | Membongkar equipment menjadi material                 |
-| `/refine [ore]`   | Memurnikan lima material menjadi tier berikutnya      |
+| `/salvage [nomor]`| Membongkar equipment dari daftar `/inv`               |
+| `/refine [nomor]` | Memurnikan lima material dari daftar `/inv`           |
 | `/market`         | Marketplace anonim untuk material dan consumable      |
 | `/season`         | Melihat seasonal points dan token                     |
 | `/rank`           | Leaderboard season dengan alias anonim                |

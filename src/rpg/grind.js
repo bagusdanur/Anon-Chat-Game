@@ -3,14 +3,16 @@
 const {
   getOrCreateUser, getCurrentEnergy, spendEnergy, getCurrentHp,
   addXp, addGold, addItem, updateHp, CLASS_DEFS,
-  incrementQuestProgress, getEquippedItem
+  incrementQuestProgress, getEquippedItem, getEquippedBonus
 } = require('./db_rpg');
 const { RARITY_EMOJI } = require('./profile');
 const { getGameSettings } = require('./config');
 const { db } = require('../db');
 const { createProfessionService } = require('./services/professions');
+const { createEquipmentService } = require('./services/equipment');
 
 const professionService = createProfessionService(db);
+const equipmentV2 = createEquipmentService(db);
 
 const fs = require('fs');
 const path = require('path');
@@ -131,11 +133,18 @@ function setupGrind(bot, { rateLimitCommand }) {
 
     spendEnergy(userId, energyCost);
 
+    const legacyBonus = getEquippedBonus(userId);
+    const instanceBonus = equipmentV2.bonuses(userId);
+    const classDef = CLASS_DEFS[user.class_name];
+    const playerAtk = classDef.damageType === 'magic'
+      ? (user.magic_atk || 0) + legacyBonus.magicAtkBonus + (instanceBonus.magic_atk || 0)
+      : user.atk + legacyBonus.atkBonus + (instanceBonus.atk || 0);
+    const playerDef = user.def + legacyBonus.defBonus + (instanceBonus.def || 0);
     const tier = getMonsterTier(user.level);
     const monster = pickRandom(tier.list);
     const mHp  = randInt(...tier.hp);
     const mAtk = randInt(...tier.atk);
-    const result = simulateBattle(user.atk, user.def, currentHp, mHp, mAtk, 1, user.class_name);
+    const result = simulateBattle(playerAtk, playerDef, currentHp, mHp, mAtk, 1, user.class_name);
 
     let msg = `<b>⚔️ BERBURU</b>\n`;
     msg += `━━━━━━━━━━━━━━━━━━━━\n`;
@@ -182,12 +191,14 @@ function setupGrind(bot, { rateLimitCommand }) {
       if (leveled && leveled.length > 0) {
         msg += `\n\n🎉 <b>LEVEL UP!</b> → Lv <b>${newLevel}</b>! Stats meningkat!`;
       }
+      msg += `\n\n<i>💡 Hunt cepat untuk XP. Untuk combat pilihan Attack/Defend/Skill gunakan /adventure.</i>`;
     } else {
       const newHp = Math.max(1, Math.floor(currentHp * 0.3));
       updateHp(userId, newHp);
       msg += `💀 <b>KABUR!</b>\n`;
       msg += `Musuh terlalu kuat, kamu terpaksa kabur!\n`;
       msg += `❤️ HP tersisa: <b>${newHp}/${user.max_hp}</b>`;
+      msg += `\n\n<i>💡 Pulihkan HP, cek /gear dan /skill, atau main duo lewat /adventure.</i>`;
     }
 
     ctx.reply(msg, { parse_mode: 'HTML' });

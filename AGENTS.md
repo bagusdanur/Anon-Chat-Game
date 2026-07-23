@@ -30,6 +30,10 @@ repo ini. Baca file ini SEBELUM mulai edit kode.
   menampilkan nomor 1-based dan command utamanya menerima nomor tersebut.
   ID internal boleh tetap didukung untuk kompatibilitas, tetapi jangan
   diwajibkan atau ditampilkan sebagai instruksi utama.
+- **Berikan arah singkat.** Menu dan hasil aktivitas player-facing harus
+  menjelaskan status, tujuan atau langkah berikutnya, dan satu tips relevan
+  secara ringkas. Utamakan arahan kontekstual; jangan memenuhi pesan dengan
+  daftar command panjang.
 
 ## Aturan Keamanan & Privasi (non-negotiable)
 - Jangan pernah kirim `username`, `first_name`, `last_name`, atau foto profil

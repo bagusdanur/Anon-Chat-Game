@@ -77,8 +77,8 @@ const HELP_PAGES = [
       '/profession — tujuh profession\n' +
       '/gather herb — gathering Herbalism\n' +
       '/craft — crafting recipe\n' +
-      '/salvage [item] — bongkar equipment\n' +
-      '/refine [material] — refinement material\n' +
+      '/salvage [nomor /inv] — bongkar equipment\n' +
+      '/refine [nomor /inv] — refinement material\n' +
       '/market — daftar listing bernomor\n' +
       '/market sell [nomor /inv] [qty] [harga]\n' +
       '/market buy [nomor /market]\n' +

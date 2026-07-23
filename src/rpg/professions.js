@@ -1,8 +1,10 @@
 const { db } = require('../db');
 const {
   getOrCreateUser, getCurrentEnergy, spendEnergy, addItem, getItem, removeItem,
+  getInventory,
 } = require('./db_rpg');
 const { createProfessionService, professionXpToNext } = require('./services/professions');
+const { orderInventory } = require('./inputResolvers');
 
 function setupProfessions(bot, { rateLimitCommand }) {
   const professions = createProfessionService(db);
@@ -12,7 +14,12 @@ function setupProfessions(bot, { rateLimitCommand }) {
     const lines = professions.list(ctx.chat.id).map(item =>
       `${item.name} Lv.<b>${item.level}</b> · ${item.xp}/${professionXpToNext(item.level)} XP · Mastery ${item.mastery}`,
     );
-    return ctx.reply(`<b>🧰 PROFESSIONS</b>\n\n${lines.join('\n')}`, { parse_mode: 'HTML' });
+    return ctx.reply(
+      `<b>🧰 PROFESSIONS</b>\n\n${lines.join('\n')}\n\n` +
+      `<i>💡 /hunt → Hunting · /fish → Fishing · /mine → Mining\n` +
+      `/gather herb → Herbalism · /salvage dan /refine → Smithing</i>`,
+      { parse_mode: 'HTML' },
+    );
   });
 
   bot.command('gather', rateLimitCommand, ctx => {
@@ -41,8 +48,13 @@ function setupProfessions(bot, { rateLimitCommand }) {
   bot.command('salvage', rateLimitCommand, ctx => {
     const userId = ctx.chat.id;
     if (!getOrCreateUser(userId)) return ctx.reply('Buat karakter terlebih dahulu dengan /profile.');
-    const itemId = ctx.message.text.trim().split(/\s+/)[1];
-    if (!itemId) return ctx.reply('Gunakan: /salvage [item_id]');
+    const input = ctx.message.text.trim().split(/\s+/)[1];
+    const inventory = orderInventory(getInventory(userId));
+    const number = Number(input);
+    const itemId = Number.isInteger(number) && number >= 1
+      ? inventory[number - 1]?.item_id
+      : input;
+    if (!itemId) return ctx.reply('Gunakan: /salvage [nomor dari /inv]');
     const item = getItem(userId, itemId);
     if (!item || !['weapon', 'staff', 'armor', 'accessory'].includes(item.category)) {
       return ctx.reply('❌ Equipment tidak ditemukan.');
@@ -66,12 +78,17 @@ function setupProfessions(bot, { rateLimitCommand }) {
   bot.command('refine', rateLimitCommand, ctx => {
     const userId = ctx.chat.id;
     if (!getOrCreateUser(userId)) return ctx.reply('Buat karakter terlebih dahulu dengan /profile.');
-    const input = ctx.message.text.trim().split(/\s+/)[1];
+    const rawInput = ctx.message.text.trim().split(/\s+/)[1];
+    const inventory = orderInventory(getInventory(userId));
+    const number = Number(rawInput);
+    const input = Number.isInteger(number) && number >= 1
+      ? inventory[number - 1]?.item_id
+      : rawInput;
     const recipes = {
       tembaga: 'besi', besi: 'perak', perak: 'emas_ore',
     };
     const output = recipes[input];
-    if (!output) return ctx.reply('Gunakan: /refine tembaga|besi|perak (butuh 5 material)');
+    if (!output) return ctx.reply('Gunakan: /refine [nomor material dari /inv] (butuh 5 material)');
     const source = getItem(userId, input);
     if (!source || source.quantity < 5) return ctx.reply(`❌ Butuh 5x ${input}.`);
     db.transaction(() => {

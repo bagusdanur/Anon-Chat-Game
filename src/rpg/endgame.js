@@ -28,7 +28,7 @@ function setupEndgame(bot, { rateLimitCommand }) {
       `⭐ Points: <b>${progress.points}</b>\n` +
       `🪙 Seasonal token: <b>${progress.currency}</b>\n` +
       `📅 Berakhir dalam <b>${remainingDays} hari</b>\n\n` +
-      `<i>Menangkan lantai tower dan aktivitas musiman untuk menambah points.</i>`,
+      `<i>💡 Mulai dari /tower. Duo bounty dan raid juga memberi progress season tanpa menghapus karakter permanen.</i>`,
       { parse_mode: 'HTML' },
     );
   });
@@ -56,13 +56,15 @@ function setupEndgame(bot, { rateLimitCommand }) {
       return ctx.reply(
         `💀 <b>ENDLESS TOWER — Lantai ${result.floor}</b>\n\n` +
         `Power ${result.playerPower} belum cukup melawan musuh ${result.enemyPower}.\n` +
-        `Perkuat build lalu coba lagi.`,
+        `Perkuat build lalu coba lagi.\n\n` +
+        `<i>💡 Cek /skill dan /gear. Upgrade bonus utama class-mu sebelum mencoba lagi.</i>`,
         { parse_mode: 'HTML' },
       );
     }
     return ctx.reply(
       `🗼 <b>LANTAI ${result.floor} DITAKLUKKAN!</b>\n\n` +
-      `💰 +${result.gold}g\n⭐ +${10 + result.floor} season points\n🪙 +1 token`,
+      `💰 +${result.gold}g\n⭐ +${10 + result.floor} season points\n🪙 +1 token\n\n` +
+      `<i>➡️ Lantai berikutnya makin kuat; rapikan build di /profile sebelum lanjut.</i>`,
       { parse_mode: 'HTML' },
     );
   });

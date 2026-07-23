@@ -26,7 +26,10 @@ function setupRaids(bot, { rateLimitCommand }) {
       `(${state.contribution.attempts}/${state.raid.attemptLimit} serangan)\n\n` +
       `<b>Top kontribusi</b>\n${ranking}\n\n` +
       `Gunakan <code>/${type === 'world' ? 'worldboss' : 'raid'} attack</code> atau ` +
-      `<code>/${type === 'world' ? 'worldboss' : 'raid'} claim</code>.`,
+      `<code>/${type === 'world' ? 'worldboss' : 'raid'} claim</code>.\n\n` +
+      `<i>💡 ${type === 'world'
+        ? 'World Boss dikerjakan bersama seluruh pemain secara asynchronous.'
+        : 'Weekly Raid membutuhkan party minimal 2 pemain; ajak partner lewat /party.'}</i>`,
       { parse_mode: 'HTML' },
     );
   }
