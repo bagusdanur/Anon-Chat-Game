@@ -19,6 +19,9 @@ repo ini. Baca file ini SEBELUM mulai edit kode.
 - **Jangan ganti metode relay pesan.** Harus tetap `ctx.telegram.copyMessage`,
   bukan `forwardMessage` — ini keputusan sengaja untuk menjaga anonimitas
   (forwardMessage menampilkan nama/username pengirim asli, copyMessage tidak).
+- **Sinkronkan command.** Setiap menambah, menghapus, atau mengubah command bot,
+  wajib pada perubahan yang sama memperbarui daftar `botCommands` Telegram,
+  panduan `/helprpg`, dan tabel command di `README.md` bila relevan.
 
 ## Aturan Keamanan & Privasi (non-negotiable)
 - Jangan pernah kirim `username`, `first_name`, `last_name`, atau foto profil

@@ -681,6 +681,7 @@ const botCommands = [
   { command: 'rpg',      description: '🌍 Menu utama RPG' },
   { command: 'helprpg',  description: '📖 Panduan RPG lengkap' },
   { command: 'profile',  description: '⚔️ Profil karakter' },
+  { command: 'alias',    description: '🎭 Atur alias karakter anonim' },
   { command: 'world',    description: '🗺️ Dunia dan region' },
   { command: 'campaign', description: '📜 Campaign utama' },
   { command: 'explore',  description: '🧭 Eksplorasi region' },
