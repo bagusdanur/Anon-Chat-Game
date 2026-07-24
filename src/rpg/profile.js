@@ -111,36 +111,19 @@ function renderProfile(user) {
   const guideState = readGuideState(userId);
   const nextStep = determineNextStep(guideState);
 
-  // ── Header ──────────────────────────────────
+  // ── Header (Hero Card) ──────────────────────────────────
   let msg = ``;
-  msg += `<b>🎭 ${alias}</b>\n`;
-  msg += `${cls.name}  <code>Lv.${user.level}</code>  💰 <b>${user.gold}g</b>\n`;
-  if (streak > 0) msg += `🔥 Win Streak: <b>${streak}x</b>\n`;
-  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-
-  // ── Guide Step Onboarding ────────────────────
-  msg += `<b>🧭 LANGKAH BERIKUTNYA</b>\n`;
-  msg += `▶️ <b>${nextStep.title}</b> · <code>${nextStep.command}</code>\n`;
-  msg += `   <i>${nextStep.detail}</i>\n`;
-  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-
-  // ── Ringkasan progres & sosial ─────────────────
-  msg += `<b>🧭 Ringkasan</b>\n`;
-  msg += `🌍 ${world?.region_name || 'Pinggiran Aldenmoor'} · Chapter ${world?.campaign_chapter || 1}`;
-  if (world?.exploration_points) msg += ` · Jelajah ${world.exploration_points}`;
-  msg += `\n`;
-  msg += `📜 ${campaign ? `${campaign.title} (${campaign.status})` : 'Campaign siap dilanjutkan'}\n`;
-  msg += `🎒 ${inventoryCount} item`;
-  if (profession) msg += ` · 🧰 ${profession.profession_id} Lv.${profession.level}`;
-  msg += `\n`;
-  msg += `🏛 ${guild ? `[${guild.tag}] ${guild.name} · ${guild.role}` : 'Belum bergabung guild'}`;
-  msg += ` · 👥 ${party ? `${party.members.length} anggota` : 'Solo'}\n`;
-  if (season) {
-    msg += `🏆 ${season.name}: ${season.points} pts · 🪙 ${season.currency}\n`;
+  msg += `<b>🎭 ${alias}</b> · ${cls.name} <code>Lv.${user.level}</code> · 💰 <b>${user.gold}g</b>\n`;
+  if (guild || party || streak > 0) {
+    const socialParts = [];
+    if (guild) socialParts.push(`🏛 [${guild.tag}] ${guild.name}`);
+    if (party) socialParts.push(`👥 Party (${party.members.length}/4)`);
+    if (streak > 0) socialParts.push(`🔥 Streak: ${streak}x`);
+    msg += `${socialParts.join(' · ')}\n`;
   }
   msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 
-  // ── Bars ────────────────────────────────────
+  // ── Bars (Vitals - Right under Header) ────────────────────
   const hpFilled  = Math.min(10, Math.round((Math.max(0, effectiveHp) / effectiveMaxHp) * 10));
   const xpFilled  = Math.min(10, Math.round((user.xp / nextXp) * 10));
   const enFilled  = Math.min(10, Math.round((energy / 10) * 10));
@@ -149,11 +132,10 @@ function renderProfile(user) {
   msg += `✨ <b>XP</b>  ${'█'.repeat(xpFilled)}${'░'.repeat(10 - xpFilled)} <code>${user.xp}/${nextXp}</code>\n`;
   msg += `⚡ <b>EN</b>  ${'█'.repeat(enFilled)}${'░'.repeat(10 - enFilled)} <code>${energy}/10</code>`;
   if (energy < 10) msg += `  <i>(+1 ~${nextEMin}m)</i>`;
-  msg += `\n`;
-  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+  msg += `\n━━━━━━━━━━━━━━━━━━━━\n`;
 
-  // ── Stats ────────────────────────────────────
-  msg += `<b>📊 Stats</b>\n`;
+  // ── Stats & Attributes ────────────────────────────────────
+  msg += `<b>📊 STATS & STATUS</b>\n`;
   msg += `⚔️ ATK <b>${formatNumberId(effectiveAtk)}</b>${totalAtkBonus > 0 ? `  <i>(+${formatNumberId(totalAtkBonus)} eq)</i>` : ''}   `;
   msg += `🛡️ DEF <b>${formatNumberId(effectiveDef)}</b>${totalDefBonus > 0 ? `  <i>(+${formatNumberId(totalDefBonus)} eq)</i>` : ''}\n`;
   if (effectiveMagic > 0) {
@@ -168,12 +150,21 @@ function renderProfile(user) {
   msg += `🏰 Dungeon: ${dungeonStatus}\n`;
   msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 
-  // ── Equipment ────────────────────────────────
+  // ── Active Objective & Progres Ringkasan ──────────────────
+  msg += `<b>🎯 OBJECTIVE SEKARANG</b>\n`;
+  msg += `▶️ <b>${nextStep.title}</b> · <code>${nextStep.command}</code>\n`;
+  msg += `   <i>${nextStep.detail}</i>\n`;
+  msg += `🌍 ${world?.region_name || 'Pinggiran Aldenmoor'} · Ch.${world?.campaign_chapter || 1} · 🎒 ${inventoryCount} item`;
+  if (profession) msg += ` · 🧰 ${profession.profession_id} Lv.${profession.level}`;
+  if (season) msg += ` · 🏆 ${season.points} pts`;
+  msg += `\n━━━━━━━━━━━━━━━━━━━━\n`;
+
+  // ── Equipment & Skills ────────────────────────────────────
+  msg += `<b>🗡️ EQUIPMENT & SKILLS</b>\n`;
   const allowedSlots = CLASS_EQUIP_SLOTS[user.class_name] || ['weapon', 'staff', 'armor', 'accessory'];
   const slotEmoji = { weapon: '⚔️', staff: '🪄', armor: '🛡️', accessory: '💍' };
   const slotLabel = { weapon: 'Weapon', staff: 'Staff', armor: 'Armor', accessory: 'Accessory' };
 
-  msg += `<b>🗡️ Equipment</b>\n`;
   for (const slot of allowedSlots) {
     msg += `${slotEmoji[slot]} ${slotLabel[slot].padEnd(9)}: ${renderSlot(equipped[slot])}\n`;
   }
@@ -190,35 +181,22 @@ function renderProfile(user) {
 
   if (v2Equipped.length > 0) {
     const totalItemPower = v2Equipped.reduce((sum, item) => sum + item.item_power, 0);
-    msg += `\n<b>💠 Equipment V2</b> · Total <b>${totalItemPower} IP</b>\n`;
-    for (const item of v2Equipped) {
+    msg += `💠 <b>Eq V2 (${totalItemPower} IP):</b> `;
+    const v2Summary = v2Equipped.map(item => {
       const gearNumber = v2Items.findIndex(candidate => candidate.id === item.id) + 1;
-      const bonuses = item.affixes.length
-        ? item.affixes.map(affix => formatStat(affix.stat_key, affix.stat_value)).join(' · ')
-        : 'Tanpa bonus acak';
-      const filledSockets = item.sockets.filter(socket => socket.gem_item_id).length;
-      const socketInfo = item.sockets.length
-        ? `${filledSockets}/${item.sockets.length} terisi`
-        : 'tidak ada';
-      const binding = item.bind_status === 'account_bound' ? 'Terikat' : 'Bisa dijual';
-      msg += `✅ <code>[${gearNumber}]</code> <b>${item.display_name}</b> +${item.upgrade_tier}\n`;
-      msg += `   ${V2_CATEGORY_LABELS[item.category] || item.category} · ` +
-        `${V2_RARITY_LABELS[item.rarity] || item.rarity} · ` +
-        `<b>${item.item_power} IP</b> (skor) · Q${item.quality}/100\n`;
-      msg += `   🎲 ${bonuses}\n`;
-      msg += `   💎 Socket ${socketInfo} · 🔒 ${binding}`;
-      if (item.set_id) msg += ` · 🧩 Set ${item.set_id}`;
-      msg += `\n`;
-    }
+      return `<code>[${gearNumber}]</code> ${item.display_name} +${item.upgrade_tier}`;
+    }).join(' · ');
+    msg += `${v2Summary}\n`;
   }
 
-  msg += `\n<b>🌟 Skill Loadout</b>\n`;
+  const skillParts = [];
   for (let slot = 1; slot <= 3; slot++) {
     const skill = skillLoadout.find(item => item.slot === slot);
-    msg += `${slot}️⃣ ${skill ? `<b>${skill.name}</b> · Rank ${skill.rank}` : '<i>(Kosong)</i>'}\n`;
+    skillParts.push(`${slot}️⃣ ${skill ? `<b>${skill.name}</b>` : '<i>(Kosong)</i>'}`);
   }
+  msg += `🌟 <b>Skills:</b> ${skillParts.join('  ')}\n`;
 
-  msg += `\n<i>/guide • /world • /campaign • /party • /guild\n/skill • /gear • /inv • /helprpg</i>`;
+  msg += `\n<i>/guide • /world • /campaign • /inv • /skill • /helprpg</i>`;
   return msg;
 }
 
