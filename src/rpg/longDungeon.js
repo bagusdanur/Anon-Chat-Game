@@ -62,7 +62,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     const buttons = [];
     if (viewerLocked) {
       buttons.push([Markup.button.callback(
-        '🔄 Perbarui Status Giliran',
+        '⏳ Menunggu Partner…',
         `ldrefresh:${session.id}`,
       )]);
     } else if (room.type === 'event') {
