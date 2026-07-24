@@ -62,4 +62,27 @@ function determineNextStep(state) {
   };
 }
 
-module.exports = { determineNextStep };
+function getCompletedChecklist(state) {
+  if (!state || !state.hasCharacter) {
+    return [
+      { title: 'Pilih Class & Buat Karakter', done: false },
+      { title: 'Set Alias Anonim (/alias)', done: false },
+      { title: 'Jelajah World Aldenmoor', done: false },
+      { title: 'Berburu / Naik Level', done: false },
+      { title: 'Selesaikan Campaign Chapter 1', done: false },
+    ];
+  }
+
+  return [
+    { title: 'Pilih Class & Buat Karakter', done: true },
+    { title: 'Set Alias Anonim (/alias)', done: state.hasAlias },
+    { title: 'Jelajah World Aldenmoor (/explore)', done: state.hasAlias && (state.explorationPoints > 0 || state.level > 1 || state.chapter > 1) },
+    { title: 'Berburu Monster (/hunt)', done: state.level >= 2 },
+    { title: 'Selesaikan Campaign Chapter 1', done: state.chapter > 1 },
+    { title: 'Taklukkan Solo/Duo Dungeon', done: state.level >= 7 || state.chapter > 1 },
+    { title: 'Bentuk Party / Co-Op (/coop)', done: state.hasParty },
+  ];
+}
+
+module.exports = { determineNextStep, getCompletedChecklist };
+

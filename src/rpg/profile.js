@@ -13,6 +13,8 @@ const { createSkillService } = require('./services/skills');
 const { createEquipmentService } = require('./services/equipment');
 const { createSocialService } = require('./services/social');
 const { formatNumberId, formatStat } = require('./equipment');
+const { readGuideState } = require('./guide');
+const { determineNextStep } = require('./services/gameplayGuide');
 
 const RARITY_EMOJI = { common: '⚪', uncommon: '🟢', rare: '🔵', epic: '🟣', legendary: '🟠' };
 const skillService = createSkillService(db);
@@ -106,11 +108,20 @@ function renderProfile(user) {
     ? (3 - Math.floor(((Date.now() / 1000) - user.energy_last_update) / 60) % 3)
     : 0;
 
+  const guideState = readGuideState(userId);
+  const nextStep = determineNextStep(guideState);
+
   // ── Header ──────────────────────────────────
   let msg = ``;
   msg += `<b>🎭 ${alias}</b>\n`;
   msg += `${cls.name}  <code>Lv.${user.level}</code>  💰 <b>${user.gold}g</b>\n`;
   if (streak > 0) msg += `🔥 Win Streak: <b>${streak}x</b>\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+
+  // ── Guide Step Onboarding ────────────────────
+  msg += `<b>🧭 LANGKAH BERIKUTNYA</b>\n`;
+  msg += `▶️ <b>${nextStep.title}</b> · <code>${nextStep.command}</code>\n`;
+  msg += `   <i>${nextStep.detail}</i>\n`;
   msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 
   // ── Ringkasan progres & sosial ─────────────────
@@ -262,7 +273,12 @@ function setupProfile(bot, { rateLimitCommand }) {
       });
     }
 
-    ctx.reply(renderProfile(user), { parse_mode: 'HTML' });
+    ctx.reply(renderProfile(user), {
+      parse_mode: 'HTML',
+      ...Markup.inlineKeyboard([
+        [Markup.button.callback('🧭 Buka Guide Lengkap', 'guide:open')]
+      ])
+    });
   });
 
   ['ksatria', 'penyihir', 'pencuri'].forEach(className => {

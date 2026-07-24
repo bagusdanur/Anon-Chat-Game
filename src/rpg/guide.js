@@ -1,6 +1,6 @@
 const { Markup } = require('telegraf');
 const { db } = require('../db');
-const { determineNextStep } = require('./services/gameplayGuide');
+const { determineNextStep, getCompletedChecklist } = require('./services/gameplayGuide');
 const { createCampaignService } = require('./services/campaign');
 
 const campaignService = createCampaignService(db);
@@ -70,6 +70,8 @@ function readGuideState(userId) {
 function renderGuide(userId) {
   const state = readGuideState(userId);
   const next = determineNextStep(state);
+  const checklist = getCompletedChecklist(state);
+
   const objective = state.activeQuest?.objective;
   const filled = objective
     ? Math.min(10, Math.round((objective.current / objective.target) * 10))
@@ -82,16 +84,24 @@ function renderGuide(userId) {
       `📜 <b>${state.activeQuest?.title || 'Campaign tersedia selesai'}</b>\n` +
       `🎯 ${objective?.label || 'Menunggu chapter berikutnya'}\n${progress}`
     : 'Karakter belum dibuat.';
+
+  const checklistText = checklist
+    .map(item => `${item.done ? '✅' : '⏳'} ${item.title}`)
+    .join('\n');
+
   return {
     text:
       `<b>🧭 PROGRESS GUIDE</b>\n\n` +
       `<b>📍 POSISIMU SEKARANG</b>\n${position}\n\n` +
-      `<b>➡️ YANG HARUS DILAKUKAN</b>\n` +
+      `<b>➡️ YANG HARUS DILAKUKAN SEKARANG</b>\n` +
       `<b>${next.title}</b>\n${next.detail}\n` +
-      `Jalankan: <code>${next.command}</code>\n\n` +
-      `<b>🔓 SETELAH ITU</b>\n${next.unlock}\n\n` +
-      `<i>/guide selalu berubah mengikuti progress world, campaign, dan checkpoint dungeon.</i>`,
+      `👉 Jalankan: <code>${next.command}</code>\n\n` +
+      `<b>📋 CHECKLIST MILESTONE PROGRES</b>\n` +
+      `${checklistText}\n\n` +
+      `<b>🔓 UNLOCK SETELAH INI</b>\n${next.unlock}\n\n` +
+      `<i>/guide diperbarui otomatis mengikuti progress world, campaign, dan dungeon.</i>`,
     next,
+    state,
   };
 }
 
@@ -101,7 +111,7 @@ function setupGuide(bot, { rateLimitCommand }) {
     return ctx.reply(guide.text, {
       parse_mode: 'HTML',
       ...Markup.inlineKeyboard([
-        [Markup.button.callback('▶️ Cara Jalankan Langkah Ini', `guide:next:${guide.next.key}`)],
+        [Markup.button.callback('▶️ Jalankan Perintah Ini', `guide:next:${guide.next.key}`)],
         [
           Markup.button.callback('🌍 World', 'guide:hint:world'),
           Markup.button.callback('📜 Campaign', 'guide:hint:campaign'),
@@ -119,7 +129,7 @@ function setupGuide(bot, { rateLimitCommand }) {
   bot.action(/^guide:next:([a-z]+)$/, ctx => {
     ctx.answerCbQuery();
     const guide = renderGuide(ctx.chat.id);
-    return ctx.reply(`➡️ Langkah berikutnya: ${guide.next.command}\n${guide.next.detail}`);
+    return ctx.reply(`➡️ <b>Langkah Berikutnya:</b> <code>${guide.next.command}</code>\n${guide.next.detail}`, { parse_mode: 'HTML' });
   });
   bot.action(/^guide:hint:(world|campaign|dungeon)$/, ctx => {
     const hints = {
