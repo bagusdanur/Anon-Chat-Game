@@ -18,7 +18,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     onEvent: (userId, event) => campaign.recordEvent(userId, event),
   });
 
-  function renderSession(session) {
+  function renderSession(session, viewerId) {
     const room = service.getRoom(session);
     const combat = session.state.combat?.roomId === room.id
       ? session.state.combat
@@ -29,21 +29,40 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
       `${room.text}\n\n` +
       `❤️ HP <b>${session.state.hp}/${session.state.maxHp}</b>\n` +
       `🤝 Companion: <b>${session.state.companion}</b>`;
+    const expectedActor = session.mode === 'duo'
+      ? session.state.turnOrder?.[session.state.turnIndex || 0]
+      : String(viewerId);
+    const turnAlias = session.mode === 'duo'
+      ? session.state.turnAliases?.[session.state.turnIndex || 0] || 'partner'
+      : null;
+    const isViewerTurn = session.mode !== 'duo' || String(expectedActor) === String(viewerId);
+    if (session.mode === 'duo') {
+      text += `\n\n━━━━━━━━━━━━━━━━━━━━\n`;
+      text += `🎲 <b>AKSI PARTY #${session.state.actionNumber || 1}</b>\n`;
+      text += isViewerTurn
+        ? `✅ <b>GILIRANMU</b> — pilih satu aksi di bawah.`
+        : `⏳ <b>MENUNGGU ${turnAlias}</b> — tombol aksimu dikunci.`;
+    }
     if (['combat', 'boss'].includes(room.type)) {
       const maxEnemyHp = combat?.maxEnemyHp || service.enemyMaxHp(session, room);
       const enemyHp = combat?.enemyHp ?? maxEnemyHp;
       text += `\n👹 ${room.enemy.name}: <b>${enemyHp}/${maxEnemyHp} HP</b>`;
+      text += `\n⚔️ Combat turn: <b>${combat?.turn || 1}</b> · Skill CD: <b>${combat?.skillCooldown || 0}</b>`;
       text += `\n\n💡 <i>Attack stabil · Defend mengurangi damage · Skill kuat dengan cooldown.</i>`;
       if (session.mode === 'duo') {
-        const turnAlias = session.state.turnAliases?.[session.state.turnIndex || 0] || 'partner';
         text += `\n🤝 Giliran: <b>${turnAlias}</b> · Energi Combo: <b>${combat?.combo || 0}/3</b>`;
-        text += `\n🤝 <i>Aksi wajib bergantian. Isi energi lalu gunakan Combo bersama.</i>`;
+        text += `\n⚠️ <i>Aksi wajib bergantian. Tunggu pesan giliranmu; tombol lama akan ditolak.</i>`;
       }
     }
     if (session.state.log) text += `\n📝 ${session.state.log}`;
 
     const buttons = [];
-    if (room.type === 'event') {
+    if (!isViewerTurn) {
+      buttons.push([Markup.button.callback(
+        '🔄 Perbarui Status Giliran',
+        `ldrefresh:${session.id}`,
+      )]);
+    } else if (room.type === 'event') {
       for (const option of room.options || []) {
         buttons.push([Markup.button.callback(
           option.label,
@@ -79,8 +98,25 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
   }
 
   function showSession(ctx, session) {
-    const rendered = renderSession(session);
+    const rendered = renderSession(session, ctx.chat.id);
     return ctx.reply(rendered.text, rendered.options);
+  }
+
+  async function sendSessionTo(chatId, session, prefix = '') {
+    const rendered = renderSession(session, chatId);
+    return bot.telegram.sendMessage(
+      chatId,
+      `${prefix ? `${prefix}\n\n` : ''}${rendered.text}`,
+      rendered.options,
+    ).catch(() => {});
+  }
+
+  async function notifyDuo(session, actorId, prefix) {
+    if (session.mode !== 'duo') return;
+    const otherId = String(session.owner_id) === String(actorId)
+      ? session.partner_id
+      : session.owner_id;
+    if (otherId) await sendSessionTo(otherId, session, prefix);
   }
 
   function requireEnabled(ctx) {
@@ -98,9 +134,34 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
       ctx.reply('♻️ Melanjutkan checkpoint ekspedisi terakhir.');
       return showSession(ctx, active);
     }
-    const result = mode === 'duo'
-      ? service.startDuo(ctx.chat.id, dungeonId)
-      : service.startSolo(ctx.chat.id, dungeonId);
+    if (mode === 'duo') {
+      const result = service.inviteDuo(ctx.chat.id, dungeonId);
+      if (!result.success) return ctx.reply(`❌ ${result.reason}`);
+      const invite = result.invite;
+      ctx.reply(
+        `<b>⏳ UNDANGAN DUNGEON DIKIRIM</b>\n\n` +
+        `Dungeon: <b>${invite.dungeonName}</b>\n` +
+        `Menunggu persetujuan partner selama 10 menit.\n\n` +
+        `<i>Dungeon belum dimulai dan tidak ada HP/progress yang berubah.</i>`,
+        { parse_mode: 'HTML' },
+      );
+      return bot.telegram.sendMessage(
+        invite.recipientId,
+        `<b>🤝 UNDANGAN DUNGEON DUO</b>\n\n` +
+        `<b>${invite.inviterAlias}</b> mengajakmu memasuki:\n` +
+        `🏰 <b>${invite.dungeonName}</b>\n\n` +
+        `Mode ini memakai aksi bergantian. Kamu harus menunggu giliran dan setiap pergantian akan dikirim sebagai pesan baru.\n\n` +
+        `<i>Undangan berlaku 10 menit. Dungeon hanya dimulai jika kamu menerima.</i>`,
+        {
+          parse_mode: 'HTML',
+          ...Markup.inlineKeyboard([[
+            Markup.button.callback('✅ Terima & Mulai', `ldinvite:${invite.id}:accept`),
+            Markup.button.callback('❌ Tolak', `ldinvite:${invite.id}:decline`),
+          ]]),
+        },
+      ).catch(() => ctx.reply('❌ Undangan tersimpan, tetapi pesan ke partner gagal dikirim.'));
+    }
+    const result = service.startSolo(ctx.chat.id, dungeonId);
     if (!result.success) return ctx.reply(`❌ ${result.reason}`);
     return showSession(ctx, result.session);
   }
@@ -167,6 +228,40 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     return showSession(ctx, session);
   });
 
+  bot.action(/^ldinvite:(\d+):(accept|decline)$/, async ctx => {
+    const accepted = ctx.match[2] === 'accept';
+    const result = service.respondDuoInvite(ctx.chat.id, Number(ctx.match[1]), accepted);
+    if (!result.success) return ctx.answerCbQuery(result.reason, { show_alert: true });
+    await ctx.answerCbQuery(accepted ? 'Undangan diterima.' : 'Undangan ditolak.');
+    if (!accepted) {
+      await ctx.editMessageText(
+        '<b>❌ UNDANGAN DITOLAK</b>\n\nDungeon duo tidak dimulai.',
+        { parse_mode: 'HTML' },
+      ).catch(() => {});
+      return bot.telegram.sendMessage(
+        result.invite.inviter_id,
+        '❌ Partner menolak undangan dungeon. Tidak ada sesi atau progress yang dibuat.',
+      ).catch(() => {});
+    }
+    await ctx.editMessageText(
+      '<b>✅ UNDANGAN DITERIMA</b>\n\nDungeon duo dimulai. Menu giliran dikirim ke kedua pemain.',
+      { parse_mode: 'HTML' },
+    ).catch(() => {});
+    await sendSessionTo(result.session.owner_id, result.session, '🏰 Partner menerima undangan. Kamu mendapat giliran pertama.');
+    return sendSessionTo(result.session.partner_id, result.session, '🏰 Dungeon dimulai. Tunggu giliran partner terlebih dahulu.');
+  });
+
+  bot.action(/^ldrefresh:(\d+)$/, async ctx => {
+    const session = service.get(Number(ctx.match[1]), ctx.chat.id);
+    if (!session || session.status !== 'active') {
+      return ctx.answerCbQuery('Checkpoint sudah tidak aktif.', { show_alert: true });
+    }
+    await ctx.answerCbQuery('Status diperbarui.');
+    const rendered = renderSession(session, ctx.chat.id);
+    return ctx.editMessageText(rendered.text, rendered.options).catch(() =>
+      ctx.reply(rendered.text, rendered.options));
+  });
+
   // `/dungeon` adalah pintu utama dungeon panjang. Raid boss lama tetap
   // tersedia secara eksplisit melalui `/dungeon raid`.
   bot.command('dungeon', (ctx, next) => {
@@ -188,7 +283,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     });
   });
 
-  bot.action(/^ld:(\d+):(\d+):([a-z0-9_]+)$/, rateLimitCommand, ctx => {
+  bot.action(/^ld:(\d+):(\d+):([a-z0-9_]+)$/, rateLimitCommand, async ctx => {
     if (!requireEnabled(ctx)) return ctx.answerCbQuery();
     const sessionId = Number(ctx.match[1]);
     const version = Number(ctx.match[2]);
@@ -197,25 +292,41 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     if (!session) return ctx.answerCbQuery('Checkpoint bukan milikmu.', { show_alert: true });
     const result = service.advance(ctx.chat.id, sessionId, version, optionId);
     if (!result.success) return ctx.answerCbQuery(result.reason, { show_alert: true });
-    ctx.answerCbQuery('Checkpoint tersimpan.');
+    await ctx.answerCbQuery('Aksi tersimpan. Giliran diperbarui.');
     if (result.session.status === 'completed') {
-      return ctx.editMessageText(
+      const terminalText =
         `<b>🏆 DUNGEON SELESAI!</b>\n\n${result.room.text}\n\n` +
         `✨ +${result.session.definition.rewards.xp} XP\n` +
         `💰 +${result.session.definition.rewards.gold}g\n` +
-        `🎁 Loot dan harta room telah masuk inventory.`,
-        { parse_mode: 'HTML' },
-      );
+        `🎁 Loot dan harta room telah masuk inventory.`;
+      await ctx.editMessageText(terminalText, { parse_mode: 'HTML' }).catch(() => {});
+      if (result.session.mode === 'duo') {
+        const otherId = String(result.session.owner_id) === String(ctx.chat.id)
+          ? result.session.partner_id : result.session.owner_id;
+        await bot.telegram.sendMessage(otherId, terminalText, { parse_mode: 'HTML' }).catch(() => {});
+      }
+      return;
     }
     if (result.session.status === 'failed') {
-      return ctx.editMessageText(
+      const terminalText =
         `<b>💀 EKSPEDISI GAGAL</b>\n\n${result.room.text}\n\n` +
-        `Gunakan /dungeon untuk mencoba ekspedisi baru.`,
-        { parse_mode: 'HTML' },
-      );
+        `Gunakan /dungeon untuk mencoba ekspedisi baru.`;
+      await ctx.editMessageText(terminalText, { parse_mode: 'HTML' }).catch(() => {});
+      if (result.session.mode === 'duo') {
+        const otherId = String(result.session.owner_id) === String(ctx.chat.id)
+          ? result.session.partner_id : result.session.owner_id;
+        await bot.telegram.sendMessage(otherId, terminalText, { parse_mode: 'HTML' }).catch(() => {});
+      }
+      return;
     }
-    const rendered = renderSession(result.session);
-    return ctx.editMessageText(rendered.text, rendered.options);
+    const rendered = renderSession(result.session, ctx.chat.id);
+    await ctx.editMessageText(rendered.text, rendered.options).catch(() =>
+      ctx.reply(rendered.text, rendered.options));
+    return notifyDuo(
+      result.session,
+      ctx.chat.id,
+      `🔔 Aksi partner selesai. ${result.session.state.turnAliases?.[result.session.state.turnIndex || 0] || 'Pemain berikutnya'} mendapat giliran.`,
+    );
   });
 }
 

@@ -53,7 +53,7 @@ const HELP_PAGES = [
       '/dungeon duo [nomor] — turn-based bersama party\n' +
       '/dungeon raid — raid boss co-op klasik\n' +
       '/adventure — alias menu dungeon panjang\n\n' +
-      'Dungeon memiliki banyak gerombolan, elite, jalur bercabang, treasure, dua rest point, boss, dan checkpoint 24 jam. Mode duo mewajibkan giliran bergantian; 3 aksi mengisi serangan Combo bersama.',
+      'Dungeon memiliki banyak gerombolan, elite, jalur bercabang, treasure, dua rest point, boss, dan checkpoint 24 jam. Mode duo baru dimulai setelah partner menerima undangan. Menu dikirim ke kedua pemain; aksi bergantian dan 3 aksi mengisi Combo bersama.',
   },
   {
     id: 'equipment',

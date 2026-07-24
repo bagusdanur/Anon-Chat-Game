@@ -23,6 +23,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Party persisten dan guild dengan alias karakter anonim
 - Pusat anonymous co-op (`/coop`) untuk party, dungeon duo, bounty, campaign, raid, dan duel
 - `/dungeon` membuka dungeon panjang baru; raid boss klasik dipindahkan ke `/dungeon raid`
+- Dungeon duo memerlukan persetujuan partner, menyimpan undangan 10 menit, dan mengirim menu/nomor giliran ke kedua pemain
 - World boss asynchronous harian dan weekly party raid dengan kontribusi persisten
 - Guild quest mingguan serta role owner/officer/member dengan audit perubahan
 - Duo bounty harian dan co-op campaign dengan progress karakter independen

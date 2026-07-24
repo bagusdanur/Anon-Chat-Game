@@ -134,6 +134,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 15 },
     { version: 16 },
     { version: 17 },
+    { version: 18 },
   ]);
   db.close();
 });
@@ -885,7 +886,9 @@ test('duo long dungeon shares checkpoints and grants idempotent rewards to both 
   social.invite('1', '2');
   social.acceptInvite('2');
   const dungeon = createLongDungeonService(db, { random: () => 1, now: () => 2_000_000_000 });
-  let session = dungeon.startDuo('1', 'goblin_ruins').session;
+  const invite = dungeon.inviteDuo('1', 'goblin_ruins');
+  assert.equal(invite.pending, true);
+  let session = dungeon.respondDuoInvite('2', invite.invite.id, true).session;
   assert.equal(dungeon.getActive('2').id, session.id);
   const actors = ['1', '2', '1', '2', '1', '2', '1', '2', '1', '2', '1'];
   const choices = [
@@ -915,28 +918,55 @@ test('duo tactical dungeon enforces alternating actors and builds a shared combo
   social.invite('1', '2');
   social.acceptInvite('2');
   const dungeon = createLongDungeonService(db, { random: () => 0.5, now: () => 2_000_000_000 });
-  let session = dungeon.startDuo('1', 'goblin_ruins').session;
+  const invite = dungeon.inviteDuo('1', 'goblin_ruins');
+  let session = dungeon.respondDuoInvite('2', invite.invite.id, true).session;
   session = dungeon.advance('1', session.id, session.state_version, 'left').session;
 
-  let result = dungeon.advance('1', session.id, session.state_version, 'attack');
+  let result = dungeon.advance('2', session.id, session.state_version, 'attack');
   assert.equal(result.success, true);
   session = result.session;
   assert.equal(session.state.combat.combo, 1);
-  assert.equal(session.state.turnAliases[session.state.turnIndex], 'Bram');
+  assert.equal(session.state.turnAliases[session.state.turnIndex], 'Astra');
 
-  const stolenTurn = dungeon.advance('1', session.id, session.state_version, 'attack');
+  const stolenTurn = dungeon.advance('2', session.id, session.state_version, 'attack');
   assert.equal(stolenTurn.success, false);
-  assert.match(stolenTurn.reason, /Bram/);
+  assert.match(stolenTurn.reason, /Astra/);
 
-  result = dungeon.advance('2', session.id, session.state_version, 'defend');
+  result = dungeon.advance('1', session.id, session.state_version, 'defend');
   session = result.session;
   assert.equal(session.state.combat.combo, 2);
-  result = dungeon.advance('1', session.id, session.state_version, 'skill');
+  result = dungeon.advance('2', session.id, session.state_version, 'skill');
   session = result.session;
   assert.equal(session.state.combat.combo, 3);
-  result = dungeon.advance('2', session.id, session.state_version, 'combo');
+  result = dungeon.advance('1', session.id, session.state_version, 'combo');
   assert.equal(result.success, true);
   assert.equal(result.session.state.combat?.combo || 0, 0);
+  db.close();
+});
+
+test('duo dungeon requires recipient consent and supports decline or expiry', () => {
+  const db = createTestDb();
+  publishDungeons(db, loadDungeons());
+  const social = createSocialService(db, { now: () => 2_000_000_000 });
+  social.createParty('1');
+  social.invite('1', '2');
+  social.acceptInvite('2');
+  const dungeon = createLongDungeonService(db, { now: () => 2_000_000_000 });
+
+  const first = dungeon.inviteDuo('1', 'goblin_ruins');
+  assert.equal(first.success, true);
+  assert.equal(dungeon.getActive('1'), null);
+  assert.equal(dungeon.respondDuoInvite('1', first.invite.id, true).success, false);
+  const declined = dungeon.respondDuoInvite('2', first.invite.id, false);
+  assert.equal(declined.accepted, false);
+  assert.equal(dungeon.getActive('1'), null);
+
+  const expiring = dungeon.inviteDuo('1', 'goblin_ruins');
+  const later = createLongDungeonService(db, { now: () => 2_000_000_601 });
+  const expired = later.respondDuoInvite('2', expiring.invite.id, true);
+  assert.equal(expired.success, false);
+  assert.match(expired.reason, /kedaluwarsa/);
+  assert.equal(dungeon.getActive('2'), null);
   db.close();
 });
 
@@ -947,7 +977,7 @@ test('RPG operations telemetry reports economy and invariant anomalies without u
   assert.equal(telemetry.economy.totalGold, 2000);
   assert.equal(telemetry.anomalies.negativeGold, 0);
   assert.equal(telemetry.anomalies.invalidInventory, 0);
-  assert.equal(telemetry.migrations[0].version, 17);
+  assert.equal(telemetry.migrations[0].version, 18);
   assert.equal(Array.isArray(telemetry.featureFlags), true);
   assert.equal(JSON.stringify(telemetry).includes('telegram_user_id'), false);
   db.close();

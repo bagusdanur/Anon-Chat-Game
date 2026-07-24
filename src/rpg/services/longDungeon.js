@@ -5,6 +5,7 @@ const { createEquipmentService } = require('./equipment');
 
 const DUNGEONS_FILE = path.join(__dirname, '../../../data/rpg_dungeons.json');
 const SESSION_TTL_SECONDS = 24 * 60 * 60;
+const INVITE_TTL_SECONDS = 10 * 60;
 
 function validateDungeon(definition) {
   if (!definition || typeof definition.id !== 'string' || !definition.id) {
@@ -264,6 +265,57 @@ function createLongDungeonService(db, options = {}) {
     return { success: true, nextRoomId: room.id, transitioned: false };
   }
 
+  function duoMembers(userId) {
+    const party = db.prepare(`
+      SELECT p.id FROM rpg_parties p JOIN rpg_party_members m ON m.party_id=p.id
+      WHERE m.user_id=? AND p.status='active'
+    `).get(String(userId));
+    if (!party) return { success: false, reason: 'Buat party berisi dua pemain terlebih dahulu.' };
+    const members = db.prepare(`
+      SELECT m.user_id,u.* FROM rpg_party_members m JOIN rpg_users u ON u.telegram_user_id=m.user_id
+      WHERE m.party_id=? ORDER BY m.joined_at
+    `).all(party.id);
+    if (members.length !== 2) return { success: false, reason: 'Dungeon duo membutuhkan party tepat dua pemain.' };
+    const owner = members.find(member => String(member.user_id) === String(userId));
+    const partner = members.find(member => String(member.user_id) !== String(userId));
+    return { success: true, owner, partner };
+  }
+
+  function createDuoSession(owner, partner, dungeonId) {
+    if (getActive(owner.user_id)) return { success: false, reason: 'Kamu masih memiliki ekspedisi aktif.' };
+    if (getActive(partner.user_id)) return { success: false, reason: 'Partner masih memiliki ekspedisi aktif.' };
+    const definitionRow = db.prepare(`
+      SELECT * FROM rpg_dungeon_definitions WHERE dungeon_id=? AND published=1
+    `).get(dungeonId);
+    if (!definitionRow) return { success: false, reason: 'Dungeon tidak ditemukan.' };
+    if (owner.level < definitionRow.min_level || partner.level < definitionRow.min_level) {
+      return { success: false, reason: `Semua anggota membutuhkan level ${definitionRow.min_level}.` };
+    }
+    const timestamp = now();
+    const definition = JSON.parse(definitionRow.definition_json);
+    const maxHp = owner.max_hp + partner.max_hp;
+    const state = {
+      hp: maxHp, maxHp, companion: 'Partner Party', collected: {},
+      visited: [definition.entry_room], log: 'Undangan diterima. Ekspedisi duo dimulai.',
+      turnOrder: [String(owner.user_id), String(partner.user_id)],
+      turnAliases: [getAlias(owner.user_id), getAlias(partner.user_id)],
+      turnIndex: 0,
+      actionNumber: 1,
+    };
+    const info = db.prepare(`
+      INSERT INTO rpg_dungeon_sessions_v2
+        (dungeon_id,owner_id,partner_id,mode,current_room_id,state_json,expires_at,created_at,updated_at)
+      VALUES (?,?,?,'duo',?,?,?,?,?)
+    `).run(
+      dungeonId, String(owner.user_id), String(partner.user_id), definition.entry_room,
+      JSON.stringify(state), timestamp + SESSION_TTL_SECONDS, timestamp, timestamp,
+    );
+    return { success: true, session: hydrate(db.prepare(`
+      SELECT s.*, d.definition_json FROM rpg_dungeon_sessions_v2 s
+      JOIN rpg_dungeon_definitions d ON d.dungeon_id=s.dungeon_id WHERE s.id=?
+    `).get(info.lastInsertRowid)) };
+  }
+
   return {
     list(level) {
       return db.prepare(`
@@ -313,46 +365,97 @@ function createLongDungeonService(db, options = {}) {
       );
       return { success: true, session: this.get(info.lastInsertRowid, userId) };
     },
-    startDuo(userId, dungeonId) {
+    inviteDuo(userId, dungeonId) {
       if (getActive(userId)) return { success: false, reason: 'Masih ada ekspedisi aktif.' };
-      const party = db.prepare(`
-        SELECT p.id FROM rpg_parties p JOIN rpg_party_members m ON m.party_id=p.id
-        WHERE m.user_id=? AND p.status='active'
-      `).get(String(userId));
-      if (!party) return { success: false, reason: 'Buat party berisi dua pemain terlebih dahulu.' };
-      const partner = db.prepare(`
-        SELECT m.user_id,u.* FROM rpg_party_members m JOIN rpg_users u ON u.telegram_user_id=m.user_id
-        WHERE m.party_id=? AND m.user_id<>? ORDER BY m.joined_at LIMIT 1
-      `).get(party.id, String(userId));
-      if (!partner) return { success: false, reason: 'Duo dungeon memerlukan partner party.' };
-      if (getActive(partner.user_id)) return { success: false, reason: 'Partner masih memiliki ekspedisi aktif.' };
-      const owner = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id=?').get(String(userId));
+      const duo = duoMembers(userId);
+      if (!duo.success) return duo;
       const definitionRow = db.prepare(`
         SELECT * FROM rpg_dungeon_definitions WHERE dungeon_id=? AND published=1
       `).get(dungeonId);
       if (!definitionRow) return { success: false, reason: 'Dungeon tidak ditemukan.' };
-      if (owner.level < definitionRow.min_level || partner.level < definitionRow.min_level) {
+      if (getActive(duo.partner.user_id)) return { success: false, reason: 'Partner masih memiliki ekspedisi aktif.' };
+      if (duo.owner.level < definitionRow.min_level || duo.partner.level < definitionRow.min_level) {
         return { success: false, reason: `Semua anggota membutuhkan level ${definitionRow.min_level}.` };
       }
       const timestamp = now();
-      const definition = JSON.parse(definitionRow.definition_json);
-      const maxHp = owner.max_hp + partner.max_hp;
-      const state = {
-        hp: maxHp, maxHp, companion: 'Partner Party', collected: {},
-        visited: [definition.entry_room], log: 'Ekspedisi duo dimulai.',
-        turnOrder: [String(userId), String(partner.user_id)],
-        turnAliases: [getAlias(userId), getAlias(partner.user_id)],
-        turnIndex: 0,
-      };
-      const info = db.prepare(`
-        INSERT INTO rpg_dungeon_sessions_v2
-          (dungeon_id,owner_id,partner_id,mode,current_room_id,state_json,expires_at,created_at,updated_at)
-        VALUES (?,?,?,'duo',?,?,?,?,?)
-      `).run(
-        dungeonId, String(userId), partner.user_id, definition.entry_room,
-        JSON.stringify(state), timestamp + SESSION_TTL_SECONDS, timestamp, timestamp,
+      db.prepare(`
+        UPDATE rpg_dungeon_invites_v2 SET status='expired',responded_at=?
+        WHERE status='pending' AND expires_at<=?
+      `).run(timestamp, timestamp);
+      const pending = db.prepare(`
+        SELECT id FROM rpg_dungeon_invites_v2
+        WHERE status='pending' AND expires_at>? AND (
+          (inviter_id=? AND recipient_id=?) OR
+          (inviter_id=? AND recipient_id=?)
+        )
+      `).get(
+        timestamp,
+        String(userId), String(duo.partner.user_id),
+        String(duo.partner.user_id), String(userId),
       );
-      return { success: true, session: this.get(info.lastInsertRowid, userId) };
+      if (pending) return { success: false, reason: 'Undangan dungeon sebelumnya masih menunggu jawaban partner.' };
+      const info = db.prepare(`
+        INSERT INTO rpg_dungeon_invites_v2
+          (dungeon_id,inviter_id,recipient_id,expires_at,created_at)
+        VALUES (?,?,?,?,?)
+      `).run(
+        dungeonId, String(userId), String(duo.partner.user_id),
+        timestamp + INVITE_TTL_SECONDS, timestamp,
+      );
+      return {
+        success: true,
+        pending: true,
+        invite: {
+          id: Number(info.lastInsertRowid),
+          dungeonId,
+          dungeonName: definitionRow.name,
+          inviterId: String(userId),
+          inviterAlias: getAlias(userId),
+          recipientId: String(duo.partner.user_id),
+          expiresAt: timestamp + INVITE_TTL_SECONDS,
+        },
+      };
+    },
+    respondDuoInvite(userId, inviteId, accepted) {
+      const timestamp = now();
+      const invite = db.prepare(`
+        SELECT * FROM rpg_dungeon_invites_v2 WHERE id=?
+      `).get(Number(inviteId));
+      if (!invite || invite.status !== 'pending') return { success: false, reason: 'Undangan sudah tidak aktif.' };
+      if (String(invite.recipient_id) !== String(userId)) {
+        return { success: false, reason: 'Hanya partner yang diundang dapat merespons.' };
+      }
+      if (invite.expires_at <= timestamp) {
+        db.prepare("UPDATE rpg_dungeon_invites_v2 SET status='expired',responded_at=? WHERE id=?")
+          .run(timestamp, invite.id);
+        return { success: false, reason: 'Undangan sudah kedaluwarsa.' };
+      }
+      if (!accepted) {
+        db.prepare("UPDATE rpg_dungeon_invites_v2 SET status='declined',responded_at=? WHERE id=? AND status='pending'")
+          .run(timestamp, invite.id);
+        return { success: true, accepted: false, invite };
+      }
+      const duo = duoMembers(invite.inviter_id);
+      if (!duo.success || String(duo.partner.user_id) !== String(invite.recipient_id)) {
+        return { success: false, reason: 'Susunan party sudah berubah.' };
+      }
+      try {
+        const created = db.transaction(() => {
+          const updated = db.prepare(`
+            UPDATE rpg_dungeon_invites_v2 SET status='accepted',responded_at=?
+            WHERE id=? AND status='pending'
+          `).run(timestamp, invite.id);
+          if (updated.changes !== 1) throw new Error('Undangan sudah diproses.');
+          const sessionResult = createDuoSession(duo.owner, duo.partner, invite.dungeon_id);
+          if (!sessionResult.success) throw new Error(sessionResult.reason);
+          db.prepare('UPDATE rpg_dungeon_invites_v2 SET session_id=? WHERE id=?')
+            .run(sessionResult.session.id, invite.id);
+          return sessionResult;
+        })();
+        return { ...created, accepted: true, invite };
+      } catch (error) {
+        return { success: false, reason: error.message };
+      }
     },
     get(sessionId, userId) {
       return hydrate(db.prepare(`
@@ -375,6 +478,13 @@ function createLongDungeonService(db, options = {}) {
       const partner = session.partner_id
         ? db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(session.partner_id)
         : null;
+      if (session.mode === 'duo') {
+        const expectedActor = session.state.turnOrder?.[session.state.turnIndex || 0];
+        if (expectedActor && expectedActor !== String(userId)) {
+          const alias = session.state.turnAliases?.[session.state.turnIndex || 0] || 'partner';
+          return { success: false, reason: `Tunggu giliran ${alias}.` };
+        }
+      }
       let nextRoomId;
       if (room.type === 'event') {
         const option = room.options?.find(item => item.id === optionId);
@@ -390,23 +500,11 @@ function createLongDungeonService(db, options = {}) {
             : owner;
           nextRoomId = autoResolve(session, room, combined);
         } else {
-          if (session.mode === 'duo') {
-            const expectedActor = session.state.turnOrder?.[session.state.turnIndex || 0];
-            if (expectedActor && expectedActor !== String(userId)) {
-              const alias = session.state.turnAliases?.[session.state.turnIndex || 0] || 'partner';
-              return { success: false, reason: `Sekarang giliran ${alias}.` };
-            }
-          }
           const actor = String(userId) === String(session.owner_id) ? owner : partner;
           const ally = actor === owner ? partner : owner;
           const tactical = resolveTacticalTurn(session, room, actor, ally, optionId);
           if (!tactical.success) return tactical;
           nextRoomId = tactical.nextRoomId;
-          if (session.mode === 'duo' && !tactical.transitioned) {
-            session.state.turnIndex = ((session.state.turnIndex || 0) + 1) % 2;
-            const nextAlias = session.state.turnAliases?.[session.state.turnIndex] || 'partner';
-            session.state.log += ` · berikutnya ${nextAlias}`;
-          }
         }
       } else if (room.type === 'treasure') {
         const reward = room.reward || {};
@@ -424,6 +522,14 @@ function createLongDungeonService(db, options = {}) {
       const terminalStatus = nextRoom.type === 'finish'
         ? 'completed'
         : nextRoom.type === 'failure' ? 'failed' : 'active';
+      if (session.mode === 'duo') {
+        session.state.actionNumber = (session.state.actionNumber || 1) + 1;
+        if (terminalStatus === 'active') {
+          session.state.turnIndex = ((session.state.turnIndex || 0) + 1) % 2;
+          const nextAlias = session.state.turnAliases?.[session.state.turnIndex] || 'partner';
+          session.state.log = `${session.state.log || 'Aksi diproses.'} · giliran ${nextAlias}`;
+        }
+      }
       const timestamp = now();
       const update = db.prepare(`
         UPDATE rpg_dungeon_sessions_v2

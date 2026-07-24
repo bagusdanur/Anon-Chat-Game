@@ -668,6 +668,29 @@ const MIGRATIONS = [
       );
     `,
   },
+  {
+    version: 18,
+    name: 'confirmed_long_dungeon_invites',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_dungeon_invites_v2 (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        dungeon_id TEXT NOT NULL REFERENCES rpg_dungeon_definitions(dungeon_id),
+        inviter_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        recipient_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        status TEXT NOT NULL DEFAULT 'pending'
+          CHECK (status IN ('pending','accepted','declined','expired','cancelled')),
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        responded_at INTEGER,
+        session_id INTEGER REFERENCES rpg_dungeon_sessions_v2(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_dungeon_invite_recipient
+        ON rpg_dungeon_invites_v2(recipient_id,status,expires_at);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_dungeon_invite_pair_pending
+        ON rpg_dungeon_invites_v2(inviter_id,recipient_id)
+        WHERE status='pending';
+    `,
+  },
 ];
 
 function quoteSql(value) {
