@@ -1,9 +1,4 @@
-const fs = require('fs');
-const path = require('path');
-
-const JSON_PATH = path.join(__dirname, '../data/icebreakers.json');
-
-const DEFAULT_QUESTIONS = [
+[
   "Kalau kamu bisa punya kekuatan super, kamu pilih apa?",
   "Apa hal paling memalukan yang pernah terjadi sama kamu?",
   "Lebih suka jalan-jalan ke gunung atau ke pantai? Kenapa?",
@@ -24,26 +19,4 @@ const DEFAULT_QUESTIONS = [
   "Sebutkan satu hal yang belum pernah kamu lakuin tapi pengen banget dicoba!",
   "Kalau kamu bisa hidup di dunia game/film, kamu mau hidup di mana?",
   "Apa mimpi masa kecil yang belum kesampaian sampai sekarang?"
-];
-
-function getQuestions() {
-  try {
-    if (fs.existsSync(JSON_PATH)) {
-      return JSON.parse(fs.readFileSync(JSON_PATH, 'utf8'));
-    }
-  } catch (e) {}
-  return DEFAULT_QUESTIONS;
-}
-
-function getRandomTopic() {
-  const questions = getQuestions();
-  const randomIndex = Math.floor(Math.random() * questions.length);
-  return questions[randomIndex];
-}
-
-module.exports = {
-  getRandomTopic,
-  getQuestions,
-  JSON_PATH
-};
-
+]

@@ -266,7 +266,9 @@ function setupGrind(bot, { rateLimitCommand }) {
 
     spendEnergy(userId, energyCost);
 
-    const lootTable = getLootTable('mine', user.level);
+    // Kirim object user, bukan angka level. Sebelumnya angka membuat semua
+    // pemain selalu jatuh ke tabel T3 dan pemain Lv.1 bisa menambang berlian.
+    const lootTable = getLootTable('mine', user);
     const rarity    = rollRarity();
     const itemOpts  = lootTable[rarity];
     const item      = pickRandom(itemOpts.length ? itemOpts : lootTable.common);

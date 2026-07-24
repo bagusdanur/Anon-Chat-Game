@@ -33,7 +33,8 @@ function buildHuntMonster(level, random = Math.random) {
   const variance = 0.9 + random() * 0.2;
   return {
     hp: Math.max(15, Math.round(baseline.attack * 5 * variance)),
-    attack: Math.max(3, Math.round((baseline.defense / 2 + baseline.hp * 0.065) * variance)),
+    // Dari HP penuh, hunt umumnya hanya aman 1-2 kali sebelum perlu pemulihan.
+    attack: Math.max(4, Math.round((baseline.defense / 2 + baseline.hp * 0.095) * variance)),
     defense: Math.max(1, Math.floor(level / 10)),
   };
 }

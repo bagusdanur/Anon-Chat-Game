@@ -7,6 +7,7 @@ const { getWords, FILTER_PATH } = require('./src/moderation/wordFilter');
 const { getGameSettings, saveGameSettings } = require('./src/rpg/config');
 const { createFeatureFlagService } = require('./src/rpg/services/featureFlags');
 const { collectRpgTelemetry } = require('./src/rpg/services/telemetry');
+const { getQuestions, JSON_PATH: ICEBREAKERS_JSON_PATH } = require('./src/icebreakers');
 
 const app = express();
 const PORT = process.env.DASHBOARD_PORT || 3001;
@@ -94,7 +95,7 @@ app.get('/api/users/search', auth, (req, res) => {
   if (status) { sql += ' AND status = ?'; params.push(status); }
   if (banned !== undefined) { sql += ' AND is_banned = ?'; params.push(banned === 'true' ? 1 : 0); }
   if (lang) { sql += ' AND lang = ?'; params.push(lang); }
-  if (gender) { sql += ' AND gender = ?'; params.push(gender); }
+  if (gender) { sql += ' AND LOWER(gender) = LOWER(?)'; params.push(gender); }
   sql += ' ORDER BY created_at DESC LIMIT 50';
   const users = db.prepare(sql).all(...params);
   res.json(users);
@@ -302,20 +303,13 @@ app.post('/api/quests', auth, (req, res) => {
 
 // ===== ICEBREAKERS =====
 app.get('/api/icebreakers', auth, (req, res) => {
-  const content = fs.readFileSync(path.join(__dirname, 'src/icebreakers.js'), 'utf8');
-  const match = content.match(/const questions = \[([^\]]+)\]/s);
-  if (match) {
-    const questions = match[1].match(/"([^"]+)"/g).map(q => q.replace(/"/g, ''));
-    return res.json({ questions });
-  }
-  res.json({ questions: [] });
+  res.json({ questions: getQuestions() });
 });
 
 app.post('/api/icebreakers', auth, (req, res) => {
   const { questions } = req.body;
-  const filePath = path.join(__dirname, 'src/icebreakers.js');
-  const newContent = `const questions = [\n${questions.map(q => `  "${q}"`).join(',\n')}\n];\n\nfunction getRandomTopic() {\n  const randomIndex = Math.floor(Math.random() * questions.length);\n  return questions[randomIndex];\n}\n\nmodule.exports = {\n  getRandomTopic\n};`;
-  fs.writeFileSync(filePath, newContent);
+  if (!Array.isArray(questions)) return res.status(400).json({ error: 'Questions must be an array' });
+  fs.writeFileSync(ICEBREAKERS_JSON_PATH, JSON.stringify(questions, null, 2));
   res.json({ success: true });
 });
 
@@ -391,7 +385,6 @@ app.post('/api/broadcast', auth, (req, res) => {
   (async () => {
     for (const u of users) {
       try {
-        const fetch = (await import('node-fetch')).default;
         await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -417,7 +410,6 @@ app.post('/api/send', auth, (req, res) => {
 
   (async () => {
     try {
-      const fetch = (await import('node-fetch')).default;
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -461,7 +453,7 @@ app.get('/api/backup', auth, (req, res) => {
 });
 
 // Fallback for SPA routing
-app.get('/{*splat}', (req, res) => {
+app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, staticDir, 'index.html'));
 });
 

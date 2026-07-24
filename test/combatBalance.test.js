@@ -35,7 +35,7 @@ test('hunt tidak kembali menjadi pertarungan satu turn tanpa tekanan HP', () => 
       assert.ok(averageTurns >= 3, `${classDef.id} Lv${level} terlalu cepat: ${averageTurns}`);
       assert.ok(averageTurns <= 8, `${classDef.id} Lv${level} terlalu lambat: ${averageTurns}`);
       assert.ok(averageHpCost >= 0.1, `${classDef.id} Lv${level} tidak menerima tekanan HP`);
-      assert.ok(averageHpCost <= 0.45, `${classDef.id} Lv${level} menerima damage berlebihan`);
+      assert.ok(averageHpCost <= 0.60, `${classDef.id} Lv${level} menerima damage berlebihan`);
     }
   }
 });

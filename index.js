@@ -252,8 +252,15 @@ bot.action('cmd_next', rateLimitSearch, (ctx) => {
   const chatId = ctx.chat.id;
   if (isPaired(chatId)) {
     const partnerId = unpairUser(chatId);
-    clearRaidSession(chatId, partnerId);
-    bot.telegram.sendMessage(partnerId, '🛑 Partner meninggalkan chat. Ketik /search untuk mencari partner baru.');
+    const cleanup = clearPartnerRpgState(chatId, partnerId);
+    const rpgNote = cleanup.partyEnded || cleanup.dungeonEnded || cleanup.duelEnded
+      ? '\n👥 Party dan sesi co-op dengan partner lama juga diakhiri.'
+      : '';
+    if (rpgNote) ctx.reply(rpgNote.trim());
+    bot.telegram.sendMessage(
+      partnerId,
+      `🛑 Partner meninggalkan chat. Ketik /search untuk mencari partner baru.${rpgNote}`,
+    );
   } else if (isQueued(chatId)) {
     dequeueUser(chatId);
   }
@@ -323,7 +330,7 @@ bot.command('stats', (ctx) => {
                `Paired Users: ${pairedUsers}\n` +
                `In Queue: ${queuedUsers}\n` +
                `Reports (24h): ${recentReports}`;
-  ctx.reply(text, { parse_mode: 'HTML' });
+  ctx.reply(text, { parse_mode: 'Markdown' });
 });
 
 bot.command('ban', (ctx) => {
@@ -376,8 +383,8 @@ bot.command('topic', rateLimitCommand, (ctx) => {
   const topic = getRandomTopic();
   const message = `🎲 *Topik Acak*\n\n"${topic}"\n\n_Silakan dibahas bersama partner kamu!_`;
   
-  ctx.reply(message, { parse_mode: 'HTML' });
-  bot.telegram.sendMessage(partnerId, message, { parse_mode: 'HTML' }).catch(() => {});
+  ctx.reply(message, { parse_mode: 'Markdown' });
+  bot.telegram.sendMessage(partnerId, message, { parse_mode: 'Markdown' }).catch(() => {});
 });
 
 // ===== REPORT COMMAND =====
