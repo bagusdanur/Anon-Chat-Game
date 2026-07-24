@@ -21,6 +21,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Controlled marketplace dengan escrow, pajak, expiry, dan audit ledger
 - Preseason, leaderboard anonim, Endless Tower, achievement, dan collection
 - Party persisten dan guild dengan alias karakter anonim
+- `/next` dan `/stop` otomatis memutus party serta sesi co-op dengan partner anonymous lama
 - Pusat anonymous co-op (`/coop`) untuk party, dungeon duo, bounty, campaign, raid, dan duel
 - `/dungeon` membuka dungeon panjang baru; raid boss klasik dipindahkan ke `/dungeon raid`
 - Dungeon duo memerlukan persetujuan partner, menyimpan undangan 10 menit, dan mengirim menu cycle ke kedua pemain

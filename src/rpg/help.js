@@ -94,6 +94,7 @@ const HELP_PAGES = [
       '/party create — buat party\n' +
       '/party invite — undang partner chat\n' +
       '/party accept, /party info, /party leave\n\n' +
+      'Party mengikuti pasangan anonymous chat. Jika salah satu memakai /next atau /stop, party, undangan, dungeon duo, raid, dan duel bersama partner lama otomatis diakhiri.\n\n' +
       '<b>Direct trade aman</b>\n' +
       '/trade offer gold [jumlah]\n' +
       '/trade offer item [nomor /inv] [jumlah]\n' +

@@ -160,6 +160,17 @@ function resolveDuelTurn(duel, actions) {
   return logs;
 }
 
+function clearDuelSession(chatId, partnerId) {
+  if (!partnerId) return false;
+  const pairKey = getDuelPairKey(chatId, partnerId);
+  duelInvites.delete(pairKey);
+  const duel = duelSessions.get(pairKey);
+  if (!duel) return false;
+  finalizeDuelRun(duel.runId, null, 0, 0);
+  duelSessions.delete(pairKey);
+  return true;
+}
+
 function sendDuelUI(bot, duel, extraLogs = []) {
   const { chatIdA, chatIdB, pairKey, playerA, playerB, turnNumber } = duel;
   const allLogs = [...extraLogs, ...duel.pendingLogs].join('\n');
@@ -493,4 +504,9 @@ setInterval(() => {
   }
 }, 60 * 1000); // Check setiap 1 menit
 
-module.exports = { setupDuel, resolveDuelTurn, DUEL_INVITE_TIMEOUT };
+module.exports = {
+  setupDuel,
+  resolveDuelTurn,
+  clearDuelSession,
+  DUEL_INVITE_TIMEOUT,
+};

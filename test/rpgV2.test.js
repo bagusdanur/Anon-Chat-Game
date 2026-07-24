@@ -24,6 +24,7 @@ const {
   publishDungeons,
   createLongDungeonService,
 } = require('../src/rpg/services/longDungeon');
+const { clearPersistentPartnerState } = require('../src/rpg/services/partnerCleanup');
 const {
   loadCampaign,
   publishCampaign,
@@ -540,6 +541,46 @@ test('persistent party invite, membership, and owner transfer are atomic', () =>
   const transferred = social.getParty('2');
   assert.equal(transferred.owner_id, '2');
   assert.equal(transferred.members[0].role, 'owner');
+  db.close();
+});
+
+test('disconnecting an anonymous pair removes both from their RPG party', () => {
+  const db = createTestDb();
+  const social = createSocialService(db, { now: () => 2_000_000_000 });
+  social.createParty('1');
+  social.invite('1', '2');
+  social.acceptInvite('2');
+  const result = social.disconnectPair('1', '2');
+  assert.equal(result.success, true);
+  assert.equal(result.partyEnded, true);
+  assert.equal(social.getParty('1'), null);
+  assert.equal(social.getParty('2'), null);
+  assert.equal(
+    db.prepare('SELECT status FROM rpg_parties WHERE id=?').get(result.partyId).status,
+    'disbanded',
+  );
+  db.close();
+});
+
+test('disconnecting a pair cancels their invite and abandons the active duo dungeon', () => {
+  const db = createTestDb();
+  publishDungeons(db, loadDungeons());
+  const social = createSocialService(db, { now: () => 2_000_000_000 });
+  social.createParty('1');
+  social.invite('1', '2');
+  social.acceptInvite('2');
+  const dungeon = createLongDungeonService(db, { now: () => 2_000_000_000 });
+  const invite = dungeon.inviteDuo('1', 'goblin_ruins');
+  const session = dungeon.respondDuoInvite('2', invite.invite.id, true).session;
+  const result = clearPersistentPartnerState(db, '1', '2', () => 2_000_000_010);
+  assert.equal(result.partyEnded, true);
+  assert.equal(result.dungeonEnded, true);
+  assert.equal(
+    db.prepare('SELECT status FROM rpg_dungeon_sessions_v2 WHERE id=?').get(session.id).status,
+    'abandoned',
+  );
+  assert.equal(dungeon.getActive('1'), null);
+  assert.equal(dungeon.getActive('2'), null);
   db.close();
 });
 

@@ -427,7 +427,7 @@ function checkRaidResolve(bot, pairKey) {
 }
 
 function clearRaidSession(chatId, partnerId) {
-  if (!partnerId) return;
+  if (!partnerId) return false;
   const key = getPairKey(chatId, partnerId);
   const raid = raidSessions.get(key);
   if (raid) {
@@ -438,8 +438,10 @@ function clearRaidSession(chatId, partnerId) {
     setDungeonCooldown(raid.chatIdB);
     // Notifikasi ke partner yang masih aktif
     const remainingId = chatId === raid.chatIdA ? raid.chatIdB : raid.chatIdA;
-    bot.telegram.sendMessage(remainingId, '⏰ <b>Raid dibatalkan!</b>\n\nPartner meninggalkan chat sebelum raid selesai.\nCooldown 3 menit aktif.', { parse_mode: 'HTML' }).catch(() => {});
+    botRef?.telegram.sendMessage(remainingId, '⏰ <b>Raid dibatalkan!</b>\n\nPartner meninggalkan chat sebelum raid selesai.\nCooldown dungeon aktif.', { parse_mode: 'HTML' }).catch(() => {});
+    return true;
   }
+  return false;
 }
 
 function setupCoop(bot, { getPartnerId, rateLimitCommand }) {

@@ -7,7 +7,9 @@ const { setupGrind } = require('./grind');
 const { setupEconomy, resolveInvInput } = require('./economy');
 const { setupCoop, clearRaidSession } = require('./coop');
 const { setupHelp } = require('./help');
-const { setupDuel } = require('./duel');
+const { setupDuel, clearDuelSession } = require('./duel');
+const { db } = require('../db');
+const { clearPersistentPartnerState } = require('./services/partnerCleanup');
 const { setupWorld } = require('./world');
 const { setupSkills } = require('./skills');
 const { setupLongDungeon } = require('./longDungeon');
@@ -55,4 +57,16 @@ function setupRpg(bot, { getPartnerId, rateLimitCommand }) {
   setupHelp(bot, { rateLimitCommand });
 }
 
-module.exports = { setupRpg, clearRaidSession, resolveInvInput };
+function clearPartnerRpgState(chatId, partnerId) {
+  if (!partnerId) return { partyEnded: false, dungeonEnded: false, duelEnded: false };
+  clearRaidSession(chatId, partnerId);
+  const duelEnded = clearDuelSession(chatId, partnerId);
+  const persistent = clearPersistentPartnerState(db, chatId, partnerId);
+  return {
+    partyEnded: persistent.partyEnded,
+    dungeonEnded: persistent.dungeonEnded,
+    duelEnded,
+  };
+}
+
+module.exports = { setupRpg, clearRaidSession, clearPartnerRpgState, resolveInvInput };

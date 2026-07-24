@@ -162,6 +162,46 @@ function createSocialService(db, options = {}) {
       })();
       return { success: true };
     },
+    disconnectPair(userId, partnerId) {
+      const party = getParty(userId);
+      const partnerIsMember = party?.members.some(
+        member => String(member.user_id) === String(partnerId),
+      );
+      const timestamp = now();
+      return db.transaction(() => {
+        db.prepare(`
+          UPDATE rpg_party_invites SET status='rejected'
+          WHERE status='pending' AND (
+            (inviter_id=? AND invitee_id=?) OR (inviter_id=? AND invitee_id=?)
+          )
+        `).run(
+          String(userId), String(partnerId),
+          String(partnerId), String(userId),
+        );
+        if (!party || !partnerIsMember) return { success: true, partyEnded: false };
+
+        db.prepare(
+          'DELETE FROM rpg_party_members WHERE party_id=? AND user_id IN (?,?)',
+        ).run(party.id, String(userId), String(partnerId));
+        const remaining = db.prepare(`
+          SELECT * FROM rpg_party_members WHERE party_id=?
+          ORDER BY joined_at LIMIT 1
+        `).get(party.id);
+        if (!remaining) {
+          db.prepare("UPDATE rpg_parties SET status='disbanded',updated_at=? WHERE id=?")
+            .run(timestamp, party.id);
+        } else if (
+          String(party.owner_id) === String(userId) ||
+          String(party.owner_id) === String(partnerId)
+        ) {
+          db.prepare("UPDATE rpg_party_members SET role='owner' WHERE user_id=?")
+            .run(remaining.user_id);
+          db.prepare('UPDATE rpg_parties SET owner_id=?,updated_at=? WHERE id=?')
+            .run(remaining.user_id, timestamp, party.id);
+        }
+        return { success: true, partyEnded: true, partyId: party.id };
+      })();
+    },
     getGuild(userId) {
       const guild = db.prepare(`
         SELECT g.*, m.role, m.contribution AS my_contribution

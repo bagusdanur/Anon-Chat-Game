@@ -33,7 +33,7 @@ const {
 const { rateLimitMessage, rateLimitCommand, rateLimitSearch } = require('./src/middleware/rateLimit');
 const { containsBadWord } = require('./src/moderation/wordFilter');
 const { getRandomTopic } = require('./src/icebreakers');
-const { setupRpg, clearRaidSession, resolveInvInput } = require('./src/rpg/controller');
+const { setupRpg, clearPartnerRpgState, resolveInvInput } = require('./src/rpg/controller');
 const { progressBar } = require('./src/format');
 const { CLASS_DEFS, xpToNextLevel, getCurrentHp, getCurrentEnergy, getEquipmentBonus, getInventory, getOrCreateUser, getEquippedBonus, getEquipped, equipItem, unequipSlot, CLASS_EQUIP_SLOTS } = require('./src/rpg/db_rpg');
 const { RARITY_EMOJI } = require('./src/rpg/profile');
@@ -151,9 +151,15 @@ function handleStop(ctx) {
 
   if (isPaired(chatId)) {
     const partnerId = unpairUser(chatId);
-    clearRaidSession(chatId, partnerId);
-    ctx.reply('🛑 Chat diakhiri. Ketik /search untuk mencari partner baru.');
-    bot.telegram.sendMessage(partnerId, '🛑 Partner mengakhiri chat. Ketik /search untuk mencari partner baru.');
+    const cleanup = clearPartnerRpgState(chatId, partnerId);
+    const rpgNote = cleanup.partyEnded || cleanup.dungeonEnded || cleanup.duelEnded
+      ? '\n👥 Party dan sesi co-op dengan partner lama juga diakhiri.'
+      : '';
+    ctx.reply(`🛑 Chat diakhiri. Ketik /search untuk mencari partner baru.${rpgNote}`);
+    bot.telegram.sendMessage(
+      partnerId,
+      `🛑 Partner mengakhiri chat. Ketik /search untuk mencari partner baru.${rpgNote}`,
+    );
   } else if (isQueued(chatId)) {
     dequeueUser(chatId);
     ctx.reply('🛑 Pencarian dibatalkan.');
@@ -218,8 +224,15 @@ bot.command('next', rateLimitSearch, (ctx) => {
 
   if (isPaired(chatId)) {
     const partnerId = unpairUser(chatId);
-    clearRaidSession(chatId, partnerId);
-    bot.telegram.sendMessage(partnerId, '🛑 Partner meninggalkan chat. Ketik /search untuk mencari partner baru.');
+    const cleanup = clearPartnerRpgState(chatId, partnerId);
+    const rpgNote = cleanup.partyEnded || cleanup.dungeonEnded || cleanup.duelEnded
+      ? '\n👥 Party dan sesi co-op dengan partner lama juga diakhiri.'
+      : '';
+    if (rpgNote) ctx.reply(rpgNote.trim());
+    bot.telegram.sendMessage(
+      partnerId,
+      `🛑 Partner meninggalkan chat. Ketik /search untuk mencari partner baru.${rpgNote}`,
+    );
   } else if (isQueued(chatId)) {
     dequeueUser(chatId);
   }
