@@ -123,22 +123,6 @@ function renderProfile(user) {
   if (streak > 0) msg += `🔥 Win Streak: <b>${streak}x</b>\n`;
   msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 
-  // ── Ringkasan progres & sosial ─────────────────
-  msg += `<b>🧭 Ringkasan</b>\n`;
-  msg += `🌍 ${world?.region_name || 'Pinggiran Aldenmoor'} · Chapter ${world?.campaign_chapter || 1}`;
-  if (world?.exploration_points) msg += ` · Jelajah ${world.exploration_points}`;
-  msg += `\n`;
-  msg += `📜 ${campaign ? `${campaign.title} (${campaign.status})` : 'Campaign siap dilanjutkan'}\n`;
-  msg += `🎒 ${inventoryCount} item`;
-  if (profession) msg += ` · 🧰 ${profession.profession_id} Lv.${profession.level}`;
-  msg += `\n`;
-  msg += `🏛 ${guild ? `[${guild.tag}] ${guild.name} · ${guild.role}` : 'Belum bergabung guild'}`;
-  msg += ` · 👥 ${party ? `${party.members.length} anggota` : 'Solo'}\n`;
-  if (season) {
-    msg += `🏆 ${season.name}: ${season.points} pts · 🪙 ${season.currency}\n`;
-  }
-  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-
   // ── Bars ────────────────────────────────────
   const hpFilled  = Math.min(10, Math.round((Math.max(0, effectiveHp) / effectiveMaxHp) * 10));
   const xpFilled  = Math.min(10, Math.round((user.xp / nextXp) * 10));
@@ -215,6 +199,22 @@ function renderProfile(user) {
   for (let slot = 1; slot <= 3; slot++) {
     const skill = skillLoadout.find(item => item.slot === slot);
     msg += `${slot}️⃣ ${skill ? `<b>${skill.name}</b> · Rank ${skill.rank}` : '<i>(Kosong)</i>'}\n`;
+  }
+  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+
+  // ── Ringkasan progres & sosial ─────────────────
+  msg += `<b>🧭 Ringkasan</b>\n`;
+  msg += `🌍 ${world?.region_name || 'Pinggiran Aldenmoor'} · Chapter ${world?.campaign_chapter || 1}`;
+  if (world?.exploration_points) msg += ` · Jelajah ${world.exploration_points}`;
+  msg += `\n`;
+  msg += `📜 ${campaign ? `${campaign.title} (${campaign.status})` : 'Campaign siap dilanjutkan'}\n`;
+  msg += `🎒 ${inventoryCount} item`;
+  if (profession) msg += ` · 🧰 ${profession.profession_id} Lv.${profession.level}`;
+  msg += `\n`;
+  msg += `🏛 ${guild ? `[${guild.tag}] ${guild.name} · ${guild.role}` : 'Belum bergabung guild'}`;
+  msg += ` · 👥 ${party ? `${party.members.length} anggota` : 'Solo'}\n`;
+  if (season) {
+    msg += `🏆 ${season.name}: ${season.points} pts · 🪙 ${season.currency}\n`;
   }
   msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 

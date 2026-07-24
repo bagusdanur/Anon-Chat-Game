@@ -1,6 +1,6 @@
 const { Markup } = require('telegraf');
 const { db } = require('../db');
-const { determineNextStep, getCompletedChecklist } = require('./services/gameplayGuide');
+const { determineNextStep, getCompletedChecklist, getClassBuildAdvice } = require('./services/gameplayGuide');
 const { createCampaignService } = require('./services/campaign');
 
 const campaignService = createCampaignService(db);
@@ -75,6 +75,8 @@ function renderGuide(userId) {
   const state = readGuideState(userId);
   const next = determineNextStep(state);
   const checklist = getCompletedChecklist(state);
+  const userRow = db.prepare('SELECT class_name FROM rpg_users WHERE telegram_user_id=?').get(String(userId));
+  const buildAdvice = getClassBuildAdvice(userRow?.class_name);
 
   const objective = state.activeQuest?.objective;
   const filled = objective
@@ -102,6 +104,11 @@ function renderGuide(userId) {
       `👉 Jalankan: <code>${next.command}</code>\n\n` +
       `<b>📋 CHECKLIST MILESTONE PROGRES</b>\n` +
       `${checklistText}\n\n` +
+      `<b>💡 ARAHAN BUILD KARAKTER (${buildAdvice.className})</b>\n` +
+      `• <b>Prioritas Stat:</b> ${buildAdvice.statFocus}\n` +
+      `• <b>Fokus Equipment:</b> ${buildAdvice.gearFocus}\n` +
+      `• <b>Combo Skill:</b> ${buildAdvice.skillCombo}\n` +
+      `• <b>Perintah Build:</b> <code>/gear</code> · <code>/skill</code> · <code>/inv</code> · <code>/reforge</code> · <code>/socket</code>\n\n` +
       `<b>🔓 UNLOCK SETELAH INI</b>\n${next.unlock}\n\n` +
       `<i>/guide diperbarui otomatis mengikuti progress world, campaign, dan dungeon.</i>`,
     next,
@@ -120,6 +127,7 @@ function setupGuide(bot, { rateLimitCommand }) {
           Markup.button.callback('🌍 World', 'guide:hint:world'),
           Markup.button.callback('📜 Campaign', 'guide:hint:campaign'),
           Markup.button.callback('🏰 Dungeon', 'guide:hint:dungeon'),
+          Markup.button.callback('💡 Tips Build', 'guide:hint:build'),
         ],
       ]),
     });
@@ -135,13 +143,27 @@ function setupGuide(bot, { rateLimitCommand }) {
     const guide = renderGuide(ctx.chat.id);
     return ctx.reply(`➡️ <b>Langkah Berikutnya:</b> <code>${guide.next.command}</code>\n${guide.next.detail}`, { parse_mode: 'HTML' });
   });
-  bot.action(/^guide:hint:(world|campaign|dungeon)$/, ctx => {
+  bot.action(/^guide:hint:(world|campaign|dungeon|build)$/, ctx => {
+    ctx.answerCbQuery();
+    if (ctx.match[1] === 'build') {
+      const userRow = db.prepare('SELECT class_name FROM rpg_users WHERE telegram_user_id=?').get(String(ctx.chat.id));
+      const advice = getClassBuildAdvice(userRow?.class_name);
+      let msg = `<b>💡 PANDUAN LENGKAP BUILD KARAKTER</b>\n\n`;
+      msg += `Class: <b>${advice.className}</b>\n`;
+      msg += `🎯 <b>Fokus Stat Utama:</b> ${advice.statFocus}\n`;
+      msg += `🛡️ <b>Rekomendasi Equipment:</b> ${advice.gearFocus}\n`;
+      msg += `⚔️ <b>Combo Skill Loadout:</b> ${advice.skillCombo}\n\n`;
+      msg += `<b>📜 PERINTAH UNTUK BUILD KARAKTER:</b>\n`;
+      advice.commands.forEach(item => {
+        msg += `• <code>${item.cmd}</code> — ${item.desc}\n`;
+      });
+      return ctx.reply(msg, { parse_mode: 'HTML' });
+    }
     const hints = {
       world: '🌍 Alur world: /world → /campaign → /explore → /dungeon.',
       campaign: '📜 /campaign menampilkan seluruh quest chapter; /guide memilih satu objective aktif untukmu.',
       dungeon: '🏰 Solo: /dungeon solo 1. Duo: /dungeon duo 1. Raid klasik: /dungeon raid.',
     };
-    ctx.answerCbQuery();
     return ctx.reply(hints[ctx.match[1]]);
   });
 }

@@ -84,5 +84,64 @@ function getCompletedChecklist(state) {
   ];
 }
 
-module.exports = { determineNextStep, getCompletedChecklist };
+function getClassBuildAdvice(className) {
+  const norm = String(className || '').toLowerCase();
+  if (norm.includes('ksatria') || norm.includes('knight') || norm.includes('warrior')) {
+    return {
+      className: '⚔️ Ksatria (Warrior/Tank)',
+      statFocus: 'ATK, DEF & HP',
+      gearFocus: 'Pedang/Senjata Fisik + Heavy Armor (Cari Bonus ATK% & DEF)',
+      skillCombo: '1️⃣ Guard Stance (Def) ➔ 2️⃣ Tebasan Berat (Burst)',
+      commands: [
+        { cmd: '/gear', desc: 'Kelola & pasang equipment V1/V2' },
+        { cmd: '/skill', desc: 'Atur kombinasi loadout skill' },
+        { cmd: '/inv', desc: 'Pakai potion & periksa item dropped' },
+        { cmd: '/reforge', desc: 'Acak ulang stat tambahan gear V2' },
+        { cmd: '/socket', desc: 'Pasang Gem HP & DEF pada gear' },
+      ],
+    };
+  }
+  if (norm.includes('penyihir') || norm.includes('mage') || norm.includes('wizard')) {
+    return {
+      className: '🔮 Penyihir (Magic Burst)',
+      statFocus: 'Magic ATK & Crit Rate',
+      gearFocus: 'Tongkat Sihir + Jubah (Cari Bonus Magic ATK & Crit Rate)',
+      skillCombo: '1️⃣ Mana Shield ➔ 2️⃣ Serangan Sihir Elemen',
+      commands: [
+        { cmd: '/gear', desc: 'Pasang Tongkat & Jubah Magic' },
+        { cmd: '/skill', desc: 'Atur loadout skill sihir' },
+        { cmd: '/socket', desc: 'Pasang Gem Magic ATK pada socket' },
+        { cmd: '/reforge', desc: 'Cari stat Magic & Crit Multiplier' },
+      ],
+    };
+  }
+  if (norm.includes('pemanah') || norm.includes('ranger') || norm.includes('archer')) {
+    return {
+      className: '🏹 Pemanah (Ranged Crit DPS)',
+      statFocus: 'ATK, Crit Rate & Crit Multiplier',
+      gearFocus: 'Busur Panah + Zirah Ringan (Prioritas Crit Rate)',
+      skillCombo: '1️⃣ Tembakan Ganda ➔ 2️⃣ Panah Beracun',
+      commands: [
+        { cmd: '/gear', desc: 'Pasang Busur & Aksesori Crit' },
+        { cmd: '/skill', desc: 'Set loadout tembakan crit' },
+        { cmd: '/reforge', desc: 'Maksimalkan Crit Chance pada gear' },
+      ],
+    };
+  }
+  return {
+    className: '🗡️ Petualang / All-Rounder',
+    statFocus: 'ATK, DEF & Crit Rate Balance',
+    gearFocus: 'Senjata Utama + Armor Terbaik (Utamakan Skor Item Power IP)',
+    skillCombo: '1️⃣ Buff Defense / Utilitas ➔ 2️⃣ Skill Serangan Utama',
+    commands: [
+      { cmd: '/gear', desc: 'Kelola equipment' },
+      { cmd: '/skill', desc: 'Atur slot skill' },
+      { cmd: '/inv', desc: 'Kelola tas & potion' },
+      { cmd: '/reforge', desc: 'Tingkatkan stat bonus' },
+    ],
+  };
+}
+
+module.exports = { determineNextStep, getCompletedChecklist, getClassBuildAdvice };
+
 
