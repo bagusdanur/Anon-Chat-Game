@@ -116,16 +116,30 @@ function renderProfile(user) {
   const roundedAtkBonus = Math.round(totalAtkBonus);
   const roundedDefBonus = Math.round(totalDefBonus);
 
-  // ── Header (Hero Card) ──────────────────────────────────
+  // ── Header ──────────────────────────────────
   let msg = ``;
-  msg += `<b>🎭 ${alias}</b> · ${cls.name} <code>Lv.${user.level}</code>\n`;
-  msg += `💰 <b>${user.gold} Gold</b>`;
-  if (party) msg += ` · 👥 Party (${party.members.length}/4)`;
-  if (guild) msg += ` · 🏛 [${guild.tag}] ${guild.name}`;
-  if (streak > 0) msg += ` · 🔥 ${streak}x Win`;
-  msg += `\n\n`;
+  msg += `<b>🎭 ${alias}</b>\n`;
+  msg += `${cls.name}  <code>Lv.${user.level}</code>  💰 <b>${user.gold}g</b>\n`;
+  if (streak > 0) msg += `🔥 Win Streak: <b>${streak}x</b>\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 
-  // ── Bars (Vitals) ────────────────────────────────────────
+  // ── Ringkasan progres & sosial ─────────────────
+  msg += `<b>🧭 Ringkasan</b>\n`;
+  msg += `🌍 ${world?.region_name || 'Pinggiran Aldenmoor'} · Chapter ${world?.campaign_chapter || 1}`;
+  if (world?.exploration_points) msg += ` · Jelajah ${world.exploration_points}`;
+  msg += `\n`;
+  msg += `📜 ${campaign ? `${campaign.title} (${campaign.status})` : 'Campaign siap dilanjutkan'}\n`;
+  msg += `🎒 ${inventoryCount} item`;
+  if (profession) msg += ` · 🧰 ${profession.profession_id} Lv.${profession.level}`;
+  msg += `\n`;
+  msg += `🏛 ${guild ? `[${guild.tag}] ${guild.name} · ${guild.role}` : 'Belum bergabung guild'}`;
+  msg += ` · 👥 ${party ? `${party.members.length} anggota` : 'Solo'}\n`;
+  if (season) {
+    msg += `🏆 ${season.name}: ${season.points} pts · 🪙 ${season.currency}\n`;
+  }
+  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+
+  // ── Bars ────────────────────────────────────
   const hpFilled  = Math.min(10, Math.round((Math.max(0, effectiveHp) / effectiveMaxHp) * 10));
   const xpFilled  = Math.min(10, Math.round((user.xp / nextXp) * 10));
   const enFilled  = Math.min(10, Math.round((energy / 10) * 10));
@@ -134,69 +148,82 @@ function renderProfile(user) {
   msg += `✨ <b>XP</b>  ${'█'.repeat(xpFilled)}${'░'.repeat(10 - xpFilled)} <code>${user.xp}/${nextXp}</code>\n`;
   msg += `⚡ <b>EN</b>  ${'█'.repeat(enFilled)}${'░'.repeat(10 - enFilled)} <code>${energy}/10</code>`;
   if (energy < 10) msg += `  <i>(+1 ~${nextEMin}m)</i>`;
-  msg += `\n\n`;
+  msg += `\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 
-  // ── Stats & Attributes ────────────────────────────────────
-  msg += `<b>📊 STATS & STATUS</b>\n`;
-  msg += `⚔️ ATK <b>${roundedAtk}</b>${roundedAtkBonus > 0 ? `  <i>(+${roundedAtkBonus} eq)</i>` : ''}   `;
-  msg += `🛡️ DEF <b>${roundedDef}</b>${roundedDefBonus > 0 ? `  <i>(+${roundedDefBonus} eq)</i>` : ''}\n`;
+  // ── Stats ────────────────────────────────────
+  msg += `<b>📊 Stats</b>\n`;
+  msg += `⚔️ ATK <b>${formatNumberId(effectiveAtk)}</b>${totalAtkBonus > 0 ? `  <i>(+${formatNumberId(totalAtkBonus)} eq)</i>` : ''}   `;
+  msg += `🛡️ DEF <b>${formatNumberId(effectiveDef)}</b>${totalDefBonus > 0 ? `  <i>(+${formatNumberId(totalDefBonus)} eq)</i>` : ''}\n`;
   if (effectiveMagic > 0) {
-    const shownMagic = Math.round(effectiveMagic);
-    const shownMagicBonus = Math.round(totalMagicBonus);
-    msg += `🔮 Magic <b>${shownMagic}</b>${shownMagicBonus > 0 ? `  <i>(+${shownMagicBonus} eq)</i>` : ''}\n`;
+    const shownMagic = formatNumberId(effectiveMagic);
+    const shownMagicBonus = formatNumberId(totalMagicBonus);
+    msg += `🔮 Magic <b>${shownMagic}</b>${totalMagicBonus > 0 ? `  <i>(+${shownMagicBonus} eq)</i>` : ''}\n`;
   }
   msg += `💥 Crit <b>${totalCrit}%</b> × <b>${totalCritMulti}%</b>   🎯 ${dmgType}\n`;
   if ((user.phys_resist || 0) > 0 || (user.magic_resist || 0) > 0) {
     msg += `🛡 Resist  Phys <b>${Math.round((user.phys_resist||0)*100)}%</b>  Magic <b>${Math.round((user.magic_resist||0)*100)}%</b>\n`;
   }
-  msg += `🏰 Dungeon: ${dungeonStatus}\n\n`;
+  msg += `🏰 Dungeon: ${dungeonStatus}\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 
-  // ── Active Objective ──────────────────────────────────────
-  msg += `<b>🎯 PETUNJUK LANGKAH BERIKUTNYA</b>\n`;
-  msg += `▶️ <code>${nextStep.command}</code> — <b>${nextStep.title}</b>\n`;
-  msg += `🌍 ${world?.region_name || 'Pinggiran Aldenmoor'} · 🎒 ${inventoryCount} item`;
-  if (profession) msg += ` · 🧰 ${profession.profession_id} Lv.${profession.level}`;
-  if (season) msg += ` · 🏆 ${season.points} pts`;
-  msg += `\n\n`;
-
-  // ── Equipment ─────────────────────────────────────────────
-  msg += `<b>🗡️ EQUIPMENT</b>\n`;
+  // ── Equipment ────────────────────────────────
   const allowedSlots = CLASS_EQUIP_SLOTS[user.class_name] || ['weapon', 'staff', 'armor', 'accessory'];
   const slotEmoji = { weapon: '⚔️', staff: '🪄', armor: '🛡️', accessory: '💍' };
-  const slotLabel = { weapon: 'Senjata  ', staff: 'Tongkat  ', armor: 'Armor    ', accessory: 'Aksesori ' };
+  const slotLabel = { weapon: 'Weapon', staff: 'Staff', armor: 'Armor', accessory: 'Accessory' };
 
+  msg += `<b>🗡️ Equipment</b>\n`;
   for (const slot of allowedSlots) {
-    msg += `${slotEmoji[slot]} ${slotLabel[slot]}: ${renderSlot(equipped[slot])}\n`;
+    msg += `${slotEmoji[slot]} ${slotLabel[slot].padEnd(9)}: ${renderSlot(equipped[slot])}\n`;
   }
 
+  // Bonus equip ringkas
   const bonusParts = [];
   if (equip.atkBonus > 0)      bonusParts.push(`ATK+${equip.atkBonus}`);
   if (equip.defBonus > 0)      bonusParts.push(`DEF+${equip.defBonus}`);
   if (equip.magicAtkBonus > 0) bonusParts.push(`Magic+${equip.magicAtkBonus}`);
   if (equip.critRate > 0)      bonusParts.push(`Crit+${Math.round(equip.critRate*100)}%`);
   if (bonusParts.length > 0) {
-    msg += `✨ <i>Bonus: ${bonusParts.join(' · ')}</i>\n`;
+    msg += `<i>Bonus: ${bonusParts.join(' · ')}</i>\n`;
   }
 
   if (v2Equipped.length > 0) {
     const totalItemPower = v2Equipped.reduce((sum, item) => sum + item.item_power, 0);
-    msg += `💠 <b>Gear V2 (${totalItemPower} IP):</b> `;
-    const v2Summary = v2Equipped.map(item => {
+    msg += `\n<b>💠 Equipment V2</b> · Total <b>${totalItemPower} IP</b>\n`;
+    for (const item of v2Equipped) {
       const gearNumber = v2Items.findIndex(candidate => candidate.id === item.id) + 1;
-      return `<code>[${gearNumber}]</code> ${item.display_name} +${item.upgrade_tier}`;
-    }).join(' · ');
-    msg += `${v2Summary}\n`;
+      const bonuses = item.affixes.length
+        ? item.affixes.map(affix => formatStat(affix.stat_key, affix.stat_value)).join(' · ')
+        : 'Tanpa bonus acak';
+      const filledSockets = item.sockets.filter(socket => socket.gem_item_id).length;
+      const socketInfo = item.sockets.length
+        ? `${filledSockets}/${item.sockets.length} terisi`
+        : 'tidak ada';
+      const binding = item.bind_status === 'account_bound' ? 'Terikat' : 'Bisa dijual';
+      msg += `✅ <code>[${gearNumber}]</code> <b>${item.display_name}</b> +${item.upgrade_tier}\n`;
+      msg += `   ${V2_CATEGORY_LABELS[item.category] || item.category} · ` +
+        `${V2_RARITY_LABELS[item.rarity] || item.rarity} · ` +
+        `<b>${item.item_power} IP</b> (skor) · Q${item.quality}/100\n`;
+      msg += `   🎲 ${bonuses}\n`;
+      msg += `   💎 Socket ${socketInfo} · 🔒 ${binding}`;
+      if (item.set_id) msg += ` · 🧩 Set ${item.set_id}`;
+      msg += `\n`;
+    }
   }
-  msg += `\n`;
 
-  // ── Skill Loadout ──────────────────────────────────────────
-  msg += `<b>🌟 SKILL LOADOUT</b>\n`;
+  msg += `\n<b>🌟 Skill Loadout</b>\n`;
   for (let slot = 1; slot <= 3; slot++) {
     const skill = skillLoadout.find(item => item.slot === slot);
-    msg += `${slot}️⃣ ${skill ? `<b>${skill.name}</b> (Rank ${skill.rank})` : '<i>(Slot Kosong)</i>'}\n`;
+    msg += `${slot}️⃣ ${skill ? `<b>${skill.name}</b> · Rank ${skill.rank}` : '<i>(Kosong)</i>'}\n`;
   }
+  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 
-  msg += `\n<i>/guide • /world • /campaign • /inv • /skill • /helprpg</i>`;
+  // ── Guide Step Onboarding (At the Bottom) ──
+  msg += `<b>🧭 LANGKAH BERIKUTNYA</b>\n`;
+  msg += `▶️ <b>${nextStep.title}</b> · <code>${nextStep.command}</code>\n`;
+  msg += `   <i>${nextStep.detail}</i>\n`;
+
+  msg += `\n<i>/guide • /world • /campaign • /party • /guild\n/skill • /gear • /inv • /helprpg</i>`;
   return msg;
 }
 
