@@ -2,8 +2,8 @@
 // PvP Duel — Turn-based 1v1 dengan partner (invite/accept system)
 const { Markup } = require('telegraf');
 const {
-  getOrCreateUser, getCurrentHp,
-  addXp, addGold, updateHp, CLASS_DEFS, getEquipmentBonus,
+  getOrCreateUser,
+  addXp, addGold, CLASS_DEFS, getEquipmentBonus,
   calcPhysicalDamage, calcMagicDamage, rollCrit,
   getDuelCooldown, setDuelCooldown, createDuelRun, finalizeDuelRun,
   incrementWinStreak, resetWinStreak, getWinStreak,
@@ -19,7 +19,8 @@ const skillService = createSkillService(db);
 const equipmentV2 = createEquipmentService(db);
 
 const duelSessions = new Map();
-const duelInvites = new Map(); // pairKey → { inviter, invitee }
+const duelInvites = new Map(); // pairKey → { inviter, invitee, createdAt }
+const DUEL_INVITE_TIMEOUT = 10 * 60 * 1000;
 
 function getDuelPairKey(a, b) {
   return [a.toString(), b.toString()].sort().join(':');
@@ -212,8 +213,9 @@ function startDuel(bot, inviterId, inviteeId) {
   const equipV2A = equipmentV2.bonuses(inviterId);
   const equipV2B = equipmentV2.bonuses(inviteeId);
 
-  const hpA = Math.max(1, Math.floor((getCurrentHp(user) + (equipV2A.max_hp || 0)) * 0.5));
-  const hpB = Math.max(1, Math.floor((getCurrentHp(partner) + (equipV2B.max_hp || 0)) * 0.5));
+  // Duel memakai HP arena terpisah agar PvP tidak merusak HP progres dunia.
+  const hpA = Math.max(1, Math.floor((user.max_hp + (equipV2A.max_hp || 0)) * 0.5));
+  const hpB = Math.max(1, Math.floor((partner.max_hp + (equipV2B.max_hp || 0)) * 0.5));
 
   const runId = createDuelRun(inviterId, inviteeId);
 
@@ -226,7 +228,7 @@ function startDuel(bot, inviterId, inviteeId) {
     lastActivity: Date.now(),
     playerA: {
       classId: user.class_name, className: clsA.name, icon: clsA.name.split(' ')[0],
-      hp: hpA, maxHp: user.max_hp + (equipV2A.max_hp || 0),
+      hp: hpA, maxHp: hpA,
       atk: user.atk + equipA.atkBonus + (equipV2A.atk || 0), def: user.def + equipA.defBonus + (equipV2A.def || 0),
       magicAtk: (user.magic_atk || 0) + (equipV2A.magic_atk || 0), atkBonus: equipA.atkBonus,
       critRate: (user.crit_rate || 0.05) + (equipV2A.crit_rate || 0), critMulti: user.crit_multi || 1.5,
@@ -237,7 +239,7 @@ function startDuel(bot, inviterId, inviteeId) {
     },
     playerB: {
       classId: partner.class_name, className: clsB.name, icon: clsB.name.split(' ')[0],
-      hp: hpB, maxHp: partner.max_hp + (equipV2B.max_hp || 0),
+      hp: hpB, maxHp: hpB,
       atk: partner.atk + equipB.atkBonus + (equipV2B.atk || 0), def: partner.def + equipB.defBonus + (equipV2B.def || 0),
       magicAtk: (partner.magic_atk || 0) + (equipV2B.magic_atk || 0), atkBonus: equipB.atkBonus,
       critRate: (partner.crit_rate || 0.05) + (equipV2B.crit_rate || 0), critMulti: partner.crit_multi || 1.5,
@@ -252,7 +254,7 @@ function startDuel(bot, inviterId, inviteeId) {
 
   duelSessions.set(pairKey, duel);
 
-  const startMsg = `⚔️ **DUEL DIMULAI!**\n\n${clsA.name} vs ${clsB.name}\nHP: 50% max (duel cepat)\nCooldown 5 menit aktif setelah selesai.`;
+  const startMsg = `⚔️ **DUEL DIMULAI!**\n\n${clsA.name} vs ${clsB.name}\nHP arena: 50% max (tidak mengubah HP dunia)\n\nKedua pemain memilih aksi Turn 1. Turn diproses setelah keduanya siap.\nCooldown 5 menit aktif setelah selesai.`;
   bot.telegram.sendMessage(inviterId, startMsg, { parse_mode: 'Markdown' }).catch(() => {});
   bot.telegram.sendMessage(inviteeId, startMsg, { parse_mode: 'Markdown' }).catch(() => {});
 
@@ -264,9 +266,6 @@ function resolveDuelIfReady(bot, duel) {
   const logs = resolveDuelTurn(duel, duel.actions);
   duel.actions = {};
   duel.pendingLogs = logs;
-  updateHp(duel.chatIdA, duel.playerA.hp);
-  updateHp(duel.chatIdB, duel.playerB.hp);
-
   const isADead = duel.playerA.hp <= 0;
   const isBDead = duel.playerB.hp <= 0;
   if (!isADead && !isBDead) {
@@ -337,7 +336,7 @@ function setupDuel(bot, { getPartnerId, rateLimitCommand }) {
     if (partnerCd > 0) return ctx.reply(`⏳ Partner masih cooldown duel: ${Math.ceil(partnerCd / 60)} menit`);
 
     // Simpan invite
-    duelInvites.set(pairKey, { inviter: userId, invitee: partnerId });
+    duelInvites.set(pairKey, { inviter: userId, invitee: partnerId, createdAt: Date.now() });
 
     const clsA = CLASS_DEFS[user.class_name];
     const clsB = CLASS_DEFS[partner.class_name];
@@ -367,6 +366,10 @@ function setupDuel(bot, { getPartnerId, rateLimitCommand }) {
     const pairKey = getDuelPairKey(userId, partnerId);
     const invite = duelInvites.get(pairKey);
     if (!invite) return ctx.answerCbQuery('Undangan sudah tidak valid.', { show_alert: true });
+    if (Date.now() - invite.createdAt > DUEL_INVITE_TIMEOUT) {
+      duelInvites.delete(pairKey);
+      return ctx.answerCbQuery('Undangan duel sudah kedaluwarsa (10 menit).', { show_alert: true });
+    }
     if (invite.inviter === userId) return ctx.answerCbQuery('Tunggu partnermu yang merespons!', { show_alert: true });
 
     const action = ctx.match[1];
@@ -401,8 +404,8 @@ function setupDuel(bot, { getPartnerId, rateLimitCommand }) {
     duel.actions[userId] = { type: actionType };
     duel.lastActivity = Date.now();
     ctx.answerCbQuery('Aksi dikonfirmasi!');
-
-    resolveDuelIfReady(bot, duel);
+    const resolved = resolveDuelIfReady(bot, duel);
+    if (!resolved) ctx.reply(`✅ Aksi Turn ${turnNumber} terkunci.\n⏳ Menunggu partner memilih aksi...`);
   });
 
   function findDuelForUser(userId) {
@@ -418,7 +421,8 @@ function setupDuel(bot, { getPartnerId, rateLimitCommand }) {
     duel.actions[userId] = action;
     duel.lastActivity = Date.now();
     ctx.answerCbQuery('Aksi dikonfirmasi!');
-    resolveDuelIfReady(bot, duel);
+    const resolved = resolveDuelIfReady(bot, duel);
+    if (!resolved) ctx.reply(`✅ Aksi Turn ${duel.turnNumber} terkunci.\n⏳ Menunggu partner memilih aksi...`);
   }
 
   bot.action(/^duel:skills:(\d+)$/, rateLimitCommand, ctx => {
@@ -484,6 +488,9 @@ setInterval(() => {
       duelSessions.delete(pairKey);
     }
   }
+  for (const [pairKey, invite] of duelInvites) {
+    if (now - invite.createdAt > DUEL_INVITE_TIMEOUT) duelInvites.delete(pairKey);
+  }
 }, 60 * 1000); // Check setiap 1 menit
 
-module.exports = { setupDuel };
+module.exports = { setupDuel, resolveDuelTurn, DUEL_INVITE_TIMEOUT };

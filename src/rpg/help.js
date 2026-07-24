@@ -36,6 +36,7 @@ const HELP_PAGES = [
     text:
       '<b>Combat tactical</b>\n' +
       'Attack, defend, skill, cooldown, status effect, resist, crit, dan boss mechanic tersedia pada dungeon tactical, duel, dan raid.\n\n' +
+      'Combat co-op memakai cycle klasik: setiap pemain mengunci satu aksi, lalu turn diproses setelah semua anggota siap. Damage duel memakai HP arena terpisah dan tidak mengurangi HP dunia.\n\n' +
       '/skill — skill tree\n' +
       '/build — loadout aktif\n' +
       '/duel — PvP opsional dengan partner\n' +
@@ -53,7 +54,7 @@ const HELP_PAGES = [
       '/dungeon duo [nomor] — turn-based bersama party\n' +
       '/dungeon raid — raid boss co-op klasik\n' +
       '/adventure — alias menu dungeon panjang\n\n' +
-      'Dungeon memiliki banyak gerombolan, elite, jalur bercabang, treasure, dua rest point, boss, dan checkpoint 24 jam. Mode duo baru dimulai setelah partner menerima undangan. Menu dikirim ke kedua pemain; aksi bergantian dan 3 aksi mengisi Combo bersama.',
+      'Dungeon memiliki banyak gerombolan, elite, jalur bercabang, treasure, dua rest point, boss, dan checkpoint 24 jam. Mode duo baru dimulai setelah partner menerima undangan. Setiap cycle, kedua pemain memilih aksi lalu hasil diproses saat 2/2 siap; pilihan room seperti istirahat juga wajib disetujui berdua. Skill memakai loadout /skill dengan cooldown masing-masing.',
   },
   {
     id: 'equipment',

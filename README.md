@@ -23,7 +23,11 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Party persisten dan guild dengan alias karakter anonim
 - Pusat anonymous co-op (`/coop`) untuk party, dungeon duo, bounty, campaign, raid, dan duel
 - `/dungeon` membuka dungeon panjang baru; raid boss klasik dipindahkan ke `/dungeon raid`
-- Dungeon duo memerlukan persetujuan partner, menyimpan undangan 10 menit, dan mengirim menu/nomor giliran ke kedua pemain
+- Dungeon duo memerlukan persetujuan partner, menyimpan undangan 10 menit, dan mengirim menu cycle ke kedua pemain
+- Setiap cycle duo menunggu aksi kedua pemain (2/2); event, jalur, treasure, dan istirahat wajib disetujui berdua
+- Skill dungeon memakai loadout aktif per pemain dengan cooldown per skill yang turun setiap cycle selesai
+- Raid klasik dan duel juga menunggu aksi kedua pemain sebelum turn diproses; duel memakai HP arena
+  terpisah sehingga damage PvP tidak mengurangi HP dunia
 - World boss asynchronous harian dan weekly party raid dengan kontribusi persisten
 - Guild quest mingguan serta role owner/officer/member dengan audit perubahan
 - Duo bounty harian dan co-op campaign dengan progress karakter independen
@@ -46,7 +50,7 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Hunt dari HP penuh ditargetkan 3–8 turn dengan konsumsi rata-rata 10–45% HP.
 - Reruntuhan Goblin dapat dicoba sejak awal, tetapi ekspedisi penuh solo direkomendasikan mulai level 7; level lebih rendah diarahkan ke duo.
 - Weekly raid duo disetel agar masih dapat dituntaskan oleh dua karakter pada level minimum bila seluruh attempt digunakan.
-- Reruntuhan Goblin memiliki lima lapis combat; mode duo memakai giliran bergantian dan energi Combo bersama.
+- Reruntuhan Goblin memiliki lima lapis combat; mode duo memakai cycle aksi 2/2 dan energi Combo bersama.
 
 ## Cara Pakai
 

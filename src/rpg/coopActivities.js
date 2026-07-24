@@ -30,7 +30,7 @@ function setupCoopActivities(bot, { rateLimitCommand }) {
     return ctx.reply(
       `<b>🤝 PUSAT ANONYMOUS CO-OP</b>\n\n${partyStatus}\n\n` +
       `<b>Aktivitas duo:</b>\n` +
-      `1. 🏰 Dungeon panjang — banyak monster, giliran bergantian, Combo\n` +
+      `1. 🏰 Dungeon panjang — banyak monster, aksi party 2/2, Combo\n` +
       `2. 🎯 Bounty harian — kontribusi kedua pemain\n` +
       `3. 📖 Campaign party — jelajah bersama, progress masing-masing\n` +
       `4. 🔥 Weekly raid — boss party dan reward kontribusi\n` +
@@ -59,7 +59,7 @@ function setupCoopActivities(bot, { rateLimitCommand }) {
   bot.action(/^coop:guide:(party|dungeon|bounty|campaign|raid|duel)$/, ctx => {
     const guides = {
       party: '👥 Saat terhubung anonymous chat: /party create → /party invite. Partner menekan /party accept.',
-      dungeon: '🏰 Gunakan /dungeon duo 1. Aksi wajib bergantian; kumpulkan 3 energi lalu tekan 🤝 Combo.',
+      dungeon: '🏰 Gunakan /dungeon duo 1. Keduanya pilih aksi; cycle berjalan saat 2/2 siap. Kumpulkan 3 energi lalu tekan 🤝 Combo.',
       bounty: '🎯 Kedua pemain gunakan /bounty hunt, lalu masing-masing /bounty claim setelah target selesai.',
       campaign: '📖 Gunakan /coopcampaign. Kedua pemain melakukan /coopcampaign explore agar progress masing-masing naik.',
       raid: '🔥 Gunakan /raid attack sampai boss tumbang, lalu masing-masing /raid claim.',

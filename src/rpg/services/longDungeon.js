@@ -220,24 +220,51 @@ function createLongDungeonService(db, options = {}) {
       };
     }
     const combat = state.combat;
-    if (!['attack', 'defend', 'skill', 'combo'].includes(action)) {
+    const skillId = action.startsWith('skill_') ? action.slice(6) : null;
+    const equippedSkill = skillId
+      ? db.prepare(`
+          SELECT us.rank, sd.definition_json
+          FROM rpg_user_skills us
+          JOIN rpg_skill_definitions sd ON sd.skill_id=us.skill_id
+          WHERE us.user_id=? AND us.skill_id=? AND us.equipped_slot IS NOT NULL
+        `).get(String(actor.telegram_user_id), skillId)
+      : null;
+    if (!['attack', 'defend', 'skill', 'combo'].includes(action) && !skillId) {
       return { success: false, reason: 'Pilih Attack, Defend, Skill, atau Combo.' };
     }
-    if (action === 'skill' && combat.skillCooldown > 0) {
-      return { success: false, reason: `Skill masih cooldown ${combat.skillCooldown} turn.` };
+    if (skillId && !equippedSkill) {
+      return { success: false, reason: 'Skill tidak terpasang pada loadout-mu.' };
+    }
+    combat.skillCooldowns = combat.skillCooldowns || {};
+    const actorCooldowns = combat.skillCooldowns[String(actor.telegram_user_id)] || {};
+    if (skillId && (actorCooldowns[skillId] || 0) > 0) {
+      return { success: false, reason: `Skill masih cooldown ${actorCooldowns[skillId]} cycle.` };
     }
     if (action === 'combo' && (session.mode !== 'duo' || combat.combo < 3)) {
       return { success: false, reason: 'Combo duo membutuhkan 3 energi kerja sama.' };
     }
 
+    const skillDefinition = equippedSkill ? JSON.parse(equippedSkill.definition_json) : null;
+    const ranked = value => Array.isArray(value)
+      ? value[Math.min(equippedSkill.rank - 1, value.length - 1)]
+      : value;
+    const skillEffect = skillDefinition?.effect || {};
+    const isDefensiveSkill = ['guard', 'shield', 'provoke', 'weaken'].includes(skillEffect.type);
     const multiplier = action === 'combo' ? 1.1
-      : action === 'skill' ? 0.8 : action === 'defend' ? 0.25 : 0.5;
+      : skillId ? (isDefensiveSkill ? 0.2 : (ranked(skillEffect.multiplier) || 0.8))
+        : action === 'skill' ? 0.8 : action === 'defend' ? 0.25 : 0.5;
     let dealt = Math.max(1, Math.floor(power * multiplier * (0.9 + random() * 0.2)));
     const critRate = Math.min(0.5, Math.max(0, actor.crit_rate || 0));
     const critical = random() < critRate;
     if (critical) dealt = Math.max(1, Math.floor(dealt * (actor.crit_multi || 1.5)));
     combat.enemyHp = Math.max(0, combat.enemyHp - dealt);
     if (action === 'skill') combat.skillCooldown = 2;
+    if (skillId) {
+      combat.skillCooldowns[String(actor.telegram_user_id)] = {
+        ...actorCooldowns,
+        [skillId]: Number(skillEffect.cooldown) || 0,
+      };
+    }
     if (session.mode === 'duo') {
       combat.combo = action === 'combo' ? 0 : Math.min(3, combat.combo + 1);
     }
@@ -247,11 +274,12 @@ function createLongDungeonService(db, options = {}) {
       ? 0
       : Math.max(1, Math.floor(
         room.enemy.damage * incomingScale *
-        (action === 'defend' ? 0.35 : action === 'combo' ? 0.5 : 1),
+        (action === 'defend' || isDefensiveSkill ? 0.35 : action === 'combo' ? 0.5 : 1),
       ));
     state.hp = Math.max(0, state.hp - incoming);
     if (action !== 'skill' && combat.skillCooldown > 0) combat.skillCooldown--;
-    state.log = `Turn ${combat.turn}: ${action}${critical ? ' CRIT' : ''} memberi ${dealt} damage · menerima ${incoming} damage`;
+    const actionLabel = skillDefinition?.name || action;
+    state.log = `Turn ${combat.turn}: ${actionLabel}${critical ? ' CRIT' : ''} memberi ${dealt} damage · menerima ${incoming} damage`;
     combat.turn++;
 
     if (state.hp <= 0) {
@@ -478,12 +506,37 @@ function createLongDungeonService(db, options = {}) {
       const partner = session.partner_id
         ? db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(session.partner_id)
         : null;
+      let cycleActions = null;
       if (session.mode === 'duo') {
-        const expectedActor = session.state.turnOrder?.[session.state.turnIndex || 0];
-        if (expectedActor && expectedActor !== String(userId)) {
-          const alias = session.state.turnAliases?.[session.state.turnIndex || 0] || 'partner';
-          return { success: false, reason: `Tunggu giliran ${alias}.` };
+        session.state.pendingActions = session.state.pendingActions || {};
+        if (session.state.pendingActions[String(userId)]) {
+          return { success: false, reason: 'Aksimu pada cycle ini sudah terkunci.' };
         }
+        const existing = Object.values(session.state.pendingActions)[0];
+        if (!['combat', 'boss'].includes(room.type) && existing && existing !== optionId) {
+          return {
+            success: false,
+            reason: 'Pilihan harus disetujui berdua. Pilih opsi yang sama dengan partner.',
+          };
+        }
+        session.state.pendingActions[String(userId)] = optionId;
+        if (Object.keys(session.state.pendingActions).length < 2) {
+          const timestamp = now();
+          const stored = db.prepare(`
+            UPDATE rpg_dungeon_sessions_v2
+            SET state_json=?, updated_at=?
+            WHERE id=? AND status='active' AND state_version=?
+          `).run(JSON.stringify(session.state), timestamp, session.id, expectedVersion);
+          if (stored.changes !== 1) return { success: false, reason: 'Aksi sudah diproses.' };
+          return {
+            success: true,
+            pending: true,
+            session: this.get(session.id, userId),
+            room,
+          };
+        }
+        cycleActions = { ...session.state.pendingActions };
+        delete session.state.pendingActions;
       }
       let nextRoomId;
       if (room.type === 'event') {
@@ -499,6 +552,25 @@ function createLongDungeonService(db, options = {}) {
             ? { _calculatedPower: calculatePower(owner) + calculatePower(partner) }
             : owner;
           nextRoomId = autoResolve(session, room, combined);
+        } else if (session.mode === 'duo' && cycleActions) {
+          const orderedIds = session.state.turnOrder || [session.owner_id, session.partner_id];
+          let tactical = null;
+          for (const actorId of orderedIds) {
+            const actor = String(actorId) === String(session.owner_id) ? owner : partner;
+            const ally = actor === owner ? partner : owner;
+            tactical = resolveTacticalTurn(session, room, actor, ally, cycleActions[String(actorId)]);
+            if (!tactical.success) return tactical;
+            nextRoomId = tactical.nextRoomId;
+            if (nextRoomId !== room.id) break;
+          }
+          // Cooldown skill loadout berkurang tepat sekali setelah cycle berikutnya selesai.
+          const cooldowns = session.state.combat?.skillCooldowns || {};
+          for (const [actorId, values] of Object.entries(cooldowns)) {
+            const usedSkill = String(cycleActions[actorId] || '').replace(/^skill_/, '');
+            for (const skillId of Object.keys(values)) {
+              if (skillId !== usedSkill) values[skillId] = Math.max(0, values[skillId] - 1);
+            }
+          }
         } else {
           const actor = String(userId) === String(session.owner_id) ? owner : partner;
           const ally = actor === owner ? partner : owner;
@@ -524,11 +596,6 @@ function createLongDungeonService(db, options = {}) {
         : nextRoom.type === 'failure' ? 'failed' : 'active';
       if (session.mode === 'duo') {
         session.state.actionNumber = (session.state.actionNumber || 1) + 1;
-        if (terminalStatus === 'active') {
-          session.state.turnIndex = ((session.state.turnIndex || 0) + 1) % 2;
-          const nextAlias = session.state.turnAliases?.[session.state.turnIndex] || 'partner';
-          session.state.log = `${session.state.log || 'Aksi diproses.'} · giliran ${nextAlias}`;
-        }
       }
       const timestamp = now();
       const update = db.prepare(`

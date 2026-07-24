@@ -24,6 +24,9 @@ const equipmentV2 = createEquipmentService(db);
 // In-memory raid state keyed by pairKey
 let botRef = null;
 const raidSessions = new Map();
+const dungeonInvites = new Map();
+const RAID_SESSION_TIMEOUT = 5 * 60 * 1000;
+const RAID_INVITE_TIMEOUT = 10 * 60 * 1000;
 
 function getPairKey(a, b) {
   return [a.toString(), b.toString()].sort().join(':');
@@ -441,8 +444,6 @@ function clearRaidSession(chatId, partnerId) {
 
 function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
   botRef = bot; // Simpan reference untuk cleanup interval
-  // Pending invite map
-  const dungeonInvites = new Map();
 
   bot.command('dungeon', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
@@ -526,7 +527,7 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
       return ctx.answerCbQuery('Sudah ada sesi dungeon aktif!', { show_alert: true });
     }
 
-    dungeonInvites.set(pairKey, { inviter: userId, invitee: partnerId, tierId });
+    dungeonInvites.set(pairKey, { inviter: userId, invitee: partnerId, tierId, createdAt: Date.now() });
     ctx.answerCbQuery(`Undangan ${bossTierDef.ui_label} dikirim!`);
     ctx.editMessageText(
       `${bossTierDef.ui_emoji} Kamu memilih <b>${bossTierDef.ui_label}</b>!\n\nMenunggu konfirmasi partner...`,
@@ -562,6 +563,10 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
     const pairKey = getPairKey(userId, partnerId);
     const invite = dungeonInvites.get(pairKey);
     if (!invite) return ctx.answerCbQuery('Undangan sudah tidak valid.', { show_alert: true });
+    if (Date.now() - invite.createdAt > RAID_INVITE_TIMEOUT) {
+      dungeonInvites.delete(pairKey);
+      return ctx.answerCbQuery('Undangan dungeon sudah kedaluwarsa (10 menit).', { show_alert: true });
+    }
     if (invite.inviter === userId) return ctx.answerCbQuery('Tunggu partnermu yang merespons!', { show_alert: true });
 
     const action = ctx.match[1];
@@ -666,7 +671,7 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
     raidSessions.set(pairKey, raid);
 
     ctx.answerCbQuery('Raid dimulai!');
-    const startMsg = `⚔️ <b>DUNGEON RAID DIMULAI!</b>\n\n👹 Boss: <b>${bossTier.name}</b>\n📊 Rata-rata level party: ${avgLv}\n\nCooldown 10 menit aktif setelah raid selesai (win/lose).\n\nPersiapkan diri!`;
+    const startMsg = `⚔️ <b>DUNGEON RAID DIMULAI!</b>\n\n👹 Boss: <b>${bossTier.name}</b>\n📊 Rata-rata level party: ${avgLv}\n\nKedua pemain memilih aksi pada setiap turn. Turn diproses setelah keduanya siap.\n⏰ Sesi batal jika 5 menit tanpa aktivitas.\nCooldown 10 menit aktif setelah raid selesai (win/lose).\n\nPersiapkan diri!`;
     bot.telegram.sendMessage(invite.inviter, startMsg, { parse_mode: 'HTML' }).catch(() => {});
     bot.telegram.sendMessage(userId, startMsg, { parse_mode: 'HTML' }).catch(() => {});
 
@@ -683,8 +688,7 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
     if (!raid) return ctx.answerCbQuery('Raid sudah selesai.', { show_alert: true });
 
     // Timeout check: auto-abandon jika inactive > 5 menit
-    const RAID_TIMEOUT_MS = 5 * 60 * 1000;
-    if (Date.now() - raid.lastActivity > RAID_TIMEOUT_MS) {
+    if (Date.now() - raid.lastActivity > RAID_SESSION_TIMEOUT) {
       finalizeDungeonRun(raid.runId, 'abandoned', null);
       raidSessions.delete(pairKey);
       bot.telegram.sendMessage(raid.chatIdA, '⏰ Raid dibatalkan karena tidak ada aktivitas selama 5 menit.').catch(() => {});
@@ -774,8 +778,7 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
 
 
 // ===== PERIODIC CLEANUP =====
-// Auto-abandon raid yang idle > 10 menit (mencegah memory leak + stuck state)
-const RAID_SESSION_TIMEOUT = 10 * 60 * 1000; // 10 menit
+// Auto-abandon raid yang idle > 5 menit (sama dengan validasi callback).
 
 setInterval(() => {
   const now = Date.now();
@@ -787,7 +790,7 @@ setInterval(() => {
       setDungeonCooldown(raid.chatIdB);
 
       const timeoutMsg = '⏰ <b>Raid Timeout!</b>\n' +
-        '\nSesi raid dibatalkan karena tidak ada aktivitas selama 10 menit.\n' +
+        '\nSesi raid dibatalkan karena tidak ada aktivitas selama 5 menit.\n' +
         'Cooldown dungeon aktif.';
       botRef.telegram.sendMessage(raid.chatIdA, timeoutMsg, { parse_mode: 'HTML' }).catch(() => {});
       botRef.telegram.sendMessage(raid.chatIdB, timeoutMsg, { parse_mode: 'HTML' }).catch(() => {});
@@ -795,6 +798,15 @@ setInterval(() => {
       raidSessions.delete(pairKey);
     }
   }
+  for (const [pairKey, invite] of dungeonInvites) {
+    if (now - invite.createdAt > RAID_INVITE_TIMEOUT) dungeonInvites.delete(pairKey);
+  }
 }, 60 * 1000); // Check setiap 1 menit
 
-module.exports = { setupCoop, clearRaidSession };
+module.exports = {
+  setupCoop,
+  clearRaidSession,
+  resolveTurn,
+  RAID_SESSION_TIMEOUT,
+  RAID_INVITE_TIMEOUT,
+};

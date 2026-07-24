@@ -2,6 +2,7 @@ const { Markup } = require('telegraf');
 const { db } = require('../db');
 const { getOrCreateUser, xpToNextLevel, calcStats } = require('./db_rpg');
 const { createFeatureFlagService } = require('./services/featureFlags');
+const { createSkillService } = require('./services/skills');
 const {
   loadDungeons, publishDungeons, createLongDungeonService,
 } = require('./services/longDungeon');
@@ -12,6 +13,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
   publishDungeons(db, loadDungeons());
   publishCampaign(db, loadCampaign());
   const campaign = createCampaignService(db);
+  const skills = createSkillService(db);
   const service = createLongDungeonService(db, {
     xpToNextLevel,
     calcStats,
@@ -29,35 +31,36 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
       `${room.text}\n\n` +
       `❤️ HP <b>${session.state.hp}/${session.state.maxHp}</b>\n` +
       `🤝 Companion: <b>${session.state.companion}</b>`;
-    const expectedActor = session.mode === 'duo'
-      ? session.state.turnOrder?.[session.state.turnIndex || 0]
-      : String(viewerId);
-    const turnAlias = session.mode === 'duo'
-      ? session.state.turnAliases?.[session.state.turnIndex || 0] || 'partner'
-      : null;
-    const isViewerTurn = session.mode !== 'duo' || String(expectedActor) === String(viewerId);
+    const pendingActions = session.state.pendingActions || {};
+    const viewerLocked = Boolean(pendingActions[String(viewerId)]);
+    const readyCount = Object.keys(pendingActions).length;
     if (session.mode === 'duo') {
       text += `\n\n━━━━━━━━━━━━━━━━━━━━\n`;
-      text += `🎲 <b>AKSI PARTY #${session.state.actionNumber || 1}</b>\n`;
-      text += isViewerTurn
-        ? `✅ <b>GILIRANMU</b> — pilih satu aksi di bawah.`
-        : `⏳ <b>MENUNGGU ${turnAlias}</b> — tombol aksimu dikunci.`;
+      text += `🎲 <b>CYCLE PARTY #${session.state.actionNumber || 1}</b> · Siap <b>${readyCount}/2</b>\n`;
+      text += viewerLocked
+        ? `✅ <b>AKSIMU TERKUNCI</b> — menunggu partner memilih.`
+        : `🟢 <b>PILIH AKSIMU</b> — hasil diproses setelah party 2/2 siap.`;
     }
     if (['combat', 'boss'].includes(room.type)) {
       const maxEnemyHp = combat?.maxEnemyHp || service.enemyMaxHp(session, room);
       const enemyHp = combat?.enemyHp ?? maxEnemyHp;
       text += `\n👹 ${room.enemy.name}: <b>${enemyHp}/${maxEnemyHp} HP</b>`;
-      text += `\n⚔️ Combat turn: <b>${combat?.turn || 1}</b> · Skill CD: <b>${combat?.skillCooldown || 0}</b>`;
+      const viewerCooldowns = combat?.skillCooldowns?.[String(viewerId)] || {};
+      const cdText = Object.values(viewerCooldowns).some(value => value > 0)
+        ? Object.entries(viewerCooldowns).filter(([, value]) => value > 0)
+          .map(([, value]) => `${value}T`).join('/')
+        : 'siap';
+      text += `\n⚔️ Combat cycle: <b>${combat?.turn || 1}</b> · Skill CD-mu: <b>${cdText}</b>`;
       text += `\n\n💡 <i>Attack stabil · Defend mengurangi damage · Skill kuat dengan cooldown.</i>`;
       if (session.mode === 'duo') {
-        text += `\n🤝 Giliran: <b>${turnAlias}</b> · Energi Combo: <b>${combat?.combo || 0}/3</b>`;
-        text += `\n⚠️ <i>Aksi wajib bergantian. Tunggu pesan giliranmu; tombol lama akan ditolak.</i>`;
+        text += `\n🤝 Energi Combo: <b>${combat?.combo || 0}/3</b>`;
+        text += `\n⚠️ <i>Kedua pemain wajib memilih. Aksi baru diproses saat status 2/2.</i>`;
       }
     }
     if (session.state.log) text += `\n📝 ${session.state.log}`;
 
     const buttons = [];
-    if (!isViewerTurn) {
+    if (viewerLocked) {
       buttons.push([Markup.button.callback(
         '🔄 Perbarui Status Giliran',
         `ldrefresh:${session.id}`,
@@ -75,7 +78,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
         Markup.button.callback('🛡 Defend', `ld:${session.id}:${session.state_version}:defend`),
       ]);
       buttons.push([
-        Markup.button.callback('✨ Skill', `ld:${session.id}:${session.state_version}:skill`),
+        Markup.button.callback('✨ Skill', `ldskills:${session.id}:${session.state_version}`),
         ...(session.mode === 'duo'
           ? [Markup.button.callback('🤝 Combo', `ld:${session.id}:${session.state_version}:combo`)]
           : []),
@@ -150,7 +153,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
         `<b>🤝 UNDANGAN DUNGEON DUO</b>\n\n` +
         `<b>${invite.inviterAlias}</b> mengajakmu memasuki:\n` +
         `🏰 <b>${invite.dungeonName}</b>\n\n` +
-        `Mode ini memakai aksi bergantian. Kamu harus menunggu giliran dan setiap pergantian akan dikirim sebagai pesan baru.\n\n` +
+        `Setiap cycle, kalian berdua memilih aksi. Hasil baru diproses setelah status 2/2 siap; pilihan room seperti istirahat juga harus disetujui berdua.\n\n` +
         `<i>Undangan berlaku 10 menit. Dungeon hanya dimulai jika kamu menerima.</i>`,
         {
           parse_mode: 'HTML',
@@ -191,7 +194,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     return ctx.reply(
       `<b>🏰 DUNGEON PANJANG — TURN-BASED</b>\n\n${list}\n\n` +
       `<b>Pilih mode:</b>\n🧍 Solo memakai companion NPC.\n` +
-      `🤝 Duo direkomendasikan: HP digabung dan kedua pemain bergantian aksi.\n\n` +
+      `🤝 Duo direkomendasikan: HP digabung; keduanya memilih aksi sebelum cycle diproses.\n\n` +
       `<i>Contoh: /dungeon solo 1 atau /dungeon duo 1</i>`,
       {
         parse_mode: 'HTML',
@@ -244,11 +247,11 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
       ).catch(() => {});
     }
     await ctx.editMessageText(
-      '<b>✅ UNDANGAN DITERIMA</b>\n\nDungeon duo dimulai. Menu giliran dikirim ke kedua pemain.',
+      '<b>✅ UNDANGAN DITERIMA</b>\n\nDungeon duo dimulai. Menu cycle dikirim ke kedua pemain.',
       { parse_mode: 'HTML' },
     ).catch(() => {});
-    await sendSessionTo(result.session.owner_id, result.session, '🏰 Partner menerima undangan. Kamu mendapat giliran pertama.');
-    return sendSessionTo(result.session.partner_id, result.session, '🏰 Dungeon dimulai. Tunggu giliran partner terlebih dahulu.');
+    await sendSessionTo(result.session.owner_id, result.session, '🏰 Partner menerima undangan. Pilih aksi Cycle 1.');
+    return sendSessionTo(result.session.partner_id, result.session, '🏰 Dungeon dimulai. Pilih aksi Cycle 1.');
   });
 
   bot.action(/^ldrefresh:(\d+)$/, async ctx => {
@@ -260,6 +263,39 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     const rendered = renderSession(session, ctx.chat.id);
     return ctx.editMessageText(rendered.text, rendered.options).catch(() =>
       ctx.reply(rendered.text, rendered.options));
+  });
+
+  bot.action(/^ldskills:(\d+):(\d+)$/, rateLimitCommand, async ctx => {
+    const session = service.get(Number(ctx.match[1]), ctx.chat.id);
+    const version = Number(ctx.match[2]);
+    if (!session || session.status !== 'active') {
+      return ctx.answerCbQuery('Checkpoint sudah tidak aktif.', { show_alert: true });
+    }
+    if (session.state_version !== version) {
+      return ctx.answerCbQuery('Cycle ini sudah berlalu.', { show_alert: true });
+    }
+    if (session.state.pendingActions?.[String(ctx.chat.id)]) {
+      return ctx.answerCbQuery('Aksimu sudah terkunci.', { show_alert: true });
+    }
+    const loadout = skills.getCombatLoadout(ctx.chat.id);
+    if (!loadout.length) {
+      return ctx.answerCbQuery('Belum ada skill terpasang. Buka /skill lalu equip ke slot.', { show_alert: true });
+    }
+    const cooldowns = session.state.combat?.skillCooldowns?.[String(ctx.chat.id)] || {};
+    await ctx.answerCbQuery();
+    return ctx.reply(
+      '<b>✨ PILIH SKILL LOADOUT</b>\n\nCooldown turun setiap satu cycle party selesai.',
+      {
+        parse_mode: 'HTML',
+        ...Markup.inlineKeyboard(loadout.map(skill => {
+          const cd = Math.max(0, cooldowns[skill.id] || 0);
+          return [Markup.button.callback(
+            `${skill.slot}. ${skill.name}${cd ? ` · CD ${cd}T` : ''}`,
+            `ld:${session.id}:${version}:skill_${skill.id}`,
+          )];
+        })),
+      },
+    );
   });
 
   // `/dungeon` adalah pintu utama dungeon panjang. Raid boss lama tetap
@@ -292,7 +328,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     if (!session) return ctx.answerCbQuery('Checkpoint bukan milikmu.', { show_alert: true });
     const result = service.advance(ctx.chat.id, sessionId, version, optionId);
     if (!result.success) return ctx.answerCbQuery(result.reason, { show_alert: true });
-    await ctx.answerCbQuery('Aksi tersimpan. Giliran diperbarui.');
+    await ctx.answerCbQuery(result.pending ? 'Aksi dikunci. Menunggu partner.' : 'Cycle diproses.');
     if (result.session.status === 'completed') {
       const terminalText =
         `<b>🏆 DUNGEON SELESAI!</b>\n\n${result.room.text}\n\n` +
@@ -325,7 +361,9 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     return notifyDuo(
       result.session,
       ctx.chat.id,
-      `🔔 Aksi partner selesai. ${result.session.state.turnAliases?.[result.session.state.turnIndex || 0] || 'Pemain berikutnya'} mendapat giliran.`,
+      result.pending
+        ? `🔔 Partner sudah memilih pada Cycle ${result.session.state.actionNumber || 1}. Giliranmu memilih aksi.`
+        : `🔔 Cycle selesai. Pilih aksi untuk Cycle ${result.session.state.actionNumber || 1}.`,
     );
   });
 }

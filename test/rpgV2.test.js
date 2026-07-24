@@ -890,15 +890,18 @@ test('duo long dungeon shares checkpoints and grants idempotent rewards to both 
   assert.equal(invite.pending, true);
   let session = dungeon.respondDuoInvite('2', invite.invite.id, true).session;
   assert.equal(dungeon.getActive('2').id, session.id);
-  const actors = ['1', '2', '1', '2', '1', '2', '1', '2', '1', '2', '1'];
-  const choices = [
+  const routeChoices = [
     'right', 'careful', 'claim', 'crypt', 'fight', 'rest',
     'beast', 'fight', 'fight', 'rest', 'fight',
   ];
-  for (let index = 0; index < choices.length; index++) {
-    const result = dungeon.advance(actors[index], session.id, session.state_version, choices[index]);
-    assert.equal(result.success, true);
-    session = result.session;
+  for (const choice of routeChoices) {
+    const first = dungeon.advance('1', session.id, session.state_version, choice);
+    assert.equal(first.success, true);
+    assert.equal(first.pending, true);
+    session = first.session;
+    const second = dungeon.advance('2', session.id, session.state_version, choice);
+    assert.equal(second.success, true);
+    session = second.session;
   }
   assert.equal(session.status, 'completed');
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_dungeon_reward_claims').get().count, 2);
@@ -908,39 +911,56 @@ test('duo long dungeon shares checkpoints and grants idempotent rewards to both 
   db.close();
 });
 
-test('duo tactical dungeon enforces alternating actors and builds a shared combo', () => {
+test('duo tactical dungeon locks both actions before resolving a fair party cycle', () => {
   const db = createTestDb();
   publishDungeons(db, loadDungeons());
   const social = createSocialService(db, { now: () => 2_000_000_000 });
   social.setAlias('1', 'Astra');
   social.setAlias('2', 'Bram');
+  publishSkills(db, loadSkills());
+  const skillTree = createSkillService(db);
+  assert.equal(skillTree.learn('1', 'ksatria_guard_stance').success, true);
+  assert.equal(skillTree.learn('2', 'penyihir_fireball').success, true);
+  assert.equal(skillTree.equip('1', 'ksatria_guard_stance', 1).success, true);
+  assert.equal(skillTree.equip('2', 'penyihir_fireball', 1).success, true);
   social.createParty('1');
   social.invite('1', '2');
   social.acceptInvite('2');
   const dungeon = createLongDungeonService(db, { random: () => 0.5, now: () => 2_000_000_000 });
   const invite = dungeon.inviteDuo('1', 'goblin_ruins');
   let session = dungeon.respondDuoInvite('2', invite.invite.id, true).session;
-  session = dungeon.advance('1', session.id, session.state_version, 'left').session;
+  let first = dungeon.advance('1', session.id, session.state_version, 'left');
+  assert.equal(first.pending, true);
+  session = first.session;
+  let result = dungeon.advance('2', session.id, session.state_version, 'left');
+  session = result.session;
 
-  let result = dungeon.advance('2', session.id, session.state_version, 'attack');
+  first = dungeon.advance('1', session.id, session.state_version, 'skill_ksatria_guard_stance');
+  assert.equal(first.pending, true);
+  assert.equal(first.session.state.pendingActions['1'], 'skill_ksatria_guard_stance');
+  const duplicate = dungeon.advance('1', session.id, session.state_version, 'defend');
+  assert.equal(duplicate.success, false);
+  assert.match(duplicate.reason, /terkunci/);
+
+  result = dungeon.advance('2', session.id, session.state_version, 'skill_penyihir_fireball');
   assert.equal(result.success, true);
+  assert.equal(result.pending, undefined);
   session = result.session;
-  assert.equal(session.state.combat.combo, 1);
-  assert.equal(session.state.turnAliases[session.state.turnIndex], 'Astra');
-
-  const stolenTurn = dungeon.advance('2', session.id, session.state_version, 'attack');
-  assert.equal(stolenTurn.success, false);
-  assert.match(stolenTurn.reason, /Astra/);
-
-  result = dungeon.advance('1', session.id, session.state_version, 'defend');
-  session = result.session;
+  assert.equal(session.state.pendingActions, undefined);
   assert.equal(session.state.combat.combo, 2);
-  result = dungeon.advance('2', session.id, session.state_version, 'skill');
-  session = result.session;
-  assert.equal(session.state.combat.combo, 3);
-  result = dungeon.advance('1', session.id, session.state_version, 'combo');
+  assert.equal(session.state.combat.skillCooldowns['1'].ksatria_guard_stance, 2);
+  assert.equal(session.state.combat.skillCooldowns['2'].penyihir_fireball, 2);
+  session.state.combat.enemyHp = 999;
+  session.state.combat.maxEnemyHp = 999;
+  db.prepare('UPDATE rpg_dungeon_sessions_v2 SET state_json=? WHERE id=?')
+    .run(JSON.stringify(session.state), session.id);
+
+  first = dungeon.advance('1', session.id, session.state_version, 'attack');
+  session = first.session;
+  result = dungeon.advance('2', session.id, session.state_version, 'attack');
   assert.equal(result.success, true);
-  assert.equal(result.session.state.combat?.combo || 0, 0);
+  assert.equal(result.session.state.combat?.combo || 0, 3);
+  assert.equal(result.session.state.combat.skillCooldowns['1'].ksatria_guard_stance, 1);
   db.close();
 });
 
