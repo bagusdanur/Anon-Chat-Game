@@ -53,6 +53,9 @@ function readGuideState(userId) {
       ORDER BY chapter,sort_order LIMIT 1
     `).get(activeQuestRow.chapter, activeQuestRow.chapter, activeQuestRow.sort_order)?.title || null;
   }
+  const ch1Quests = quests.filter(quest => quest.chapter === 1);
+  const isChapter1Completed = ch1Quests.length > 0 && ch1Quests.every(quest => ['completed', 'claimed'].includes(quest.status));
+
   return {
     hasCharacter: true,
     hasAlias,
@@ -64,6 +67,7 @@ function readGuideState(userId) {
     activeQuest,
     nextQuestTitle,
     activeDungeon,
+    isChapter1Completed: isChapter1Completed || (world?.campaign_chapter > 1),
   };
 }
 

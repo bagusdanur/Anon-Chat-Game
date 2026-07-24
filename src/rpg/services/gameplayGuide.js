@@ -75,12 +75,12 @@ function getCompletedChecklist(state) {
 
   return [
     { title: 'Pilih Class & Buat Karakter', done: true },
-    { title: 'Set Alias Anonim (/alias)', done: state.hasAlias },
-    { title: 'Jelajah World Aldenmoor (/explore)', done: state.hasAlias && (state.explorationPoints > 0 || state.level > 1 || state.chapter > 1) },
-    { title: 'Berburu Monster (/hunt)', done: state.level >= 2 },
-    { title: 'Selesaikan Campaign Chapter 1', done: state.chapter > 1 },
-    { title: 'Taklukkan Solo/Duo Dungeon', done: state.level >= 7 || state.chapter > 1 },
-    { title: 'Bentuk Party / Co-Op (/coop)', done: state.hasParty },
+    { title: 'Set Alias Anonim (/alias)', done: Boolean(state.hasAlias) },
+    { title: 'Jelajah World Aldenmoor (/explore)', done: Boolean(state.hasAlias && (state.explorationPoints > 0 || state.level > 1 || state.chapter > 1)) },
+    { title: 'Berburu Monster (/hunt)', done: Boolean(state.level >= 2) },
+    { title: 'Selesaikan Campaign Chapter 1', done: Boolean(state.isChapter1Completed || state.chapter > 1) },
+    { title: 'Taklukkan Solo/Duo Dungeon', done: Boolean(state.level >= 7 || state.chapter > 1 || state.isChapter1Completed) },
+    { title: 'Bentuk Party / Co-Op (/coop)', done: Boolean(state.hasParty) },
   ];
 }
 

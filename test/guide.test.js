@@ -24,4 +24,11 @@ test('getCompletedChecklist returns correct milestone checklist', () => {
   assert.equal(checklistRegistered[2].done, true);
   assert.equal(checklistRegistered[3].done, true);
   assert.equal(checklistRegistered[4].done, false);
+
+  const stateCompletedCh1 = {
+    ...stateRegistered,
+    isChapter1Completed: true,
+  };
+  const checklistCompleted = getCompletedChecklist(stateCompletedCh1);
+  assert.equal(checklistCompleted[4].done, true);
 });
