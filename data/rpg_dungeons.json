@@ -877,5 +877,535 @@
         "text": "Tekan gravitas kencang dan badai tembakan energi Kosmik menggemparkan pertahanan Anda! Segera evakuasi diri kembali ke kabin Bahtera Guild, tingkatkan kualitas atribut via tips di (/guide), reforge & socket gem pada gear Anda (/reforge, /socket), serta ajak rekan Aliansi (/coop, /guild) sebelum kembali menggebrak dari pelabuhan udara!"
       }
     ]
+  },
+  {
+    "id": "antimatter_spire",
+    "name": "🗼 Menara Anti-Materi: Markas Archon Void",
+    "description": "Statis laser anti-materi dan perangkap gravitasi prisma menghiasi menara 15 ruangan yang menjulang membelah langit gerhana. Menuntut koordinasi matang Co-Op Party serta sokongan Aliansi Guild untuk meruntuhkan pertahanan sang Archon!",
+    "min_level": 35,
+    "recommended_level": 40,
+    "version": 1,
+    "published": true,
+    "entry_room": "spire_entrance",
+    "rewards": {
+      "xp": 2800,
+      "gold": 1800,
+      "item": "emas",
+      "quantity": 10
+    },
+    "rooms": [
+      {
+        "id": "spire_entrance",
+        "type": "event",
+        "name": "Pelataran Gerbang Anti-Materi",
+        "text": "Pintu lapis kristal ungu membuka sendiri tatkala langkah Anda terdengar. Di depan, elevator laser berputar pesat sementara jalur samping menuju ladang generator plasma kosmik.",
+        "options": [
+          {
+            "id": "take_elevator",
+            "label": "🚀 Terobos Elevator Laser Pembahasa Menara",
+            "next": "laser_elevator"
+          },
+          {
+            "id": "take_harvest",
+            "label": "⚡ Selusuri Jalur Ladang Plasma Kosmik",
+            "next": "energy_harvest"
+          }
+        ]
+      },
+      {
+        "id": "laser_elevator",
+        "type": "combat",
+        "name": "Elevator Laser Pembatasan",
+        "text": "Di dalam elevator cerdas ini, penjaga Sentinel Anti-Materi muncul dari kubah siluet langit-langit, menembakkan senapan laser beradiasi tinggi!",
+        "enemy": {
+          "name": "Sentinel Anti-Materi",
+          "power": 90,
+          "damage": 40
+        },
+        "success": "plasma_bridge",
+        "failure": "spire_failed"
+      },
+      {
+        "id": "energy_harvest",
+        "type": "event",
+        "name": "Ladang Plasma Kosmik",
+        "text": "Generator plasma meretih menghasilkan energi tak tertahankan! Robot pengawal berotasi memeriksa sabuk energi.",
+        "options": [
+          {
+            "id": "fight_robot",
+            "label": "🤖 Hadapi Robot Pengawal Prisma",
+            "next": "robot_guard"
+          },
+          {
+            "id": "cache_guild",
+            "label": "💎 Akses Kotak Bantuan Darurat Aliansi Guild",
+            "next": "guild_cache"
+          }
+        ]
+      },
+      {
+        "id": "robot_guard",
+        "type": "combat",
+        "name": "Robot Pengawal Prisma",
+        "text": "Robot baja berkarbon prisma melampaui batas kecepatan angin, mengayunkan gergaji sinar laser anti-materi!",
+        "enemy": {
+          "name": "Robot Pengawal Prisma",
+          "power": 88,
+          "damage": 38
+        },
+        "success": "plasma_bridge",
+        "failure": "spire_failed"
+      },
+      {
+        "id": "guild_cache",
+        "type": "treasure",
+        "name": "Peti Bantuan Darurat Aliansi",
+        "text": "Kode sandi aliansi guild Anda membuka kotak baja darurat! Di dalamnya tersimpan vial serum penahan radiasi dan lempengan emas murni!",
+        "reward": {
+          "gold": 320,
+          "item": "emas",
+          "quantity": 4
+        },
+        "next": "plasma_bridge"
+      },
+      {
+        "id": "plasma_bridge",
+        "type": "event",
+        "name": "Jembatan Plasma Biru",
+        "text": "Jembatan melayang di ketinggian 50.000 meter di atas permukaan Suaka Gerhana. Di depan menara pengatur, berdiri sang Jenderal Penjaga Menara.",
+        "options": [
+          {
+            "id": "fight_kaelen",
+            "label": "⚔️ Tantang Duel Jenderal Gerhana Kaelen",
+            "next": "spire_general"
+          },
+          {
+            "id": "take_vent",
+            "label": "🌪️ Susupi Saluran Angin Eter di Bawah Jembatan",
+            "next": "gravity_vent"
+          }
+        ]
+      },
+      {
+        "id": "spire_general",
+        "type": "combat",
+        "name": "Mini-Boss: Jenderal Gerhana Kaelen",
+        "text": "Kaelen melompat menggentarkan perisai gravitasinya! Ia menorehkan sabetan tombak gerhana yang mengeringkan vitalitas Anda!",
+        "enemy": {
+          "name": "Jenderal Gerhana Kaelen",
+          "power": 95,
+          "damage": 42
+        },
+        "success": "valtharor_antechamber",
+        "failure": "spire_failed"
+      },
+      {
+        "id": "gravity_vent",
+        "type": "treasure",
+        "name": "Saluran Angin Eter",
+        "text": "Melayang mengikuti arus angin kosmik membawa Anda melewati kuburan pesawat asing kuno yang sarat akan emas batang berkilau!",
+        "reward": {
+          "gold": 380,
+          "item": "emas",
+          "quantity": 5
+        },
+        "next": "valtharor_antechamber"
+      },
+      {
+        "id": "valtharor_antechamber",
+        "type": "event",
+        "name": "Serambi Archon Malaikat",
+        "text": "Pintu raksasa bermahkotai lambang sayap sujud bergemuruh membuka. Energi murni anti-materi menyergap keluar, sementara detak sayap Valtharor bergema bak petir.",
+        "options": [
+          {
+            "id": "fight_wings",
+            "label": "⚔️ Bersihkan Pasokan Sayap Pengawal Void",
+            "next": "wing_guards"
+          },
+          {
+            "id": "starlight_assist",
+            "label": "🛸 Minta Bantuan Tembakan Meriam Starlight dari Bahtera",
+            "next": "starlight_cannon_assist"
+          }
+        ]
+      },
+      {
+        "id": "wing_guards",
+        "type": "combat",
+        "name": "Pasukan Sayap Void Pengawal",
+        "text": "Tiga pengawal bersayap plasma turun dari altar, menyatukan pedang halilintar kosmik dalam serangan sinkron!",
+        "enemy": {
+          "name": "Pasukan Sayap Void",
+          "power": 98,
+          "damage": 44
+        },
+        "success": "archon_throne_door",
+        "failure": "spire_failed"
+      },
+      {
+        "id": "starlight_cannon_assist",
+        "type": "treasure",
+        "name": "Dukungan Udara Armada Bahtera",
+        "text": "Sembilan Bahtera Guild melepaskan rentetan meriam starlight, membasmi perisai energi lawan dan menjatuhkan suplai ransum peperangan emas!",
+        "reward": {
+          "gold": 450,
+          "item": "emas",
+          "quantity": 5
+        },
+        "next": "archon_throne_door"
+      },
+      {
+        "id": "archon_throne_door",
+        "type": "event",
+        "name": "Puncak Menara Anti-Materi",
+        "text": "Suara Archon Valtharor menggaang: 'Siapa yang berani mengusik tidur suci para malaikat angkasa?!' Altar kristal di hadapan Anda membelak telak, memperlihatkan sayap suster kristal raksasa!",
+        "options": [
+          {
+            "id": "assault_valtharor",
+            "label": "💥 SERBU ALTAR! Taklukkan Archon Malaikat Void Valtharor!",
+            "next": "valtharor_boss"
+          }
+        ]
+      },
+      {
+        "id": "valtharor_boss",
+        "type": "boss",
+        "name": "RAID BOSS: Archon Malaikat Void Valtharor",
+        "text": "🔥 [SAGA II CLIMAX PARTIAL: ANTIMATTER SHATTER]\nDari balik siluet gerhana melayang turun sosok makhluk mulanya suci, kini bertransformasi menjadi Archon Malaikat Void—<b>Valtharor!</b> Enam sayapnya memancarkan bilah pedang anti-materi, matanya berkedip memuntahkan radiasi super infeksi kosmik.\n\nValtharor membentak: <i>\"Manusia Aldenmoor busuk! Bintang-bintang ini milik Kaisar Xylarion! Kalian tidak layak memandang tahta emasnya! Runtuhlah dalam debu hư vô abadi!\"</i>\n\nPadukan kombinasi reforge perlengkapan tertinggi Anda bersinergi bersama serangan Aliansi Guild dan rekan Co-Op untuk mematahkan keangkuhan sang Archon!",
+        "enemy": {
+          "name": "Archon Malaikat Void Valtharor",
+          "power": 110,
+          "damage": 50
+        },
+        "success": "valtharor_victory",
+        "failure": "spire_failed"
+      },
+      {
+        "id": "valtharor_victory",
+        "type": "finish",
+        "name": "Runtuhnya Menara Anti-Materi & Pembukaan Jalur Tahta",
+        "text": "👑 [VICTORY: THE ROAD TO XYLARION IS OPEN]\nSabetan telak dari obor senjata perak dan serangan kritis ko-operatif menghantam batu inti di dada Valtharor! Dalam kilatan cahaya putih beringas, tubuh sang Archon luruh menjadi kepingan bulu starlight yang menyinari daratan gerhana.\n\nDengan runtuhnya Menara Anti-Materi, gelombang perisai pembatas menuju Jantung Galaksi lenyap! Dari jauh, Anda dapat memandang kubahnya kosmik mah megah—<b>Singgahsana Ruang Hampa Kaisar Kosmik Xylarion (Patch 2.3)</b>! Bersiaplah meluncur untuk babak pamungkas dari <b>Saga II: The Astral Horizon</b>!"
+      },
+      {
+        "id": "spire_failed",
+        "type": "failure",
+        "name": "Terbakar Gelombang Anti-Materi",
+        "text": "Daya ledak laser dan sabetan pedang sayap Valtharor melampaui pertahanan Anda! Mundur segera ke geladak Bahtera Guild, beli ransum pemulih di (/market), pasang socket gem (/socket), reforge item anda (/reforge), dan rekrut rekan Co-Op terkuat (/coop) sebelum mencoba menebus kemuliaan kembali!"
+      }
+    ]
+  },
+  {
+    "id": "emperor_throne_citadel",
+    "name": "🏰 Istana Tahta Kaisar: Markas Kosmik Tertinggi",
+    "description": "Istana 20 ruangan berselimut badai gravitasi super dan laser plasma kosmik di jantung black hole statis! Membutuhkan koordinasi tempur Aliansi Guild tingkat dewa, racikan skill termutakhir, serta kombinasi perisai terbaik untuk meruntuhkan kekuasaan sang Kaisar Kosmik Xylarion!",
+    "min_level": 50,
+    "recommended_level": 55,
+    "version": 1,
+    "published": true,
+    "entry_room": "throne_gates",
+    "rewards": {
+      "xp": 5500,
+      "gold": 3800,
+      "item": "emas",
+      "quantity": 25
+    },
+    "rooms": [
+      {
+        "id": "throne_gates",
+        "type": "event",
+        "name": "Gerbang Singguhsana Emas Kosmik",
+        "text": "Armada Bahtera Guild melabuhkan sauh energi di depan gerbang emas kolosal berhiaskan ukiran planet yang tertaklukkan. Medan energi memecah jalan menuju Balai Kehormatan dan Terowongan Anti-Materi Samping.",
+        "options": [
+          {
+            "id": "enter_honor",
+            "label": "🛡️ Terobos Balai Kehormatan Pengawal Tahta",
+            "next": "honor_hall"
+          },
+          {
+            "id": "enter_tunnel",
+            "label": "🚀 Susupi Terowongan Anti-Materi Samping",
+            "next": "antimatter_tunnel"
+          }
+        ]
+      },
+      {
+        "id": "honor_hall",
+        "type": "combat",
+        "name": "Balai Kehormatan Pengawal Tahta",
+        "text": "Barisan Pengawal Kehormatan berbaju zirah kristal meteorit menghadang langkah Anda dengan tombak plasma bercahaya suci!",
+        "enemy": {
+          "name": "Pengawal Kehormatan Kosmik",
+          "power": 105,
+          "damage": 45
+        },
+        "success": "galaxy_atrium",
+        "failure": "throne_failed"
+      },
+      {
+        "id": "antimatter_tunnel",
+        "type": "treasure",
+        "name": "Gudang Peninggalan Planet Runtuh",
+        "text": "Terowongan samping membawa Anda melintasi museum trofi kaisar, menyimpan bertiang-tiang emas batang murni dari planet terluar yang direbut masa lalu!",
+        "reward": {
+          "gold": 500,
+          "item": "emas",
+          "quantity": 6
+        },
+        "next": "galaxy_atrium"
+      },
+      {
+        "id": "galaxy_atrium",
+        "type": "event",
+        "name": "Atrium Seribu Galaksi",
+        "text": "Ruangan kubah raksasa menampilkan peta 1000 galaksi dalam bentuk bola plasma melayang. Di atas panggung tengah, berdiri rahib golem penanggung jawab navigasi angkasa.",
+        "options": [
+          {
+            "id": "fight_golem",
+            "label": "🤖 Hancurkan Golem Meteor Supernova",
+            "next": "meteor_golem"
+          },
+          {
+            "id": "access_terminal",
+            "label": "💻 Akses Terminal Aliansi untuk Membuka Suplai Ransum",
+            "next": "alliance_terminal"
+          }
+        ]
+      },
+      {
+        "id": "meteor_golem",
+        "type": "combat",
+        "name": "Golem Meteor Supernova",
+        "text": "Golem batu dari pecahan inti planet melompat dengan berat ribuan ton, memuntahkan bola-bola api magmatik supernova!",
+        "enemy": {
+          "name": "Golem Meteor Supernova",
+          "power": 108,
+          "damage": 48
+        },
+        "success": "mirror_corridor",
+        "failure": "throne_failed"
+      },
+      {
+        "id": "alliance_terminal",
+        "type": "treasure",
+        "name": "Depot Suplai Pamungkas Aliansi",
+        "text": "Sinyal transmisi dari Aliansi Guild Anda di bumi Aldenmoor berhasil menembus lapisan pelindung! Mengalir kiriman ramuan ether suci dan tumpukan koin emas kejayaan!",
+        "reward": {
+          "gold": 550,
+          "item": "emas",
+          "quantity": 8
+        },
+        "next": "mirror_corridor"
+      },
+      {
+        "id": "mirror_corridor",
+        "type": "event",
+        "name": "Koridor Cermin Dimensi",
+        "text": "Dinding koridor terbuat dari kaca reflektor yang memantulkan dimensi paralel, menciptakan ilusi musuh bayang kloningan diri Anda sendiri yang bergerak mengincar leher!",
+        "options": [
+          {
+            "id": "fight_clones",
+            "label": "⚔️ Tebat Sepasukkan Bayangan Kloning Astral",
+            "next": "shadow_clones"
+          },
+          {
+            "id": "radar_scan",
+            "label": "📡 Aktifkan Gelombang Pemindai dari Bahtera Guild",
+            "next": "airship_radar_scan"
+          }
+        ]
+      },
+      {
+        "id": "shadow_clones",
+        "type": "combat",
+        "name": "Bayangan Kloning Astral",
+        "text": "Bayangan gelap yang meniru seluruh susunan skill dan perlengkapan senjata Anda melompati barikade kaca untuk bertarung dalam duel maut!",
+        "enemy": {
+          "name": "Bayangan Kloning Astral",
+          "power": 112,
+          "damage": 50
+        },
+        "success": "starlight_vault",
+        "failure": "throne_failed"
+      },
+      {
+        "id": "airship_radar_scan",
+        "type": "treasure",
+        "name": "Gelombang Pemindai Bahtera Guild",
+        "text": "Gelombang sonar anti-ilusi dari armada kapal udara menghancurkan cermin manipulasi, mengungkap peti harta tersembunyi yang sarat batubara starlight emas!",
+        "reward": {
+          "gold": 600,
+          "item": "emas",
+          "quantity": 8
+        },
+        "next": "starlight_vault"
+      },
+      {
+        "id": "starlight_vault",
+        "type": "event",
+        "name": "Kuburan Raja-Raja Purba",
+        "text": "Di lantai puncakan ke-10, terbaring makam naga suap pengawal kaisar. Penjaga gerbang tengah, Naga Eter Bersayap Enam, mengaum membangkitkan badai plasma biru.",
+        "options": [
+          {
+            "id": "fight_dragon",
+            "label": "🐉 Hadapi Naga Eter Bersayap Enam",
+            "next": "ether_dragon"
+          },
+          {
+            "id": "pray_altar",
+            "label": "🙏 Mohon Pemberantasan Kuasa di Altar Pengorbanan Gem",
+            "next": "gem_altar_blessing"
+          }
+        ]
+      },
+      {
+        "id": "ether_dragon",
+        "type": "combat",
+        "name": "Mini-Boss: Naga Eter Bersayap Enam",
+        "text": "Naga suster berlendir plasma menyisir langit-langit bergetar! Semburan nafas eternya membakar oksigen di seluruh kubah pertempuran!",
+        "enemy": {
+          "name": "Naga Eter Bersayap Enam",
+          "power": 118,
+          "damage": 54
+        },
+        "success": "celestial_staircase",
+        "failure": "throne_failed"
+      },
+      {
+        "id": "gem_altar_blessing",
+        "type": "treasure",
+        "name": "Altar Pemberantasan Energi Kosmik",
+        "text": "Anda meletakkan sesembahan kristal di altar kuno! Energi magis kaisar berbalik melumpuhkan sang Naga dan menghadiahi Anda peti permata berharga berderet!",
+        "reward": {
+          "gold": 700,
+          "item": "emas",
+          "quantity": 10
+        },
+        "next": "celestial_staircase"
+      },
+      {
+        "id": "celestial_staircase",
+        "type": "event",
+        "name": "Tangga Menuju Tahta Mahkota",
+        "text": "Seratus anak tangga berlapis batu permata ungu memimpin langsung ke lantai atas istana kaisar. Di puncak tangga, batalion elit prajurit tahta siap menempurkan darah terakhir.",
+        "options": [
+          {
+            "id": "break_barricade",
+            "label": "🛡️ Hancurkan Barikade Prajurit Elit Kaisar",
+            "next": "emperor_guard_barricade"
+          },
+          {
+            "id": "take_vent_path",
+            "label": "🌪️ Menyelinap Melalui Saluran Angin Eter Supernova",
+            "next": "cosmic_vent_path"
+          }
+        ]
+      },
+      {
+        "id": "emperor_guard_barricade",
+        "type": "combat",
+        "name": "Barikade Prajurit Elit Kaisar",
+        "text": "Lima puluh prajurit berbaju besi starlight meremuk barisan depan Anda dengan formasi perisai tak tertembus!",
+        "enemy": {
+          "name": "Batalion Elit Tahta",
+          "power": 122,
+          "damage": 56
+        },
+        "success": "inner_sanctum",
+        "failure": "throne_failed"
+      },
+      {
+        "id": "cosmic_vent_path",
+        "type": "treasure",
+        "name": "Saluran Angin Eter Supernova",
+        "text": "Melalui lorong pendingin generator supernova, Anda menemukan cadangan bahan bakar emas murni milik kapal perang pribadi Kaisar!",
+        "reward": {
+          "gold": 750,
+          "item": "emas",
+          "quantity": 12
+        },
+        "next": "inner_sanctum"
+      },
+      {
+        "id": "inner_sanctum",
+        "type": "event",
+        "name": "Serambi Mahkota Kaisar Xylarion",
+        "text": "Pintu mahkota tertinggi di hadapan Anda terbuka perlahan dengan gemetar yang membuat black hole bereaksi! Di depannya, berdiri penasihat perang tertinggi kaisar.",
+        "options": [
+          {
+            "id": "fight_chancellor",
+            "label": "⚔️ Tundukkan Perdana Menteri Astral Morian",
+            "next": "astral_chancellor"
+          },
+          {
+            "id": "fleet_barrage",
+            "label": "💥 Mintakan Pemborbadian Pamungkas Armada Bahtera",
+            "next": "grand_fleet_barrage"
+          }
+        ]
+      },
+      {
+        "id": "astral_chancellor",
+        "type": "combat",
+        "name": "Sub-Boss: Perdana Menteri Astral Morian",
+        "text": "Morian merapalkan mantra anti-materi bertingkat tujuh! Cahaya ruang hampa mengurung gerakan Anda dalam gravitasi ganda!",
+        "enemy": {
+          "name": "Perdana Menteri Astral Morian",
+          "power": 126,
+          "damage": 60
+        },
+        "success": "final_throne_rally",
+        "failure": "throne_failed"
+      },
+      {
+        "id": "grand_fleet_barrage",
+        "type": "treasure",
+        "name": "Pembomardir Pamungkas Armada Guild",
+        "text": "Seluruh armada Bahtera Guild dari ribuan petualang meluncurkan meriam starlight secara serentak dari angkat luar, membobol benteng morian dan menjanjutkan koin emas kolosal!",
+        "reward": {
+          "gold": 800,
+          "item": "emas",
+          "quantity": 15
+        },
+        "next": "final_throne_rally"
+      },
+      {
+        "id": "final_throne_rally",
+        "type": "event",
+        "name": "Titik Konvergensi Sinergi Guild & Co-Op",
+        "text": "Sejenak sebelum melangkah ke Panggung Tahta Emas, seluruh anggota Aliansi Guild dan partner Co-Op Anda bergandengan menyatukan energi buff suar abadi dari Pasar Konsinyasi! Suara terompet kemenangan bumi Aldenmoor bergemar menggema di ruang angkasa!",
+        "options": [
+          {
+            "id": "assault_xylarion",
+            "label": "👑 LAUNCH SERBUAN PAMUNGKAS! Taklukkan Kaisar Kosmik Xylarion!",
+            "next": "emperor_throne"
+          }
+        ]
+      },
+      {
+        "id": "emperor_throne",
+        "type": "boss",
+        "name": "FINAL GRAND RAID BOSS: Kaisar Kosmik Xylarion",
+        "text": "🔥 [SAGA II CLIMAX GRAND FINALE: THE CELESTIAL EMPEROR]\nDari atas tahta karbon meteor murni yang melayang di pusat pusaran black hole, bangkit sosok dewa angkasa sejati—<b>Kaisar Kosmik Xylarion!</b> Jubahnya dirajut dari nebula ribuan bintang mati, tongkat mahkotanya menopang energi Supernova Eclipse Blast yang mampu menghapuskan keberadaan tata surya dalam sekejap!\n\nXylarion menyoroti Anda dengan tatapan keabadian: <i>\"Makhluk debu dari lumpur Aldenmoor... kalian tlah berani meruntuhkan Malakor, mengoyaki Valtharor, dan mengotaki mahkotaku! Akulah hukum alam semesta! Cahaya duniapun kan kuhisap hingga tiadakan ada lagi yang ingat nama bangsamu! RASA KAN MURKA SUPERNOVA KOSMIK!\"</i>\n\nPadukan daya seret maksimal perlengkapan bertuah terbaik Anda, tempaan obor konsinyasi Escrow, serta kesempurnaan sinergi Co-Op Party tingkat dewa untuk menahbiskan legenda abadi dalam puncak perjumpaan Saga II!",
+        "enemy": {
+          "name": "Kaisar Kosmik Xylarion (Ancient Celestial Emperor)",
+          "power": 135,
+          "damage": 70
+        },
+        "success": "xylarion_victory",
+        "failure": "throne_failed"
+      },
+      {
+        "id": "xylarion_victory",
+        "type": "finish",
+        "name": "Kemenangan Mutlak Saga II & Portal Underworld Terbuka",
+        "text": "👑 [GRAND VICTORY: SAGA II GRAND FINALE]\nTusukan obor suksesi suksese Aliansi Guild yang bersinkornasi dengan ledakan kritis ko-operatif menerobos tepat ke pusaran inti energi Kaisar Xylarion! Dalam raungan yang memecah kesunyian abadi angkasa luar, mahkota emas sang Kaisar bergemeretak hancur berantakan; tubuh agungnya meredup dan tersedot ke dalam black hole yang meluluh lemas menjadi kawah kristal perdamaian abadi!\n\nSaat hembusan nafas supernova terakhir Xylarion melunturkan atmosfer istana, sang Kaisar membisikkan kutukan misterius: <i>\"Kalian merasa tlah menyelamatkan langit... Tapi ketahuilah... Kekaisaranku beralaskan angkasa hanya demi menjerata Raksasa Bawah Tanah di dunia asalmu! Dengan kematianku... Gembok Inti Bumi Aldenmoor tlah lepas... DENGER KAN SUARA RINTIHAN DARI DALAM KEDUNIAWI FORGOTTEN REALM...\"</i>\n\nDari bawah pelataran bumi Aldenmoor di jauh sana, terdengar dentuman gemetar membelakan samudera pasir hitam! Anda dianugerahi kehormatan mutlak sebagai sang Jawara Astral dengan ribuan harta koin emas kejayaan abadi, seiring terbukanya lembaran kelak pada <b>SAGA III: UNDERWORLD OF THE FORGOTTEN REALM (Patch 3.0)</b>!"
+      },
+      {
+        "id": "throne_failed",
+        "type": "failure",
+        "name": "Terlempar oleh Gelombang Supernova Xylarion",
+        "text": "Ledakan energi supernova dan tebakan plasma Xylarion melunturkan perisai Anda! Mundur segera ke pangkalan Aliansi Guild di bumi, konsultasi strategi build karakter di (/guide), borong ransum elixir suci di Pasar Escrow (/market), tempa perlengkapan dengan obsidian suki (/reforge, /socket), serta himpun kekuatan penuh Co-Op Anda (/coop) sebelum mencoba menakar kembali sejarah kosmik!"
+      }
+    ]
   }
 ]

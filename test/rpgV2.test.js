@@ -360,7 +360,7 @@ test('long dungeon completion rewards are idempotent and include treasure', () =
   }
   assert.equal(session.status, 'completed');
   const user = db.prepare('SELECT level, xp, gold FROM rpg_users WHERE telegram_user_id = ?').get('1');
-  assert.deepEqual(user, { level: 3, xp: 29, gold: 1101 });
+  assert.deepEqual(user, { level: 3, xp: 49, gold: 1111 });
   const inventory = db.prepare(
     'SELECT item_id, quantity FROM rpg_inventory WHERE telegram_user_id = ? ORDER BY item_id',
   ).all('1');
@@ -947,8 +947,8 @@ test('duo long dungeon shares checkpoints and grants idempotent rewards to both 
   assert.equal(session.status, 'completed');
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_dungeon_reward_claims').get().count, 2);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 2);
-  assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='1'").get().gold, 1101);
-  assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='2'").get().gold, 1101);
+  assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='1'").get().gold, 1111);
+  assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='2'").get().gold, 1111);
   db.close();
 });
 

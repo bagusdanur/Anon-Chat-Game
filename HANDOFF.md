@@ -11,8 +11,9 @@ Dokumen ini dibuat khusus untuk mempermudah AI Agent baru (**Codex**, **Claude**
   - `anon-dashboard` (ID 16) — Web Admin Dashboard Express.js.
 - **Progress Cerita (Saga Status)**:
   - **Saga I (Patch 1.0, 1.1, 1.2)**: 100% Selesai & Aktif.
-  - **Saga II (Patch 2.0 & 2.1 - The Astral Horizon)**: 100% Selesai & Aktif (`patch_2_0.json` & `patch_2_1.json`).
-  - **Campaign Quests & Dungeons**: Chapter 1 s/d Chapter 5 (Act I & II) serta Dungeon baru *Benteng Kristal Astral* (`astral_citadel`) dengan bos Leviathan Kosmik telah aktif secara dinamis.
+  - **Saga II (Patch 2.0, 2.1, 2.2, 2.3 - The Astral Horizon Grand Finale)**: 100% Selesai & Aktif (`patch_2_0.json` s/d `patch_2_3.json`).
+  - **Campaign Quests & Dungeons**: Chapter 1 s/d Chapter 7 (Level Cap 60+) serta Dungeon megah 20-Ruangan *Istana Tahta Kaisar Kosmik* (`emperor_throne_citadel`) dengan bos *Kaisar Kosmik Xylarion* (HP: 25.000) telah aktif!
+  - **Teaser Saga III**: Alur cerita telah terbuka untuk implementasi berikutnya pada *Saga III: Underworld of the Forgotten Realm (Patch 3.0)*.
 
 ---
 

@@ -18,10 +18,20 @@ Dokumen ini melacak kemajuan implementasi dari rencana jangka panjang bot **Anon
 
 ---
 
-## ✅ SAGA II (THE ASTRAL HORIZON / PATCH 2.0 & 2.1): COMPLETED & ACTIVATED
+## ✅ SAGA II (THE ASTRAL HORIZON / PATCH 2.0, 2.1, 2.2, & 2.3): 100% COMPLETED & DEPLOYED TO VPS
 - [x] **P2.0.1** Buat struktur folder saga baru: `data/patches/saga_v2/patch_2_0.json` (`published: true`).
 - [x] **P2.0.2** Rancang arena Kepulauan Melayang (*Floating Ethereal Isles*) dengan gravitasi rendah dan monster kristal kosmik dari luar angkasa (`ethereal_isles`).
 - [x] **P2.0.3** Misi Campaign Chapter 4 (Act I & Act II) dengan peluncuran Bahtera Guild (*Airship Ascent*) menembus Void Astral.
 - [x] **P2.0.4** Penggabungan otomatis via aggregator `npm run build:patches` dan uji coba regresi lulus 100%!
 - [x] **P2.1.1** Eksekusi Patch 2.1: Dungeon 15 Ruangan *Benteng Kristal Astral* (`astral_citadel`) dengan Raid Boss *Leviathan Kosmik*.
 - [x] **P2.1.2** Campaign Chapter 5 (Act I: Titik Temu Astral & Act II: Penaklukan Leviathan Kosmik) serta validasi simulasi 100% Lulus!
+- [x] **P2.2.1** Rilis Patch 2.2: Arena *Suaka Gerhana Abadi* (`eclipse_sanctuary`), Dungeon 15-Ruangan *Menara Anti-Materi* (`antimatter_spire`), dan Campaign Chapter 6 melawan Archon Valtharor.
+- [x] **P2.3.1** Rilis Patch 2.3 (Saga II Ultimate Grand Finale): Arena Puncakan *Singgahsana Ruang Hampa* (`celestial_void_throne`), Dungeon Aliansi 20-Ruangan *Istana Tahta Kaisar* (`emperor_throne_citadel`), dan Raid Boss *Kaisar Kosmik Xylarion* (HP: 25.000 / Level 60 Cap).
+
+---
+
+## 🚀 ROADMAP MASA DEPAN: SAGA III (UNDERWORLD OF THE FORGOTTEN REALM / PATCH 3.0+)
+- [ ] **P3.0.1** Inisiasi struktur direktori modular `data/patches/saga_v3/patch_3_0.json`.
+- [ ] **P3.0.2** Rancang arena Bawah Tanah Dalam (*Abyssal Depths & Forgotten Sand*) dengan monster purba inti bumi.
+- [ ] **P3.0.3** Implementasi sistem Eksplorasi Bawah Tanah, relik bumi abadi, dan Raid Boss Raksasa Forgotten Realm (Level 60–75).
+

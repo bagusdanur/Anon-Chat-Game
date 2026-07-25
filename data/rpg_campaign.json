@@ -232,5 +232,101 @@
       "item": "emas",
       "quantity": 10
     }
+  },
+  {
+    "id": "chapter6_eclipse_journey",
+    "chapter": 6,
+    "order": 1,
+    "title": "Act I - Menjemput Gerhana Angkasa di Suaka Abadi",
+    "description": "Kemenangan melawan Leviathan Kosmik membuka gerbang menuju daerah terlarang Galaksi Utara! Mendaratlah dengan Bahtera Guild Anda di Suaka Gerhana Abadi (/explore) sebanyak 6 kali, kalahkan pengintai Ksatria Gerhana, dan petik hasil bumi angkasanya via profesi kuno (/gather, /mine, /fish) untuk bersiap bertarung di zona anti-materi!",
+    "requires": "chapter5_leviathan_raid",
+    "version": 1,
+    "published": true,
+    "objectives": [
+      {
+        "id": "explore_eclipse",
+        "type": "explore",
+        "target": "eclipse_sanctuary",
+        "count": 6
+      }
+    ],
+    "rewards": {
+      "xp": 2000,
+      "gold": 1200,
+      "item": "emas",
+      "quantity": 6
+    }
+  },
+  {
+    "id": "chapter6_antimatter_spire",
+    "chapter": 6,
+    "order": 2,
+    "title": "Act II - Penaklukan Menara Anti-Materi & Archon Valtharor",
+    "description": "Menara Anti-Materi Prisma menjulang tinggi memancarkan gelombang destruktif yang menghalangi jalan menuju singgahsana Kaisar Kosmik! Di puncaknya bertahta Archon Malaikat Void Valtharor yang perkasa. Tingkatkan kombinasi gem via /socket, atur susunan skill terbaik via /skill, dan kerahkan tim Co-Op Anda menembus dungeon Menara Anti-Materi (/dungeon)!",
+    "requires": "chapter6_eclipse_journey",
+    "version": 1,
+    "published": true,
+    "objectives": [
+      {
+        "id": "clear_antimatter_spire",
+        "type": "dungeon_complete",
+        "target": "antimatter_spire",
+        "count": 1
+      }
+    ],
+    "rewards": {
+      "xp": 3000,
+      "gold": 2000,
+      "item": "emas",
+      "quantity": 12
+    }
+  },
+  {
+    "id": "chapter7_throne_siege",
+    "chapter": 7,
+    "order": 1,
+    "title": "Act I - Pengepungan Singguhsana Ruang Hampa di Jantung Galaksi",
+    "description": "Dengan runtuhnya Menara Anti-Materi, armada Bahtera Guild kini berhadapan langsung dengan Singguhsana Ruang Hampa Kaisar Kosmik! Jelajahi kawasan berbahaya ini via /explore sebanyak 8 kali, bertempur melawan Penjaga Tahta Elit, dan reforge perlengkapan emas Anda via profesi kuno (/gather, /mine) untuk bersiap bertembur di 20 ruangan paling mematikan dalam sejarah!",
+    "requires": "chapter6_antimatter_spire",
+    "version": 1,
+    "published": true,
+    "objectives": [
+      {
+        "id": "explore_throne",
+        "type": "explore",
+        "target": "celestial_void_throne",
+        "count": 8
+      }
+    ],
+    "rewards": {
+      "xp": 3500,
+      "gold": 2500,
+      "item": "emas",
+      "quantity": 15
+    }
+  },
+  {
+    "id": "chapter7_emperor_fall",
+    "chapter": 7,
+    "order": 2,
+    "title": "Act II - KLIMAKS SAGA II: Runtuhnya Kaisar Kosmik Xylarion",
+    "description": "Kaisar Kosmik Xylarion duduk di atas tahta meteor murni, merencanakan pembinasaan dunia Aldenmoor dengan meriam supernova! Satukan kekuatan maksimal bersama Aliansi Guild, optimalkan susunan skill tertinggi via /skill, dan kerahkan ketangkasan Duo Co-Op untuk mendobrak 20 ruangan Istana Tahta Kaisar (/dungeon) demi menamatkan Saga II dan mengukirkankan namamu di prasasti kekalahan Kaisar!",
+    "requires": "chapter7_throne_siege",
+    "version": 1,
+    "published": true,
+    "objectives": [
+      {
+        "id": "clear_emperor_throne",
+        "type": "dungeon_complete",
+        "target": "emperor_throne_citadel",
+        "count": 1
+      }
+    ],
+    "rewards": {
+      "xp": 6000,
+      "gold": 5000,
+      "item": "emas",
+      "quantity": 30
+    }
   }
 ]

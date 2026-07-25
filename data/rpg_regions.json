@@ -221,5 +221,139 @@
         "Persiapkan Bahtera Guild untuk menembus Void!"
       ]
     }
+  },
+  {
+    "id": "eclipse_sanctuary",
+    "name": "🌑 Suaka Gerhana Abadi: Dataran Tanpa Cahaya",
+    "description": "Wilayah misterius di sudut galaksi di mana dua bulan abadi menutupi matahari kosmik selamanya. Suasana remang bermandikan kabut ungu pekat, menyimpan kristal anti-materi dan dijaga oleh barisan Ksatria Bayangan Gerhana serta malaikat bersayap void.",
+    "min_level": 35,
+    "travel_cost": 75,
+    "published": true,
+    "version": 1,
+    "encounters": [
+      {
+        "id": "eclipse_knight",
+        "name": "Ksatria Bayangan Gerhana",
+        "type": "combat",
+        "weight": 40,
+        "enemy": "ksatria_gerhana",
+        "xp": [
+          180,
+          260
+        ],
+        "gold": [
+          150,
+          220
+        ]
+      },
+      {
+        "id": "void_angel_scout",
+        "name": "Malaikat Penginta Void Terkutuk",
+        "type": "combat",
+        "weight": 35,
+        "enemy": "malaikat_void",
+        "xp": [
+          200,
+          300
+        ],
+        "gold": [
+          180,
+          280
+        ]
+      },
+      {
+        "id": "eclipse_tear_crystal",
+        "name": "Tambang Air Mata Gerhana Murni (/mine)",
+        "type": "treasure",
+        "weight": 15,
+        "gold": [
+          250,
+          450
+        ]
+      },
+      {
+        "id": "cosmic_grape_harvest",
+        "name": "Pohon Anggur Kosmik Abadi (/gather)",
+        "type": "event",
+        "weight": 10,
+        "exploration_points": 8
+      }
+    ],
+    "campaign": {
+      "chapter": 6,
+      "title": "Act I - Menjemput Gerhana Angkasa",
+      "steps": [
+        "Jelajahi kabut remang Suaka Gerhana Abadi.",
+        "Kumpulkan Air Mata Gerhana dan petik Anggur Kosmik.",
+        "Temukan jalan masuk menuju Menara Anti-Materi Prisma!"
+      ]
+    }
+  },
+  {
+    "id": "celestial_void_throne",
+    "name": "👑 Singguhsana Ruang Hampa: Tahta Kaisar Kosmik",
+    "description": "Pusat gravitasi dari seluruh angkasa luar, di mana singgahsana berlapis karbon meteor murni mengorbit di tengah black hole statis. Di sinilah Kaisar Kosmik Xylarion memerintah seluruh armada penyusup dimensi dengan kekuasaan mutlak.",
+    "min_level": 50,
+    "travel_cost": 100,
+    "published": true,
+    "version": 1,
+    "encounters": [
+      {
+        "id": "throne_elite_guard",
+        "name": "Penjaga Tahta Elit Kosmik",
+        "type": "combat",
+        "weight": 35,
+        "enemy": "penjaga_tahta",
+        "xp": [
+          300,
+          450
+        ],
+        "gold": [
+          250,
+          380
+        ]
+      },
+      {
+        "id": "six_winged_ether_dragon",
+        "name": "Naga Eter Bersayap Enam",
+        "type": "combat",
+        "weight": 35,
+        "enemy": "naga_eter",
+        "xp": [
+          350,
+          500
+        ],
+        "gold": [
+          280,
+          420
+        ]
+      },
+      {
+        "id": "supernova_relic_chest",
+        "name": "Peti Pusaka Inti Supernova (/mine)",
+        "type": "treasure",
+        "weight": 15,
+        "gold": [
+          400,
+          750
+        ]
+      },
+      {
+        "id": "ancient_star_branch",
+        "name": "Panen Batang Bintang Purba (/gather)",
+        "type": "event",
+        "weight": 15,
+        "exploration_points": 10
+      }
+    ],
+    "campaign": {
+      "chapter": 7,
+      "title": "Act I - Pengepungan Singgahsana Angkasa",
+      "steps": [
+        "Tembus badai radiasi di Singguhsana Ruang Hampa.",
+        "Kumpulkan Pusaka Inti Supernova dan Bintang Purba.",
+        "Buka gerbang 20 ruangan menuju Tahta Kaisar Xylarion!"
+      ]
+    }
   }
 ]
