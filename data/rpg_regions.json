@@ -1,5 +1,45 @@
 [
   {
+    "id": 3,
+    "slug": "shadow_volcano",
+    "name": "Gunung Berapi Bayangan (Shadow Volcano)",
+    "min_level": 15,
+    "recommended_level": 18,
+    "description": "Daratan gersang berselimut debu vulkanik dan sungai lava hitam murni. Panas terik mematikan merenggut tenaga siapapun yang berani melangkah tanpa perlindungan eliksir es maupun perisai obsidian.",
+    "threat_level": "Bencana Kosmik (Cataclysmic - Tingkat III)",
+    "stamina_cost": 4,
+    "lore": "Dulu merupakan tempat bertengguknya kuil suci Ordo Besi Putih, kini gunung ini telah berubah menjadi tungku api kultis penyeleweng yang berniat membangkitkan Malakor.",
+    "monsters": [
+      "Prajurit Besi Hitam Magma",
+      "Kelelawar Api Neraka",
+      "Gila Monster Bakul Es",
+      "Kultis Penyembah Lava Kuno"
+    ],
+    "events": [
+      "Ledakan Geiser Magma Mendidih: Menghindari cipratan lahar hitam bermodalkan cek kecepatan & kecermatan",
+      "Pertemuan Pengintai Aliansi Guild: Menyalakan granat isyarat di kemah pertempuran untuk memicu bonus damage Duo Co-Op",
+      "Panen Profesional Bunga Teratai Api (`/gather`): Mengikis kerak vulkanik untuk mengamankan bahan obat eliksir penahan panas",
+      "Tambang Obsidian Murni (`/mine`): Menjemput bongkahan kristal vulkanik superkeras untuk ditempa menjadi Baju Perang Obsidian",
+      "Mancing di Sungai Hidrotermal (`/fish`): Menemukan Sisik Naga Perak Kuno bernilai ratusan emas di pasar konsinyasi (`/market`)"
+    ],
+    "rewards_summary": {
+      "xp_range": [
+        35,
+        75
+      ],
+      "gold_range": [
+        30,
+        80
+      ],
+      "loot": [
+        "Obsidian Murni",
+        "Bunga Teratai Api",
+        "Sisik Naga Perak",
+        "Kristal Bayangan Bakar"
+      ]
+    }
+  },
+  {
     "id": "aldenmoor_outskirts",
     "name": "🌲 Pinggiran Aldenmoor: Kabut Kelabu",
     "description": "Perbatasan utara Kerajaan Aldenmoor yang diselimuti fenomena anomali Kabut Kelabu (The Gray Mite). Suku goblin lokal yang dulunya damai kini bertransformasi menjadi gerombolan agresif oleh sihir asing dari kedalaman Reruntuhan, menghabisi kafilah pasokan medis.",

@@ -1,4 +1,4 @@
-# AGENTS.md — Konteks Resmi & Aturan Kerja untuk AI Coding Agent (Updated: Patch 1.1)
+# AGENTS.md — Konteks Resmi & Aturan Kerja untuk AI Coding Agent (Updated: Patch 1.2 - Saga I Finale)
 
 File ini merupakan sumber kebenaran tertinggi (Single Source of Truth) bagi setiap agent AI (Antigravity, Claude, ChatGPT, Cursor, atau sejenisnya) yang melanjut, merefaktor, atau menambah fitur pada repositori **Anon-Chat-Game**. 
 **WAKTU BACA & PATUHI KETENTUAN DI BAWAH INI SEBELUM MEMODIFIKASI SATU BARIS PUN KODE!**
@@ -7,17 +7,17 @@ File ini merupakan sumber kebenaran tertinggi (Single Source of Truth) bagi seti
 
 ## 1. 📖 Urutan Baca & Pemahaman Konten
 1. `AGENTS.md` — Aturan arsitektur teknis, batasan VPS, dan hukum keamanan (file ini).
-2. `PRD.md` — Spesifikasi produk live-service berseries (Patch 1.0 & 1.1 yang sudah aktif) dan filosofi "Anti-Boredom".
-3. `TASKS.md` — Daftar pencapaian patch yang telah lunas dan road-map ekspansi berikutnya (Patch 1.2+).
-4. `PANDUAN_SETUP_VPS.md` — Aturan deploy ke lingkungan Linux production (Git Pull + PM2 + Node 20).
+2. `PRD.md` — Spesifikasi produk live-service berseries (Saga I: Patch 1.0, 1.1, & 1.2 sudah aktif) dan filosofi "Anti-Boredom".
+3. `TASKS.md` — Daftar pencapaian Saga I yang telah purna lunas dan road-map ekspansi berikutnya (Saga II: Patch 2.0+).
+4. `PANDUAN_SETUP_VPS.md` — Aturan deploy ke lingkungan Linux production (Git Pull / PM2 / SSH).
 
 ---
 
 ## 2. 🏰 Arsitektur Wajib: Modular Patch System (Content Delivery System)
-Sejak Patch 1.1, sistem cerita, dungeon, dan eksplorasi MENGGUNAKAN ARSITEKTUR MODULAR.
+Sistem cerita, dungeon, dan eksplorasi MENGGUNAKAN ARSITEKTUR MODULAR.
 - **JANGAN PERNAH MENUMPUK KODE BARU SECARA MANUAL** ke file `data/rpg_regions.json`, `data/rpg_campaign.json`, atau `data/rpg_dungeons.json`. File-file tersebut adalah **FILE HASIL AUTO-GENERATE** dari aggregator.
-- **CARA MENAMBAH KONTEN BARU (Patch/Chapter Berikutnya):**
-  1. Buat atau edit file patch per-saga di direktori modular: `data/patches/saga_v1/patch_X_Y.json` (Contoh: `patch_1_0.json` & `patch_1_1.json`).
+- **CARA MENAMBAH KONTEN BARU (Saga II / Patch 2.0+):**
+  1. Buat atau edit file patch per-saga di direktori modular: `data/patches/saga_v2/patch_X_Y.json`.
   2. Gunakan status `"published": false` jika patch masih dalam tahap draf internal, dan ubah ke `"published": true` bila siap dirilis.
   3. Mesin `data/patch_loader.js` akan otomatis menyatukan file-file modular tersebut setiap kali server atau unit test diaktifkan.
   4. Untuk memicu build penggabungan manual, jalankan perintah: `npm run build:patches`.
@@ -32,15 +32,15 @@ Sejak Patch 1.1, sistem cerita, dungeon, dan eksplorasi MENGGUNAKAN ARSITEKTUR M
 ---
 
 ## 4. 🎮 Filosofi Game Design & Interface (Anti-Boredom & Clean UI)
-- **Hukum Anti-Boredom (Gameplay Taktis & Dinamis)**: Setiap penambahan level atau patch tidak boleh berujung pada grinding combat yang berulang dan membosankan. Pastikan pengintegrasian dengan **7 Profesi Kuno (`/gather`, `/mine`, `/fish`)**, **Perdagangan Konsinyasi (`/market`, `/trade`)**, dan **Synergi Duo Co-Op (`/coop`)** agar dinamika bermain bervariasi.
+- **Hukum Anti-Boredom (Gameplay Taktis & Dinamis)**: Setiap penambahan level atau patch tidak boleh berujung pada grinding combat yang berulang dan membosankan. Pastikan pengintegrasian dengan **7 Profesi Kuno (`/gather`, `/mine`, `/fish`)**, **Perdagangan Konsinyasi (`/market`, `/trade`)**, dan **Synergi Aliansi Guild & Co-Op (`/coop`)** agar dinamika bermain bervariasi (Monotone Combat Ratio wajib <15%).
 - **Input Angka 1-Based**: Semua daftar item, skill, dungeon, equipment, dan keputusan event harus menampilkan nomor urut (1-based index: 1, 2, 3...) yang gampang diketrik di ponsel pintar Telegram, tanpa mewajibkan input string ID internal.
 - **Pengecekan Kerapihan /profile & /guide**: Perintah `/profile` harus tetap ramah dibaca di layar Telegram tanpa melebihi batas karakter pesan, menampilkan rekor dan level perlengkapan dengan ringkas namun bergengsi.
 
 ---
 
-## 5. 🧪 Standar Pengujian Sebelum Menyerahkan Tugas
-Setiap selesai mengonstruksi pemutakhiran, agen AI WAJIB mengeksekusi uji coba otomatisasi di lingkungan Terminal (Gunakan format Windows Powerhell/CMD mumpuni):
+## 5. 🧪 Standar Pengujian & Deployment SSH
+Setiap selesai mengonstruksi pemutakhiran, agen AI WAJIB mengeksekusi uji coba otomatisasi di lingkungan Terminal dan sinkronisasi server VPS:
 ```bash
-cmd.exe /c "npm run build:patches && npm test"
+cmd.exe /c "npm run build:patches && npm test && npm run simulate:saga"
 ```
-*Pastikan seluruh 7+ unit test lulus 100% (All Pass) dan tidak ada crash pada syntax JSON atau database sebelum kode didorong (commit & push) ke server main!*
+*Pastikan seluruh 7+ unit test lulus 100% (All Pass), simulasi mencontohkan gameplay dinamis, dan deploy ke VPS dilakukan sejuk tanpa crash!*

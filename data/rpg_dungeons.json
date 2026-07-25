@@ -1,5 +1,69 @@
 [
   {
+    "id": 3,
+    "name": "Benteng Vulkanik Kuil Bayangan (Volcano Fortress)",
+    "slug": "volcano_fortress",
+    "recommended_level": 20,
+    "min_level": 16,
+    "total_rooms": 20,
+    "stamina_cost": 6,
+    "theme": "Labyrinth Lava Hitam & Ruang Penobatan Naga",
+    "lore_intro": "Benteng agung berbatu obsidian di jantung kawah gunung berapi. 20 Ruangan penuh ujian hidup mati yang menguras strategi, profesi, serta koefisiensi kolaboratif Anda bersama rekan Duo Co-Op.",
+    "mechanics": {
+      "anti_boredom": true,
+      "coop_synergy_boost": "Jika Anda mengajak partner berkekuatan tinggi di mode Duo, efek serangan magma berkurang 50%",
+      "professions_integration": {
+        "gather_check": "Mengoleskan ekstrak Teratai Api pada baju besi saat meniti jembatan rantai lahar",
+        "mine_check": "Membongkar pilar batu obsidian menggunakan piksel tambang guna menutup aliran lava yang menyerbu ruangan",
+        "market_synergy": "Membuka kotak raksasa berisikan Saham Konsinyasi yang langsung meningkatkan suku bunga dompet Anda di Escrow Ledger!"
+      }
+    },
+    "rooms_layout": {
+      "room_1": "Gerbang Batu Bakar: Menguji ketahanan mental atas hawa panas kawah gunung berapi",
+      "room_2": "Pos Penjaga Orc Bakar: Pertarungan taktis melawan regu tombak berkulit lahar",
+      "room_3": "Jembatan Gantung Rantai Lava: Keputusan memilih berlari cepat atau merayap menghemat HP",
+      "room_4": "Ruang Altar Relik Batu Hitam: Memicukan teka-teki simbol naga untuk mengikis perisai musuh",
+      "room_5": "Mini-Boss 1: Golem Obsidian Raksasa (HP: 2200). Titikan kelemahan terletak pada retakan punggungnya",
+      "room_6": "Kolam Magma Meluap: Memaknai peran profesi `/gather` untuk menggosok ramuan penutup luka bakar",
+      "room_7": "Labirin Uap Hitam: Sinergi Co-Op memantul sinyal lampu isyarat agar tidak tercepit di dinding bergeser",
+      "room_8": "Gudang Besi Putih: Peluang mengantongi resep tembakan meriam tembus baju zirah",
+      "room_9": "Kandang Serigala Api: Pertempuran sengit jarak dekat dalam ruangan tanpa tempat berlindung",
+      "room_10": "Mini-Boss 2: Pendeta Kepala Hitam Kultis (HP: 3400). Mengelarkan mantra penghisap darah dari kawah lahar",
+      "room_11": "Lorong Stalaktit Berjatuhan: Mengandalkan refleks kelincahan dan penempaan tameng `/reforge`",
+      "room_12": "Tambang Darat Obsidian Kuno: Ruangan bonus profesi `/mine` yang memberikan bahan tempa tingkat tertinggi",
+      "room_13": "Ruang Interogasi Tahanan Goblin Kabut: Membantu memendekkan barikade kultis tersembunyi di lantai atas",
+      "room_14": "Kolam Air Panas Belerang: Ruang pemulihan HP & Stamina berbekal pancuran mata air suci yang belum terpencil",
+      "room_15": "Mini-Boss 3: Naga Muda Sayap Bara (HP: 4800). Pertarungan udara membutuhkan koordinasi serangan panah beruntung",
+      "room_16": "Anjungan Observasi Bintang Kuno: Memantapkan rekor di buku panduan mengenai astronomi gerhana penjaga langit",
+      "room_17": "Gerbang Besi Segel Enam Kunci: Menukarkan keping emas dari Pasar Konsinyasi `/market` untuk menyuap mekanisme otomatis",
+      "room_18": "Terowongan Lava Jatuh: Ruang ketangkasan akhir di mana setiap ketukan layar menentukan selisih 1 detik selamat dari terjangan api",
+      "room_19": "Serambi Mahkota Bayangan: Ruang periapan item suci sebelum melangkah ke arena penobatan Naga Agung",
+      "room_20": "FINAL RAID BOSS: Naga Bayangan Malakor (HP: 7500, Power Requirement: 110, Recommended Lv: 22)"
+    },
+    "boss_details": {
+      "name": "Naga Bayangan Malakor (Ancient Shadow Dragon: Malakor)",
+      "hp": 7500,
+      "attack_power": 95,
+      "recommended_level": 22,
+      "signature_moves": [
+        "Napas Api Kelabu: Menyapu seluruh ruangan dengan lidah api yang melelehkan logam biasa",
+        "Kibas Sayap Badai Meteor: Menggoyangkan tiang kawah hingga batu bara panas berguguran",
+        "Auman Segel Astral: Membebani psikologis musuh dengan bayangan kosmik tak berujung"
+      ],
+      "defeat_narrative": "Saat tombak berlapis Obsidian tancapkan telak ke dada Malakor, sisik naga agung itu luruh berubah menjadi abu perak. Dalam napas terakhirnya, Malakor merintih: 'Kalian bodoh... Kami membangkitkan badai bukan untuk mengubur kalian, tapi untuk menutup Gerbang Astral... Kini segel kawah ini pecah... PARA PENGHUNI BINTANG ASTRAL AKAN DATANG MENYERBU DUNIAMU!'. Cliffhanger epik menandari akhir Saga I dan menyala sebagai fajar bagi SAGA II: INVASION FROM THE ASTRAL HORIZON (Patch 2.0)!"
+    },
+    "rewards_summary": {
+      "xp": 550,
+      "gold": 450,
+      "exclusive_loot": [
+        "Mahkota Naga Malakor (Tier IV Legendary Gear)",
+        "Pedang Tombak Besi Bakar",
+        "Sayap Jubah Bayangan",
+        "Sertifikat Penawar Kritis Aldenmoor"
+      ]
+    }
+  },
+  {
     "id": "goblin_ruins",
     "name": "🏚️ Reruntuhan Goblin: Benteng Kabut Kelabu",
     "description": "Ekspedisi taktis bercabang menembus 5 lapisan pos militer goblin yang terinfeksi hawar magis. Butuh kerja sama sinkronic duo, pengelolaan pemulihan di kuil air suci, dan ketegasan menguji konspirasi bawah tanah!",

@@ -1,5 +1,29 @@
 [
   {
+    "act": 1,
+    "title": "Pengepungan Lembah Magma (Siege of Magma Valley)",
+    "min_level": 15,
+    "max_level": 18,
+    "objectives": [
+      "Menembus kepungan Prajurit Besi Hitam di kaki gunung melalu perintah `/world` dan `/hunt`",
+      "Memetik minimal 5 Bunga Teratai Api via `/gather` dan meraciknya di kemah aliansi agar bertahan dari suhu lava",
+      "Menjual atau membeli perlengkapan penawar haba panas melalui perantaraan Escrow Marketplace (`/market` & `/trade`)"
+    ],
+    "boss_intro": "Komandan Kultis Berjubah Besi menghadang di gerbang pendakian, menghalangi jalur pasokan Aliansi Guild!"
+  },
+  {
+    "act": 2,
+    "title": "Kuil Baja Hitam (Temple of Black Steel)",
+    "min_level": 18,
+    "max_level": 22,
+    "objectives": [
+      "Menambang 10 unit Obsidian Murni via `/mine` di dalam terowongan panas bumi untuk mempersatukan senjata penusuk sisik naga",
+      "Melompat bersama rekan Duo Co-Op untuk menonaktifkan rektor kristal magma yang menyuplai tenaga penjara naga",
+      "Mengupgrade seluruh armor ke Tingkat 4 (Obsidian Set) melalui meja tempa `/reforge` dan `/socket`"
+    ],
+    "boss_intro": "Kultis Agung membuka portal api hitam, membiarkan geraman Malakor menggentarkan langit Aldenmoor!"
+  },
+  {
     "id": "chapter1_mist_clues",
     "chapter": 1,
     "order": 1,
