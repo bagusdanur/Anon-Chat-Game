@@ -142,6 +142,47 @@ function getClassBuildAdvice(className) {
   };
 }
 
-module.exports = { determineNextStep, getCompletedChecklist, getClassBuildAdvice };
+function formatObjectiveLabel(id) {
+  const map = {
+    explore_outskirts: 'Jelajahi Pinggiran Aldenmoor',
+    clear_ruins: 'Taklukkan Reruntuhan Goblin',
+    explore_valley: 'Jelajahi Lembah Sutra Beracun',
+    clear_spider_nest: 'Taklukkan Sarang Ratu Laba-laba',
+    explore_volcano: 'Jelajahi Gunung Berapi Bayangan',
+    clear_volcano_fortress: 'Taklukkan Benteng Vulkanik Kuil Bayangan',
+  };
+  return map[id] || (id || '').replace(/_/g, ' ');
+}
+
+function getSagaHeader(chapter) {
+  const num = Number(chapter) || 1;
+  if (num === 1) return '✨ <b>[SAGA I: PATCH 1.0 - THE MISTY FRONTIER] (Chapter 1)</b>';
+  if (num === 2) return '✨ <b>[SAGA I: PATCH 1.1 - WEBS OF THE SILENT ABYSS] (Chapter 2)</b>';
+  if (num === 3) return '✨ <b>[SAGA I: PATCH 1.2 - SHADOW DRAGON\'S WRATH] (Chapter 3 - Finale)</b>';
+  return '✨ <b>[SAGA I: THE ALDENMOOR CRISIS - COMPLETE FINALE]</b>';
+}
+
+function getSagaFooter(chapter) {
+  const num = Number(chapter) || 1;
+  if (num === 1) {
+    return '<i>📜 Saga Tracker: Jelajahi Pinggiran Aldenmoor dan taklukkan Reruntuhan Goblin berbekal penempaan gear (/reforge)!</i>';
+  }
+  if (num === 2) {
+    return '<i>📜 Saga Tracker: Manfaatkan Pasar Gelap (/market) dan 7 Profesi Kuno untuk mengimbangi racun Ratu Laba-laba!</i>';
+  }
+  if (num === 3) {
+    return '<i>📜 Saga Tracker: Bersatu dalam Aliansi Guild (/coop), tambang Obsidian Murni, dan redam amarah Naga Malakor di Kawah Magma!</i>';
+  }
+  return '<i>📜 Saga Tracker: Seluruh tantangan Saga I telah lunas ditaklukkan! Bersiap menyambut Invasi Astral pada Saga II!</i>';
+}
+
+module.exports = {
+  determineNextStep,
+  getCompletedChecklist,
+  getClassBuildAdvice,
+  formatObjectiveLabel,
+  getSagaHeader,
+  getSagaFooter,
+};
 
 

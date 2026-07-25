@@ -1,6 +1,6 @@
 const { Markup } = require('telegraf');
 const { db } = require('../db');
-const { determineNextStep, getCompletedChecklist, getClassBuildAdvice } = require('./services/gameplayGuide');
+const { determineNextStep, getCompletedChecklist, getClassBuildAdvice, formatObjectiveLabel, getSagaHeader, getSagaFooter } = require('./services/gameplayGuide');
 const { createCampaignService } = require('./services/campaign');
 
 const campaignService = createCampaignService(db);
@@ -42,7 +42,7 @@ function readGuideState(userId) {
       status: activeQuestRow.status,
       objective: {
         type: objective.type,
-        label: objective.id.replace(/_/g, ' '),
+        label: formatObjectiveLabel(objective.id),
         current: activeQuestRow.progress[objective.id] || 0,
         target: objective.count,
       },
@@ -97,7 +97,7 @@ function renderGuide(userId) {
 
   return {
     text:
-      `✨ <b>[CURRENT SAGA: PATCH 1.1 - WEBS OF THE SILENT ABYSS]</b>\n` +
+      `${getSagaHeader(state.chapter)}\n` +
       `<b>🧭 ALDENMOOR ADVENTURER'S GUIDE</b>\n\n` +
       `<b>📍 POSISIMU SEKARANG</b>\n${position}\n\n` +
       `<b>➡️ MISI SAGA SAAT INI</b>\n` +
@@ -111,7 +111,7 @@ function renderGuide(userId) {
       `• <b>Combo Skill:</b> ${buildAdvice.skillCombo}\n` +
       `• <b>Perintah Build:</b> <code>/gear</code> · <code>/skill</code> · <code>/inv</code> · <code>/reforge</code> · <code>/socket</code>\n\n` +
       `<b>🔓 UNLOCK SETELAH INI</b>\n${next.unlock}\n\n` +
-      `<i>📜 Saga Tracker: Manfaatkan Pasar Gelap (/market) dan 7 Profesi Kuno untuk mengimbangi racun Ratu Laba-laba!</i>`,
+      `${getSagaFooter(state.chapter)}`,
     next,
     state,
   };
