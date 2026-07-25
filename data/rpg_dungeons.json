@@ -661,5 +661,221 @@
         "text": "Badai lahar dan serangan mematikan dari pertahanan Kuil Bayangan membakar pertahanan Anda! Mundur sesaat ke markas aliansi, berdagang ramuan suci via Pasar Konsinyasi (/market), reforge baju zirah dengan obsidian Murni (/reforge), dan undang partner terkuat Anda sebelum menyerang ulang dari oasis penyegaran!"
       }
     ]
+  },
+  {
+    "id": "astral_citadel",
+    "name": "🌌 Benteng Kristal: Markas Astral Void",
+    "description": "Markas terapung berhiaskan prisma cahaya kosmik dan gravitasi anomali di angkasa luar. 15 ruangan menantang yang menuntut sinergi Bahtera Guild, ketangkasan party Co-Op, serta build karakter maksimal untuk menghadapi sang pemakan bintang!",
+    "min_level": 25,
+    "recommended_level": 30,
+    "version": 1,
+    "published": true,
+    "entry_room": "astral_gates",
+    "rewards": {
+      "xp": 1800,
+      "gold": 1200,
+      "item": "emas",
+      "quantity": 8
+    },
+    "rooms": [
+      {
+        "id": "astral_gates",
+        "type": "event",
+        "name": "Gerbang Cahaya Starlight",
+        "text": "Bahtera Guild bergemuruh melintasi sabuk nebula saat Anda menjejakkan kaki di pelataran Gerbang Starlight! Dua pilar raksasa memendarkan energi ungu menyala, memecah medan gravitasi menjadi dua rute invasi.",
+        "options": [
+          {
+            "id": "enter_skydome",
+            "label": "🪐 Terobos Kubah Udara Kosmik via Jalur Atas",
+            "next": "sky_dome"
+          },
+          {
+            "id": "enter_zerog",
+            "label": "⚡ Selusuri Terowongan Anti-Gravitasi di Bawah Gerbang",
+            "next": "zero_g_tunnel"
+          }
+        ]
+      },
+      {
+        "id": "sky_dome",
+        "type": "combat",
+        "name": "Kubah Udara Kosmik",
+        "text": "Pasukan Sentinel Kristal Astral menghadang di bawah kubah tembus pandang yang menampakan ratusan galaksi terpencil! Sinar laser mereka mengunci koordinat Anda!",
+        "enemy": {
+          "name": "Sentinel Kristal Astral",
+          "power": 75,
+          "damage": 30
+        },
+        "success": "crystal_bridge",
+        "failure": "void_failed"
+      },
+      {
+        "id": "zero_g_tunnel",
+        "type": "event",
+        "name": "Terowongan Zero Gravity",
+        "text": "Di dalam terowongan ini, gravitasi berbalik arah 180 derajat! Anda melayang di antara batu asteroid melayang yang menyimpan energi starlight aktif.",
+        "options": [
+          {
+            "id": "jump_nebula",
+            "label": "🌌 Lompat Menerjang Kawanan Nebula",
+            "next": "nebula_field"
+          },
+          {
+            "id": "use_gravity_stones",
+            "label": "💎 Aktifkan Batu Gravitasi untuk Menyerap Energi Ruang Rahasia",
+            "next": "gravity_sanctuary"
+          }
+        ]
+      },
+      {
+        "id": "nebula_field",
+        "type": "combat",
+        "name": "Medan Kawanan Nebula",
+        "text": "Dari dalam gumpalan asap starlight ungu, menyergap kawanan Ubur-Ubur Nebula Kosmik yang menyengat dengan sengatan plasma statis!",
+        "enemy": {
+          "name": "Ubur-Ubur Nebula Kosmik",
+          "power": 72,
+          "damage": 28
+        },
+        "success": "crystal_bridge",
+        "failure": "void_failed"
+      },
+      {
+        "id": "gravity_sanctuary",
+        "type": "treasure",
+        "name": "Ruang Karunia Gravitasi",
+        "text": "Batu Gravitasi Anda bergetar sinkron dengan altar kristal terapung di ruang rahsia ini! Anda menyerap kekuatan starlight dan menemukan peninggalan logam mulia luar angkasa!",
+        "reward": {
+          "gold": 250,
+          "item": "emas",
+          "quantity": 3
+        },
+        "next": "crystal_bridge"
+      },
+      {
+        "id": "crystal_bridge",
+        "type": "event",
+        "name": "Jembatan Prisma Kosmik",
+        "text": "Kedua rute bertemu pada Jembatan Prisma Kosmik—struktur kristal solid berpenyangga energi plasma yang menjenguk langsung ke jurang kehampaan Void.",
+        "options": [
+          {
+            "id": "strike_tower",
+            "label": "🎯 Serang Menara Laser Prisma Penjaga Utama",
+            "next": "laser_tower"
+          },
+          {
+            "id": "rally_airship",
+            "label": "⚓ Menjemput Pasokan Suku Cadang di Depot Bahtera Guild",
+            "next": "airship_dock"
+          }
+        ]
+      },
+      {
+        "id": "laser_tower",
+        "type": "combat",
+        "name": "Menara Laser Prisma",
+        "text": "Robot Penjaga Prisma bertransformasi dari struktur pilar abadi, meluncurkan rentetan roket kristal dan pemotong sinar suar dari tangannya!",
+        "enemy": {
+          "name": "Robot Penjaga Prisma",
+          "power": 80,
+          "damage": 32
+        },
+        "success": "core_antechamber",
+        "failure": "void_failed"
+      },
+      {
+        "id": "airship_dock",
+        "type": "treasure",
+        "name": "Depot Logistik Bahtera Guild",
+        "text": "Kapal sudi bantuan Guild mendarat mulus di geladak observasi! Anggota guild menyalurkan persediaan ramuan ether murni serta kantong koin emas brilian!",
+        "reward": {
+          "gold": 280,
+          "item": "emas",
+          "quantity": 3
+        },
+        "next": "core_antechamber"
+      },
+      {
+        "id": "core_antechamber",
+        "type": "event",
+        "name": "Serambi Inti Kosmik",
+        "text": "Pintu raksa bermotif rasi bintang abadi bergetar hebat. Dari balapan ruangan altar di depan, bergema jeritan sang Leviathan yang mengguncang denyut jantung angkasa!",
+        "options": [
+          {
+            "id": "fight_general",
+            "label": "⚔️ Hadapi Panglima Perang Void di Gerbang Altar",
+            "next": "astral_general"
+          },
+          {
+            "id": "secret_path",
+            "label": "🔭 Teliti Observatorium Planet Purba di Samping Altar",
+            "next": "secret_observatory"
+          }
+        ]
+      },
+      {
+        "id": "astral_general",
+        "type": "combat",
+        "name": "Mini-Boss: Panglima Perang Void Varelian",
+        "text": "Panglima Void Varelian menjulurkan tombak cermin bercahaya ganda! Ia mengendalikan gravitasi local untuk meremukkan tulang tempur siapa pun yang melangkah ke Altar Suci!",
+        "enemy": {
+          "name": "Panglima Void Varelian",
+          "power": 88,
+          "damage": 36
+        },
+        "success": "guild_airship_rally",
+        "failure": "void_failed"
+      },
+      {
+        "id": "secret_observatory",
+        "type": "treasure",
+        "name": "Observatorium Planet Purba",
+        "text": "Melalui teleskop giroskop kuno, Anda mempelajari kelemahan fatal sang Leviathan Kosmik—sisik punggungnya rapuh terhadap energi sihir dan sabetan kritis berkali-kali!",
+        "reward": {
+          "gold": 320,
+          "item": "emas",
+          "quantity": 4
+        },
+        "next": "guild_airship_rally"
+      },
+      {
+        "id": "guild_airship_rally",
+        "type": "event",
+        "name": "Pos Komando Armada Bahtera Guild",
+        "text": "Bala bantuan penuh dari Co-Op Party dan Aliansi Guild telah menempati koordinat tempur mengelilingi Benteng Kristal! Meriam Starlight kapal bersiap meluncurkan tembakan barikade perisai pembuka jalan!",
+        "options": [
+          {
+            "id": "assault_leviathan",
+            "label": "🚀 LAUNCH PENGGEREBEkan! Serbu Altar Leviathan Kosmik!",
+            "next": "leviathan_altar"
+          }
+        ]
+      },
+      {
+        "id": "leviathan_altar",
+        "type": "boss",
+        "name": "FINAL RAID BOSS: Leviathan Kosmik",
+        "text": "🔥 [SAGA II CLIMAX: THE COSMIC LEVIATHAN]\nGeladak altar robek oleh pusaran Black Hole berskala raksasa! Dari kedalaman dimensi kelam menengger tubuh raksasa seukuran bulan bersisik kristal meteorit gempur—sang pemakan bintang abadi, <b>Leviathan Kosmik!</b>\n\nTentakel plasma dan sirip starlight raksasanya menggoncangkan keseimbangan gravitasi: <i>\"Kerdil! Sungguh lancang kalian menghancurkan gembok Malakor hanya untuk datang kemari menjadi pakan lambung angkasaku! Cahaya duniapun kan kumuat dalam kegelapan hampa abadi!\"</i>\n\nPadukan kombinasi stat, skill, dan tempaan perlengkapan tertinggi Anda bersatu dengan tembakan rentak Armada Bahtera Guild untuk mengukir kemenangan bersejarah di angkasa abadi!",
+        "enemy": {
+          "name": "Leviathan Kosmik (Ancient Void Eater)",
+          "power": 100,
+          "damage": 45
+        },
+        "success": "leviathan_victory",
+        "failure": "void_failed"
+      },
+      {
+        "id": "leviathan_victory",
+        "type": "finish",
+        "name": "Kemenangan Gemilang di Tapal Batas Astral",
+        "text": "👑 [GRAND VICTORY: SAGA II CLIMAX]\nRententan dentuman Meriam Starlight Bahtera Guild bersatu dengan tusukan fatal dari senjata bertuah Anda melumpuhkan jantung energi hitam sang Leviathan Kosmik! Ruput tubuh angkasanya bergoncang luruh menjadi limpahan meteor emas dan debu starlight bergemilangan.\n\nDalam seruan kemerdekaan angkasawi, ancaman invasi Void ke dunia Aldenmoor telah dibungkem! Nama Anda dipahatkan pada bintang-bintang penunjuk jalan di angkasa luar, menyematkan kejayaan kekal dalam <b>Saga II: The Astral Horizon</b>!"
+      },
+      {
+        "id": "void_failed",
+        "type": "failure",
+        "name": "Terhempas badai Radiasi Kosmik",
+        "text": "Tekan gravitas kencang dan badai tembakan energi Kosmik menggemparkan pertahanan Anda! Segera evakuasi diri kembali ke kabin Bahtera Guild, tingkatkan kualitas atribut via tips di (/guide), reforge & socket gem pada gear Anda (/reforge, /socket), serta ajak rekan Aliansi (/coop, /guild) sebelum kembali menggebrak dari pelabuhan udara!"
+      }
+    ]
   }
 ]

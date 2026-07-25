@@ -18,9 +18,10 @@ Dokumen ini melacak kemajuan implementasi dari rencana jangka panjang bot **Anon
 
 ---
 
-## ✅ SAGA II (THE ASTRAL HORIZON / PATCH 2.0): COMPLETED & ACTIVATED
+## ✅ SAGA II (THE ASTRAL HORIZON / PATCH 2.0 & 2.1): COMPLETED & ACTIVATED
 - [x] **P2.0.1** Buat struktur folder saga baru: `data/patches/saga_v2/patch_2_0.json` (`published: true`).
 - [x] **P2.0.2** Rancang arena Kepulauan Melayang (*Floating Ethereal Isles*) dengan gravitasi rendah dan monster kristal kosmik dari luar angkasa (`ethereal_isles`).
 - [x] **P2.0.3** Misi Campaign Chapter 4 (Act I & Act II) dengan peluncuran Bahtera Guild (*Airship Ascent*) menembus Void Astral.
 - [x] **P2.0.4** Penggabungan otomatis via aggregator `npm run build:patches` dan uji coba regresi lulus 100%!
-
+- [x] **P2.1.1** Eksekusi Patch 2.1: Dungeon 15 Ruangan *Benteng Kristal Astral* (`astral_citadel`) dengan Raid Boss *Leviathan Kosmik*.
+- [x] **P2.1.2** Campaign Chapter 5 (Act I: Titik Temu Astral & Act II: Penaklukan Leviathan Kosmik) serta validasi simulasi 100% Lulus!

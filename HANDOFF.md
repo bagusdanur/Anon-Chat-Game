@@ -11,8 +11,8 @@ Dokumen ini dibuat khusus untuk mempermudah AI Agent baru (**Codex**, **Claude**
   - `anon-dashboard` (ID 16) — Web Admin Dashboard Express.js.
 - **Progress Cerita (Saga Status)**:
   - **Saga I (Patch 1.0, 1.1, 1.2)**: 100% Selesai & Aktif.
-  - **Saga II (Patch 2.0 - The Astral Horizon)**: 100% Selesai & Aktif di `data/patches/saga_v2/patch_2_0.json`.
-  - **Campaign Quests**: Chapter 1 s/d Chapter 4 aktif secara dinamis.
+  - **Saga II (Patch 2.0 & 2.1 - The Astral Horizon)**: 100% Selesai & Aktif (`patch_2_0.json` & `patch_2_1.json`).
+  - **Campaign Quests & Dungeons**: Chapter 1 s/d Chapter 5 (Act I & II) serta Dungeon baru *Benteng Kristal Astral* (`astral_citadel`) dengan bos Leviathan Kosmik telah aktif secara dinamis.
 
 ---
 

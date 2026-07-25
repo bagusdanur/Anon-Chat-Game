@@ -184,5 +184,53 @@
       "item": "emas",
       "quantity": 5
     }
+  },
+  {
+    "id": "chapter5_astral_nexus",
+    "chapter": 5,
+    "order": 1,
+    "title": "Act I - Titik Temu Dimensi Astral & Misteri Starlight",
+    "description": "Setelah meluncur dengan Bahtera Guild di angkasa luar Kepulauan Melayang Ethereal, armada petualang menemukan fenomena aneh di Titik Temu Dimensi Astral! Badai kosmik mengancam menghancurkan navigasi kapal udara. Jelajahi Kepulauan Ethereal sebanyak 6 kali via /explore, kumpulkan kristal starlight, dan amankan radar angkasa!",
+    "requires": "chapter4_airship_ascent",
+    "version": 1,
+    "published": true,
+    "objectives": [
+      {
+        "id": "explore_astral_nexus",
+        "type": "explore",
+        "target": "ethereal_isles",
+        "count": 6
+      }
+    ],
+    "rewards": {
+      "xp": 1500,
+      "gold": 900,
+      "item": "emas",
+      "quantity": 4
+    }
+  },
+  {
+    "id": "chapter5_leviathan_raid",
+    "chapter": 5,
+    "order": 2,
+    "title": "Act II - Penaklukan Leviathan Kosmik di Benteng Kristal",
+    "description": "Di ujung kehampaan Void, berdirilah Benteng Kristal Astral yang menjadi markas utama monster antarplanet! Sang pemakan bintang, Leviathan Kosmik, tlah terbangun oleh pecahan segel Malakor. Kerahkan sinergi Aliansi Guild, pasang perlengkapan terbaik hasil /reforge & /socket, dan taklukkan dungeon Benteng Kristal Astral (/dungeon) untuk menyelamatkan tatanan kosmik!",
+    "requires": "chapter5_astral_nexus",
+    "version": 1,
+    "published": true,
+    "objectives": [
+      {
+        "id": "clear_astral_citadel",
+        "type": "dungeon_complete",
+        "target": "astral_citadel",
+        "count": 1
+      }
+    ],
+    "rewards": {
+      "xp": 2500,
+      "gold": 1500,
+      "item": "emas",
+      "quantity": 10
+    }
   }
 ]
