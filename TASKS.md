@@ -18,8 +18,9 @@ Dokumen ini melacak kemajuan implementasi dari rencana jangka panjang bot **Anon
 
 ---
 
-## 🚀 ROADMAP MASA DEPAN: SAGA II (THE ASTRAL HORIZON / PATCH 2.0 - NEXT EXPANSION)
-- [ ] **P2.0.1** Buat struktur folder saga baru: `data/patches/saga_v2/patch_2_0.json` (Diferensiasi saga agar direktori tetap rapi dan ringan).
-- [ ] **P2.0.2** Rancang arena Kepulauan Melayang (*Floating Ethereal Isles*) dengan gravitasi rendah dan monster kristal kosmik dari luar angkasa.
-- [ ] **P2.0.3** Implementasi sistem Kendaraan Udara & Bahtera Guild (*Airship Crafting*) berbasis kayu kristal dan batu gravitasi.
-- [ ] **P2.0.4** Uji coba regresi menyeluruh untuk menjembatani peralihan level 25 menuju Level 40!
+## ✅ SAGA II (THE ASTRAL HORIZON / PATCH 2.0): COMPLETED & ACTIVATED
+- [x] **P2.0.1** Buat struktur folder saga baru: `data/patches/saga_v2/patch_2_0.json` (`published: true`).
+- [x] **P2.0.2** Rancang arena Kepulauan Melayang (*Floating Ethereal Isles*) dengan gravitasi rendah dan monster kristal kosmik dari luar angkasa (`ethereal_isles`).
+- [x] **P2.0.3** Misi Campaign Chapter 4 (Act I & Act II) dengan peluncuran Bahtera Guild (*Airship Ascent*) menembus Void Astral.
+- [x] **P2.0.4** Penggabungan otomatis via aggregator `npm run build:patches` dan uji coba regresi lulus 100%!
+

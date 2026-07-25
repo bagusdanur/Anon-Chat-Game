@@ -137,5 +137,52 @@
       "item": "perak",
       "quantity": 10
     }
+  },
+  {
+    "id": "chapter4_ethereal_isles",
+    "chapter": 4,
+    "order": 1,
+    "title": "Act I - Jelajah Kepulauan Melayang Ethereal",
+    "description": "Naga Bayangan Malakor berhasil membuka Gerbang Astral sebelum dikalahkan! Lintasi Kepulauan Melayang Ethereal di angkasa luar, bertarung melawan Golem Kristal Astral, dan kumpulkan 5 Serpihan Bintang Astral via /explore!",
+    "requires": "chapter3_volcano_fortress",
+    "version": 1,
+    "published": true,
+    "objectives": [
+      {
+        "id": "explore_ethereal",
+        "type": "explore",
+        "target": "ethereal_isles",
+        "count": 5
+      }
+    ],
+    "rewards": {
+      "xp": 1000,
+      "gold": 600,
+      "item": "emas",
+      "quantity": 2
+    }
+  },
+  {
+    "id": "chapter4_airship_ascent",
+    "chapter": 4,
+    "order": 2,
+    "title": "Act II - Peluncuran Bahtera Guild & Penaklukan Void",
+    "description": "Rakit Bahtera Guild menggunakan Batu Gravitasi dan Batu Kristal! Tantang perburuan monster kosmik di angkasa luar untuk menstabilkan kemudi kapal udara dan mengamankan jalur pelayaran dimensi!",
+    "requires": "chapter4_ethereal_isles",
+    "version": 1,
+    "published": true,
+    "objectives": [
+      {
+        "id": "hunt_astral",
+        "type": "hunt",
+        "count": 8
+      }
+    ],
+    "rewards": {
+      "xp": 1500,
+      "gold": 1000,
+      "item": "emas",
+      "quantity": 5
+    }
   }
 ]

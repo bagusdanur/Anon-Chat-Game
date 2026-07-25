@@ -169,5 +169,57 @@
         "Temukan gerbang utama menuju Benteng Vulkanik Kuil Bayangan!"
       ]
     }
+  },
+  {
+    "id": "ethereal_isles",
+    "name": "🌌 Kepulauan Melayang Ethereal: Void Astral",
+    "description": "Kepulauan terapung di angkasa luar yang didukung oleh Batu Gravitasi Kosmik. Monster Kristal Astral bertindak sebagai penjaga gerbang dimensi lain.",
+    "min_level": 25,
+    "travel_cost": 50,
+    "published": true,
+    "version": 1,
+    "encounters": [
+      {
+        "id": "astral_golem",
+        "name": "Golem Kristal Astral",
+        "type": "combat",
+        "weight": 40,
+        "enemy": "golem_astral",
+        "xp": [
+          100,
+          180
+        ],
+        "gold": [
+          80,
+          150
+        ]
+      },
+      {
+        "id": "gravity_chest",
+        "name": "Peti Karunia Gravitasi Kosmik",
+        "type": "treasure",
+        "weight": 30,
+        "gold": [
+          100,
+          250
+        ]
+      },
+      {
+        "id": "starlight_shard",
+        "name": "Serpihan Bintang Astral (/gather)",
+        "type": "event",
+        "weight": 30,
+        "exploration_points": 5
+      }
+    ],
+    "campaign": {
+      "chapter": 4,
+      "title": "Act I - Ujian Dimensi Astral",
+      "steps": [
+        "Jelajahi Kepulauan Melayang Ethereal.",
+        "Kumpulkan 5 Serpihan Bintang Astral.",
+        "Persiapkan Bahtera Guild untuk menembus Void!"
+      ]
+    }
   }
 ]
