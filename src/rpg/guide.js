@@ -74,7 +74,6 @@ function readGuideState(userId) {
 function renderGuide(userId) {
   const state = readGuideState(userId);
   const next = determineNextStep(state);
-  const checklist = getCompletedChecklist(state);
   const userRow = db.prepare('SELECT class_name FROM rpg_users WHERE telegram_user_id=?').get(String(userId));
   const buildAdvice = getClassBuildAdvice(userRow?.class_name);
 
@@ -91,10 +90,6 @@ function renderGuide(userId) {
       `🎯 ${objective?.label || 'Menunggu chapter berikutnya'}\n${progress}`
     : 'Karakter belum dibuat.';
 
-  const checklistText = checklist
-    .map(item => `${item.done ? '✅' : '⏳'} ${item.title}`)
-    .join('\n');
-
   return {
     text:
       `${getSagaHeader(state.chapter)}\n` +
@@ -103,8 +98,6 @@ function renderGuide(userId) {
       `<b>➡️ MISI SAGA SAAT INI</b>\n` +
       `<b>${next.title}</b>\n${next.detail}\n` +
       `👉 Jalankan: <code>${next.command}</code>\n\n` +
-      `<b>📋 CHECKLIST MILESTONE PROGRES</b>\n` +
-      `${checklistText}\n\n` +
       `<b>💡 ARAHAN BUILD KARAKTER (${buildAdvice.className})</b>\n` +
       `• <b>Prioritas Stat:</b> ${buildAdvice.statFocus}\n` +
       `• <b>Fokus Equipment:</b> ${buildAdvice.gearFocus}\n` +
