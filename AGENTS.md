@@ -1,69 +1,46 @@
-# AGENTS.md — Konteks untuk AI Coding Agent
+# AGENTS.md — Konteks Resmi & Aturan Kerja untuk AI Coding Agent (Updated: Patch 1.1)
 
-File ini khusus untuk agent (Antigravity atau sejenisnya) yang mengerjakan
-repo ini. Baca file ini SEBELUM mulai edit kode.
+File ini merupakan sumber kebenaran tertinggi (Single Source of Truth) bagi setiap agent AI (Antigravity, Claude, ChatGPT, Cursor, atau sejenisnya) yang melanjut, merefaktor, atau menambah fitur pada repositori **Anon-Chat-Game**. 
+**WAKTU BACA & PATUHI KETENTUAN DI BAWAH INI SEBELUM MEMODIFIKASI SATU BARIS PUN KODE!**
 
-## Baca urutan ini dulu
-1. `PRD.md` — requirement lengkap & alasan di baliknya
-2. `TASKS.md` — checklist eksekusi, kerjakan sesuai urutan prioritas
-3. `README.md` — cara install & run yang harus tetap akurat setelah perubahan
+---
 
-## Prinsip Kerja
-- **Jangan big-bang rewrite.** `index.js` saat ini sudah jalan dan sudah
-  diverifikasi (`npm install` sukses, syntax valid). Refactor bertahap per
-  task di `TASKS.md`, bukan menulis ulang semuanya sekaligus.
-- **Setiap task = commit/perubahan terpisah** yang bisa dites sendiri sebelum
-  lanjut ke task berikutnya.
-- **Jangan ganti stack.** Tetap Node.js + Telegraf + SQLite (`better-sqlite3`).
-  Jangan migrasi ke Python, Deno, Postgres, Mongo, dll kecuali diminta eksplisit.
-- **Jangan ganti metode relay pesan.** Harus tetap `ctx.telegram.copyMessage`,
-  bukan `forwardMessage` — ini keputusan sengaja untuk menjaga anonimitas
-  (forwardMessage menampilkan nama/username pengirim asli, copyMessage tidak).
-- **Sinkronkan command.** Setiap menambah, menghapus, atau mengubah command bot,
-  wajib pada perubahan yang sama memperbarui daftar `botCommands` Telegram,
-  panduan `/helprpg`, dan tabel command di `README.md` bila relevan.
-- **Jaga `/profile` sebagai pusat ringkasan pemain.** Saat menambah sistem
-  player-facing yang memiliki status/progres penting, tampilkan ringkasan
-  singkatnya di `/profile` tanpa membuat pesan melewati batas Telegram.
-- **Gunakan nomor untuk input pemain.** Daftar item, gear, skill, anggota,
-  quest, region, listing, trade, dan pilihan lain yang terlihat pemain harus
-  menampilkan nomor 1-based dan command utamanya menerima nomor tersebut.
-  ID internal boleh tetap didukung untuk kompatibilitas, tetapi jangan
-  diwajibkan atau ditampilkan sebagai instruksi utama.
-- **Berikan arah singkat.** Menu dan hasil aktivitas player-facing harus
-  menjelaskan status, tujuan atau langkah berikutnya, dan satu tips relevan
-  secara ringkas. Utamakan arahan kontekstual; jangan memenuhi pesan dengan
-  daftar command panjang.
+## 1. 📖 Urutan Baca & Pemahaman Konten
+1. `AGENTS.md` — Aturan arsitektur teknis, batasan VPS, dan hukum keamanan (file ini).
+2. `PRD.md` — Spesifikasi produk live-service berseries (Patch 1.0 & 1.1 yang sudah aktif) dan filosofi "Anti-Boredom".
+3. `TASKS.md` — Daftar pencapaian patch yang telah lunas dan road-map ekspansi berikutnya (Patch 1.2+).
+4. `PANDUAN_SETUP_VPS.md` — Aturan deploy ke lingkungan Linux production (Git Pull + PM2 + Node 20).
 
-## Aturan Keamanan & Privasi (non-negotiable)
-- Jangan pernah kirim `username`, `first_name`, `last_name`, atau foto profil
-  user ke partner chat-nya, dalam kondisi apapun, di fitur manapun.
-- Jangan log isi pesan user ke console/file. Log hanya metadata (chat_id,
-  jenis event, timestamp).
-- Data report (`/report`) boleh menyimpan alasan singkat, tapi jangan simpan
-  isi pesan lengkap kecuali task eksplisit memintanya.
+---
 
-## Testing Manual Minimum Sebelum Menandai Task Selesai
-Untuk setiap perubahan yang menyentuh alur pairing/relay:
-1. Jalankan bot lokal (`npm start`)
-2. Simulasikan 2 user (2 akun Telegram atau 2 device) → `/search` di keduanya
-   → pastikan ke-pair dan pesan ter-relay dua arah
-3. Uji `/next` dan `/stop` → pastikan state ter-update dengan benar di kedua sisi
-4. Untuk fitur baru (rate limit, report, ban) → uji jalur gagal juga, bukan
-   cuma jalur sukses (contoh: kirim spam untuk uji rate limit, coba `/ban`
-   dari akun non-admin untuk uji otorisasi)
+## 2. 🏰 Arsitektur Wajib: Modular Patch System (Content Delivery System)
+Sejak Patch 1.1, sistem cerita, dungeon, dan eksplorasi MENGGUNAKAN ARSITEKTUR MODULAR.
+- **JANGAN PERNAH MENUMPUK KODE BARU SECARA MANUAL** ke file `data/rpg_regions.json`, `data/rpg_campaign.json`, atau `data/rpg_dungeons.json`. File-file tersebut adalah **FILE HASIL AUTO-GENERATE** dari aggregator.
+- **CARA MENAMBAH KONTEN BARU (Patch/Chapter Berikutnya):**
+  1. Buat atau edit file patch per-saga di direktori modular: `data/patches/saga_v1/patch_X_Y.json` (Contoh: `patch_1_0.json` & `patch_1_1.json`).
+  2. Gunakan status `"published": false` jika patch masih dalam tahap draf internal, dan ubah ke `"published": true` bila siap dirilis.
+  3. Mesin `data/patch_loader.js` akan otomatis menyatukan file-file modular tersebut setiap kali server atau unit test diaktifkan.
+  4. Untuk memicu build penggabungan manual, jalankan perintah: `npm run build:patches`.
 
-## Style Kode
-- CommonJS (`require`), konsisten dengan `index.js` yang sudah ada — jangan
-  campur dengan ESM (`import`) kecuali seluruh project dimigrasikan sekaligus
-  dengan alasan jelas.
-- Nama file & folder: `camelCase.js` untuk file, `kebab-case` untuk folder kalau ada.
-- Komentar boleh Bahasa Indonesia atau Inggris, konsisten dengan gaya yang
-  sudah ada di file terkait (repo saat ini pakai komentar Bahasa Indonesia).
+---
 
-## Kalau Ragu
-Kalau requirement di PRD ambigu atau ada keputusan desain yang tidak
-tercakup, pilih opsi paling sederhana yang memenuhi acceptance criteria,
-dan catat asumsi yang diambil di README bagian "Catatan Implementasi" —
-jangan berhenti menunggu klarifikasi kecuali benar-benar blocking (misal:
-kredensial yang tidak tersedia).
+## 3. ⚠️ Aturan Kritis Sistem & Stabilitas VPS (NON-NEGOTIABLE)
+- **Express 5 Wildcard Routing Bug Prevention**: Dashboard web menggunakan Express versi 5. Dalam Express 5, rute penangkap fallback/wildcard **WAJIB MENULISKAN** syntax `/{*path}` (contoh di `dashboard.js`: `app.get('/{*path}', ...)`). **JANGAN PERNAH KEMBALIKAN KODE KE `app.get('*')`** atau sejenisnya, karena akan menyebabkan loop rekursif fatal yang meledakkan CPU VPS hingga 100%!
+- **Metode Relay Pesan Anonymous Chat**: Harus dan senantiasa menggunakan `ctx.telegram.copyMessage` untuk merelay chat acak antar pengguna. **DILARANG KERAS** memakai `forwardMessage`, karena forward melanggar privasi (membuka username dan foto profil pengirim asal).
+- **Stack Teknologi Tetap**: Jangan meretas atau mengubah fondasi arsitektur (Node.js CommonJS + Telegraf + SQLite `better-sqlite3`). Hindari mencampur syntax ESM (`import / export`) ke dalam codebase CommonJS (`require / module.exports`).
+
+---
+
+## 4. 🎮 Filosofi Game Design & Interface (Anti-Boredom & Clean UI)
+- **Hukum Anti-Boredom (Gameplay Taktis & Dinamis)**: Setiap penambahan level atau patch tidak boleh berujung pada grinding combat yang berulang dan membosankan. Pastikan pengintegrasian dengan **7 Profesi Kuno (`/gather`, `/mine`, `/fish`)**, **Perdagangan Konsinyasi (`/market`, `/trade`)**, dan **Synergi Duo Co-Op (`/coop`)** agar dinamika bermain bervariasi.
+- **Input Angka 1-Based**: Semua daftar item, skill, dungeon, equipment, dan keputusan event harus menampilkan nomor urut (1-based index: 1, 2, 3...) yang gampang diketrik di ponsel pintar Telegram, tanpa mewajibkan input string ID internal.
+- **Pengecekan Kerapihan /profile & /guide**: Perintah `/profile` harus tetap ramah dibaca di layar Telegram tanpa melebihi batas karakter pesan, menampilkan rekor dan level perlengkapan dengan ringkas namun bergengsi.
+
+---
+
+## 5. 🧪 Standar Pengujian Sebelum Menyerahkan Tugas
+Setiap selesai mengonstruksi pemutakhiran, agen AI WAJIB mengeksekusi uji coba otomatisasi di lingkungan Terminal (Gunakan format Windows Powerhell/CMD mumpuni):
+```bash
+cmd.exe /c "npm run build:patches && npm test"
+```
+*Pastikan seluruh 7+ unit test lulus 100% (All Pass) dan tidak ada crash pada syntax JSON atau database sebelum kode didorong (commit & push) ke server main!*
