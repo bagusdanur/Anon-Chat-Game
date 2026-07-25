@@ -1,69 +1,5 @@
 [
   {
-    "id": 3,
-    "name": "Benteng Vulkanik Kuil Bayangan (Volcano Fortress)",
-    "slug": "volcano_fortress",
-    "recommended_level": 20,
-    "min_level": 16,
-    "total_rooms": 20,
-    "stamina_cost": 6,
-    "theme": "Labyrinth Lava Hitam & Ruang Penobatan Naga",
-    "lore_intro": "Benteng agung berbatu obsidian di jantung kawah gunung berapi. 20 Ruangan penuh ujian hidup mati yang menguras strategi, profesi, serta koefisiensi kolaboratif Anda bersama rekan Duo Co-Op.",
-    "mechanics": {
-      "anti_boredom": true,
-      "coop_synergy_boost": "Jika Anda mengajak partner berkekuatan tinggi di mode Duo, efek serangan magma berkurang 50%",
-      "professions_integration": {
-        "gather_check": "Mengoleskan ekstrak Teratai Api pada baju besi saat meniti jembatan rantai lahar",
-        "mine_check": "Membongkar pilar batu obsidian menggunakan piksel tambang guna menutup aliran lava yang menyerbu ruangan",
-        "market_synergy": "Membuka kotak raksasa berisikan Saham Konsinyasi yang langsung meningkatkan suku bunga dompet Anda di Escrow Ledger!"
-      }
-    },
-    "rooms_layout": {
-      "room_1": "Gerbang Batu Bakar: Menguji ketahanan mental atas hawa panas kawah gunung berapi",
-      "room_2": "Pos Penjaga Orc Bakar: Pertarungan taktis melawan regu tombak berkulit lahar",
-      "room_3": "Jembatan Gantung Rantai Lava: Keputusan memilih berlari cepat atau merayap menghemat HP",
-      "room_4": "Ruang Altar Relik Batu Hitam: Memicukan teka-teki simbol naga untuk mengikis perisai musuh",
-      "room_5": "Mini-Boss 1: Golem Obsidian Raksasa (HP: 2200). Titikan kelemahan terletak pada retakan punggungnya",
-      "room_6": "Kolam Magma Meluap: Memaknai peran profesi `/gather` untuk menggosok ramuan penutup luka bakar",
-      "room_7": "Labirin Uap Hitam: Sinergi Co-Op memantul sinyal lampu isyarat agar tidak tercepit di dinding bergeser",
-      "room_8": "Gudang Besi Putih: Peluang mengantongi resep tembakan meriam tembus baju zirah",
-      "room_9": "Kandang Serigala Api: Pertempuran sengit jarak dekat dalam ruangan tanpa tempat berlindung",
-      "room_10": "Mini-Boss 2: Pendeta Kepala Hitam Kultis (HP: 3400). Mengelarkan mantra penghisap darah dari kawah lahar",
-      "room_11": "Lorong Stalaktit Berjatuhan: Mengandalkan refleks kelincahan dan penempaan tameng `/reforge`",
-      "room_12": "Tambang Darat Obsidian Kuno: Ruangan bonus profesi `/mine` yang memberikan bahan tempa tingkat tertinggi",
-      "room_13": "Ruang Interogasi Tahanan Goblin Kabut: Membantu memendekkan barikade kultis tersembunyi di lantai atas",
-      "room_14": "Kolam Air Panas Belerang: Ruang pemulihan HP & Stamina berbekal pancuran mata air suci yang belum terpencil",
-      "room_15": "Mini-Boss 3: Naga Muda Sayap Bara (HP: 4800). Pertarungan udara membutuhkan koordinasi serangan panah beruntung",
-      "room_16": "Anjungan Observasi Bintang Kuno: Memantapkan rekor di buku panduan mengenai astronomi gerhana penjaga langit",
-      "room_17": "Gerbang Besi Segel Enam Kunci: Menukarkan keping emas dari Pasar Konsinyasi `/market` untuk menyuap mekanisme otomatis",
-      "room_18": "Terowongan Lava Jatuh: Ruang ketangkasan akhir di mana setiap ketukan layar menentukan selisih 1 detik selamat dari terjangan api",
-      "room_19": "Serambi Mahkota Bayangan: Ruang periapan item suci sebelum melangkah ke arena penobatan Naga Agung",
-      "room_20": "FINAL RAID BOSS: Naga Bayangan Malakor (HP: 7500, Power Requirement: 110, Recommended Lv: 22)"
-    },
-    "boss_details": {
-      "name": "Naga Bayangan Malakor (Ancient Shadow Dragon: Malakor)",
-      "hp": 7500,
-      "attack_power": 95,
-      "recommended_level": 22,
-      "signature_moves": [
-        "Napas Api Kelabu: Menyapu seluruh ruangan dengan lidah api yang melelehkan logam biasa",
-        "Kibas Sayap Badai Meteor: Menggoyangkan tiang kawah hingga batu bara panas berguguran",
-        "Auman Segel Astral: Membebani psikologis musuh dengan bayangan kosmik tak berujung"
-      ],
-      "defeat_narrative": "Saat tombak berlapis Obsidian tancapkan telak ke dada Malakor, sisik naga agung itu luruh berubah menjadi abu perak. Dalam napas terakhirnya, Malakor merintih: 'Kalian bodoh... Kami membangkitkan badai bukan untuk mengubur kalian, tapi untuk menutup Gerbang Astral... Kini segel kawah ini pecah... PARA PENGHUNI BINTANG ASTRAL AKAN DATANG MENYERBU DUNIAMU!'. Cliffhanger epik menandari akhir Saga I dan menyala sebagai fajar bagi SAGA II: INVASION FROM THE ASTRAL HORIZON (Patch 2.0)!"
-    },
-    "rewards_summary": {
-      "xp": 550,
-      "gold": 450,
-      "exclusive_loot": [
-        "Mahkota Naga Malakor (Tier IV Legendary Gear)",
-        "Pedang Tombak Besi Bakar",
-        "Sayap Jubah Bayangan",
-        "Sertifikat Penawar Kritis Aldenmoor"
-      ]
-    }
-  },
-  {
     "id": "goblin_ruins",
     "name": "🏚️ Reruntuhan Goblin: Benteng Kabut Kelabu",
     "description": "Ekspedisi taktis bercabang menembus 5 lapisan pos militer goblin yang terinfeksi hawar magis. Butuh kerja sama sinkronic duo, pengelolaan pemulihan di kuil air suci, dan ketegasan menguji konspirasi bawah tanah!",
@@ -516,6 +452,213 @@
         "type": "failure",
         "name": "Ekspedisi Tenggelam dalam Racun",
         "text": "Racun pekat dan sabetan kaki jaring melumpuhkan stamina tim kalian! Segera melipir mundur, racik ramuan dari profesi Herbalisme/Market, upgrade gear dengan perak, dan konsentrasikan koordinasi dengan partnermu sebelum menembus ulang dari pos pemulihan!"
+      }
+    ]
+  },
+  {
+    "id": "volcano_fortress",
+    "name": "🐉 Benteng Vulkanik: Kuil Bayangan Kuno",
+    "description": "Benteng raja naga berlantai obsidian di jantung kawah mendidih. 20 ruangan epik bernuansa taktis penuh uji mental, sinergi Aliansi Guild, dan pertarungan sengit. Siapakah yang sanggup meredakan amarah Naga Bayangan Malakor?!",
+    "min_level": 15,
+    "recommended_level": 20,
+    "version": 1,
+    "published": true,
+    "entry_room": "volcano_gates",
+    "rewards": {
+      "xp": 750,
+      "gold": 450,
+      "item": "perak",
+      "quantity": 12
+    },
+    "rooms": [
+      {
+        "id": "volcano_gates",
+        "type": "event",
+        "name": "Gerbang Batu Bakar Obsidian",
+        "text": "Udara berguncang oleh gelombang panas yang meletupkan gelembung lahar hitam dari tebing gua. Gerbang baja murni terbentang kokoh dengan lambang cakar naga beraura kelabu. Apakah Anda akan mendobrak gerbang menggunakan peledak kristal perak atau merayap melewati terowongan uap belerang di sisi kiri?",
+        "options": [
+          {
+            "id": "blast",
+            "label": "💥 Dobrak Gerbang Baja Utama (Menantang Garnisun Besi)",
+            "next": "garrison_clash"
+          },
+          {
+            "id": "steam",
+            "label": "💨 Menelusuri Terowongan Uap Belerang (Menguji Ketahanan HP)",
+            "next": "steam_vents",
+            "damage": 5
+          }
+        ]
+      },
+      {
+        "id": "garrison_clash",
+        "type": "combat",
+        "name": "Garnisun Penjaga Orc Bakar",
+        "text": "Suasana meledak peledak perak menyentak selusin penjaga orc berkulit lava! Mereka menghunuskan tombak pedas bergigi tajam!",
+        "enemy": {
+          "name": "Regu Prajurit Orc Bakar Lapis Obsidian",
+          "power": 48,
+          "damage": 22
+        },
+        "success": "lava_bridge_fork",
+        "failure": "volcano_failed"
+      },
+      {
+        "id": "steam_vents",
+        "type": "treasure",
+        "name": "Gudang Besi Putih Rahasia",
+        "text": "Terowongan belerang mengantarkan kalian ke belakang lini pertahanan musuh! Sebuah peti obor berisi perlengkapan perak murni tertINGgal oleh pengintai Ordo Besi!",
+        "reward": {
+          "gold": 75,
+          "item": "perak",
+          "quantity": 3
+        },
+        "next": "lava_bridge_fork"
+      },
+      {
+        "id": "lava_bridge_fork",
+        "type": "event",
+        "name": "Jembatan Gantung Rantai Lava",
+        "text": "Di hadapan Anda melintang ngarai lahar selebar seratus tombak yang dihubungkan dua jembatan besi. Jembatan timur terus dihantam meteor kecil yang berjatuhan dari tebing, sedangkan jembatan barat dijebah oleh Golem Besi rahasia yang melintasi rel. Pilih rute penaklukan Anda!",
+        "options": [
+          {
+            "id": "meteor_run",
+            "label": "🏃 Menghindari Badai Meteor di Jembatan Timur (Uji Kecepatan)",
+            "next": "meteor_sprint"
+          },
+          {
+            "id": "golem_fight",
+            "label": "🤖 Menantang Golem Obsidian di Jembatan Barat",
+            "next": "golem_miniboss"
+          }
+        ]
+      },
+      {
+        "id": "meteor_sprint",
+        "type": "event",
+        "name": "Hujan Meteor Batu Bakar",
+        "text": "Ledakan batu kawah menyembur ke arah rantai jembatan! Beruntung, sinergi Duo Co-Op Anda secara cepat menarikan perisai, melompati celah jurang tanpa goresan mematikan!",
+        "options": [
+          {
+            "id": "continue",
+            "label": "⚡ Teruskan Lari Ke Altar Tengah!",
+            "next": "central_altar"
+          }
+        ]
+      },
+      {
+        "id": "golem_miniboss",
+        "type": "combat",
+        "name": "Mini-Boss: Golem Obsidian Raksasa",
+        "text": "Seonggok batu kristal obsidian sebesar bentar kastil berdiri menantang! Tinjunya berguncang melepaskan api kelabu yang menguras daya ketahanan tarikan layar Anda!",
+        "enemy": {
+          "name": "Golem Obsidian Pembelah Lava",
+          "power": 58,
+          "damage": 26
+        },
+        "success": "obsidian_cache",
+        "failure": "volcano_failed"
+      },
+      {
+        "id": "obsidian_cache",
+        "type": "treasure",
+        "name": "Bongkahan Obsidian Murni Golem",
+        "text": "Golem rubuh berderak menjadi bongkahan batu kristal berharga! Kalian memunguti perak mulur dan pundi koin kental dari inti badannya!",
+        "reward": {
+          "gold": 90,
+          "item": "perak",
+          "quantity": 4
+        },
+        "next": "central_altar"
+      },
+      {
+        "id": "central_altar",
+        "type": "rest",
+        "name": "Mata Air Suci Kuil Besi Putih",
+        "text": "Di bawah patung ksatria pelindung gunung kuno, mengalir sumber air dingin bening yang kebal dari lahar mendidih. Tim Anda menunduk beristirahat, menegak racun eliksir teratai, dan memulihkan vitalitas.",
+        "heal_percent": 40,
+        "next": "shadow_sanctum_fork"
+      },
+      {
+        "id": "shadow_sanctum_fork",
+        "type": "event",
+        "name": "Serambi Kuil Bayangan Dalam",
+        "text": "Kalian telah memasuki sayap utama kuil bayangan yang angker. Udara terasa dingin menusuk sumsum oleh pengaruh sihir kultis. Ada dua pintu besar bercahaya ungu dan emas. Pintu ungu mengarahkan ke Altar Penghisap Jiwa tempat Pendeta Kepala bersiap. Pintu emas menuju Anjungan Astronomi Penanda Bintang Kuno.",
+        "options": [
+          {
+            "id": "priest",
+            "label": "🧙 Hentikan Ritual Pendeta Kepala Kultis (Mini-Boss)",
+            "next": "priest_boss"
+          },
+          {
+            "id": "astro",
+            "label": "🔭 Simak Rahasia Anjungan Bintang (Lore Kosmik & Harta)",
+            "next": "astrolabe_room"
+          }
+        ]
+      },
+      {
+        "id": "priest_boss",
+        "type": "combat",
+        "name": "Mini-Boss: Pendeta Kepala Hitam Kultis",
+        "text": "Sang Pendeta melompat melingkari api kelabu! Ia membaca mantra penghisap darah sem bari melemparkan sumpah serapah kutukan kuno dari puncak kawah!",
+        "enemy": {
+          "name": "Pendeta Kepala Kultis Bayangan",
+          "power": 64,
+          "damage": 28
+        },
+        "success": "guild_rally",
+        "failure": "volcano_failed"
+      },
+      {
+        "id": "astrolabe_room",
+        "type": "treasure",
+        "name": "Anjungan Observasi Bintang Astral",
+        "text": "Kalian menyentuh instrumen bola dunia kristal raib. Prasasti kuno bertuliskan kenyataan mengejutkan: <i>'Api gunung ini bukanlah senjata pencabik bumi... melainkan tungku segel pelindung dimensi dari monster laut astral!'</i> Kalian juga memetik peninggalan resep emas!",
+        "reward": {
+          "gold": 110,
+          "item": "perak",
+          "quantity": 3
+        },
+        "next": "guild_rally"
+      },
+      {
+        "id": "guild_rally",
+        "type": "event",
+        "name": "Kemah Konsinyasi & Persatuan Guild",
+        "text": "Sebelum menaiki tangga terakhir menuju Kawah Tahta Naga, pengintai dari Aliansi Guild tiba membawa pasokan ramuan pamungkas dari Escrow Market! Sinyal suar diluncurkan; seluruh petualang di Telegram mendoakan kekuatan penyerbuan Anda!",
+        "options": [
+          {
+            "id": "charge_dragon",
+            "label": "⚔️ SIAP BERTEMPUR! Naik ke Kawah Tahta Naga Malakor!",
+            "next": "dragon_throne"
+          }
+        ]
+      },
+      {
+        "id": "dragon_throne",
+        "type": "boss",
+        "name": "FINAL RAID BOSS: Naga Bayangan Malakor",
+        "text": "🔥 [SAGA I CLIMAX: SHADOW DRAGON'S WRATH]\nKawah gunung meledak gencar! Dari kedalaman magma hitam mendidih, bangkit seekor naga bergemuruh seukuran pegunungan—Naga Bayangan Kuno, <b>Malakor!</b> Sisiknya menghitam dari kristal meteorit, mata merahnya memantulkan keabadian langit yang koyak.\n\nDengan kepak sayap yang membelah awan vulkanik, Malakor meraung: <i>\"Manusia naif! Kultis ini menyalakan apiku agar perisai Aldenmoor tetap tertutup rapat dari pemburu Bintang Eter! Kalian justru memadamkan api suci ini?! Rasakan kemurkaan sayap bayangan!\"</i>\n\nSinergikan seluruh daya serangan Aliansi Guild, tempa obor perak murni Anda, dan kerahkan ketangkasan Duo Co-Op tertinggi untuk menahbiskan legenda Anda!",
+        "enemy": {
+          "name": "Naga Bayangan Malakor (Ancient Shadow Dragon)",
+          "power": 85,
+          "damage": 38
+        },
+        "success": "malakor_victory",
+        "failure": "volcano_failed"
+      },
+      {
+        "id": "malakor_victory",
+        "type": "finish",
+        "name": "Kemenangan Mutlak Saga I & Teaser Invasi Astral",
+        "text": "👑 [GRAND VICTORY: SAGA I FINALE]\nTombak berlapis Obsidian dan sabetan pedang Perak Murni menembus telak ke jantung perisai Malakor! Dalam pekik rintihan raib, sosok naga raksasa itu melemas bergemeretak, sisik kristalnya runtuh membasuhi kawah gunung berapi menjadi abu perak terang.\n\nDalam hembusan napas terakhir yang mendinginkan kawah, Malakor menatap ke angkasa bergetar: <i>\"Kalian... berangus penjagamu sendiri... Tolol... Segel Tungku Api Kelabu kini pecah! LIhatlah ke atas langit utara... MERANGKAK DATANG GEROMBOLAN ARMADA LUAR DIMENSI! PARA PENGHUNI BINTANG ASTRAL KINI SIAP MENYERBU DUNIAMU...\"</i>\n\nLangit Aldenmoor seketika berubah warna menjadi ungu kosmik redup; sebuah retakan cermin rahasia bergemuruh terbuka di atas kepulauan melayang! Kalian dianugerahi ribuan emas kejaya berkat kemenangan epik ini, namun fajar baru peperangan antar planet telah menyongsong pada <b>SAGA II: INVASION FROM THE ASTRAL HORIZON (Patch 2.0)</b>!"
+      },
+      {
+        "id": "volcano_failed",
+        "type": "failure",
+        "name": "Runtuh di Bawah Hawa Panas Kawah",
+        "text": "Badai lahar dan serangan mematikan dari pertahanan Kuil Bayangan membakar pertahanan Anda! Mundur sesaat ke markas aliansi, berdagang ramuan suci via Pasar Konsinyasi (/market), reforge baju zirah dengan obsidian Murni (/reforge), dan undang partner terkuat Anda sebelum menyerang ulang dari oasis penyegaran!"
       }
     ]
   }

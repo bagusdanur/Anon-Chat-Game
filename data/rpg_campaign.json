@@ -1,29 +1,5 @@
 [
   {
-    "act": 1,
-    "title": "Pengepungan Lembah Magma (Siege of Magma Valley)",
-    "min_level": 15,
-    "max_level": 18,
-    "objectives": [
-      "Menembus kepungan Prajurit Besi Hitam di kaki gunung melalu perintah `/world` dan `/hunt`",
-      "Memetik minimal 5 Bunga Teratai Api via `/gather` dan meraciknya di kemah aliansi agar bertahan dari suhu lava",
-      "Menjual atau membeli perlengkapan penawar haba panas melalui perantaraan Escrow Marketplace (`/market` & `/trade`)"
-    ],
-    "boss_intro": "Komandan Kultis Berjubah Besi menghadang di gerbang pendakian, menghalangi jalur pasokan Aliansi Guild!"
-  },
-  {
-    "act": 2,
-    "title": "Kuil Baja Hitam (Temple of Black Steel)",
-    "min_level": 18,
-    "max_level": 22,
-    "objectives": [
-      "Menambang 10 unit Obsidian Murni via `/mine` di dalam terowongan panas bumi untuk mempersatukan senjata penusuk sisik naga",
-      "Melompat bersama rekan Duo Co-Op untuk menonaktifkan rektor kristal magma yang menyuplai tenaga penjara naga",
-      "Mengupgrade seluruh armor ke Tingkat 4 (Obsidian Set) melalui meja tempa `/reforge` dan `/socket`"
-    ],
-    "boss_intro": "Kultis Agung membuka portal api hitam, membiarkan geraman Malakor menggentarkan langit Aldenmoor!"
-  },
-  {
     "id": "chapter1_mist_clues",
     "chapter": 1,
     "order": 1,
@@ -112,6 +88,54 @@
       "gold": 180,
       "item": "perak",
       "quantity": 3
+    }
+  },
+  {
+    "id": "chapter3_volcano_siege",
+    "chapter": 3,
+    "order": 1,
+    "title": "Act I - Pengepungan Lembah Magma & Tambang Obsidian",
+    "description": "Perjalanan menuju puncak Utara membawa tim petualang ke badai debu Gunung Berapi Bayangan! Hawa panas terik membakar baju zirah biasa. Telusuri 5 titik strategis di kawah lahar, panen Bunga Teratai Api via /gather, atau tambang Obsidian Murni via /mine dan perjualbelikan di Escrow Market (/market) agar bertahan dari suhu mematikan!",
+    "requires": "chapter2_spider_nest",
+    "version": 1,
+    "published": true,
+    "objectives": [
+      {
+        "id": "explore_volcano",
+        "type": "explore",
+        "target": "shadow_volcano",
+        "count": 5
+      }
+    ],
+    "rewards": {
+      "xp": 300,
+      "gold": 180,
+      "item": "perak",
+      "quantity": 4
+    }
+  },
+  {
+    "id": "chapter3_volcano_fortress",
+    "chapter": 3,
+    "order": 2,
+    "title": "Act II - Kuil Baja Hitam & Kemurkaan Naga Malakor",
+    "description": "Gerbang Benteng Vulkanik Kuil Bayangan telah bergetar! Kultis Agung menyemburkan ritual darah lava dari Altar Mahkota. Rekrut Aliansi Guild atau rekan Duo Co-Op Anda untuk mendobrak 20 ruangan lava hitam gencar, runtuhkan Golem Obsidian, dan hentikan kebangkitan sang Naga Bayangan Kuno Malakor sebelum dunia jatuh ke bawah jajahan astral!",
+    "requires": "chapter3_volcano_siege",
+    "version": 1,
+    "published": true,
+    "objectives": [
+      {
+        "id": "clear_volcano_fortress",
+        "type": "dungeon_complete",
+        "target": "volcano_fortress",
+        "count": 1
+      }
+    ],
+    "rewards": {
+      "xp": 600,
+      "gold": 400,
+      "item": "perak",
+      "quantity": 10
     }
   }
 ]

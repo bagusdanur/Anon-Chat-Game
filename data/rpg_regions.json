@@ -1,45 +1,5 @@
 [
   {
-    "id": 3,
-    "slug": "shadow_volcano",
-    "name": "Gunung Berapi Bayangan (Shadow Volcano)",
-    "min_level": 15,
-    "recommended_level": 18,
-    "description": "Daratan gersang berselimut debu vulkanik dan sungai lava hitam murni. Panas terik mematikan merenggut tenaga siapapun yang berani melangkah tanpa perlindungan eliksir es maupun perisai obsidian.",
-    "threat_level": "Bencana Kosmik (Cataclysmic - Tingkat III)",
-    "stamina_cost": 4,
-    "lore": "Dulu merupakan tempat bertengguknya kuil suci Ordo Besi Putih, kini gunung ini telah berubah menjadi tungku api kultis penyeleweng yang berniat membangkitkan Malakor.",
-    "monsters": [
-      "Prajurit Besi Hitam Magma",
-      "Kelelawar Api Neraka",
-      "Gila Monster Bakul Es",
-      "Kultis Penyembah Lava Kuno"
-    ],
-    "events": [
-      "Ledakan Geiser Magma Mendidih: Menghindari cipratan lahar hitam bermodalkan cek kecepatan & kecermatan",
-      "Pertemuan Pengintai Aliansi Guild: Menyalakan granat isyarat di kemah pertempuran untuk memicu bonus damage Duo Co-Op",
-      "Panen Profesional Bunga Teratai Api (`/gather`): Mengikis kerak vulkanik untuk mengamankan bahan obat eliksir penahan panas",
-      "Tambang Obsidian Murni (`/mine`): Menjemput bongkahan kristal vulkanik superkeras untuk ditempa menjadi Baju Perang Obsidian",
-      "Mancing di Sungai Hidrotermal (`/fish`): Menemukan Sisik Naga Perak Kuno bernilai ratusan emas di pasar konsinyasi (`/market`)"
-    ],
-    "rewards_summary": {
-      "xp_range": [
-        35,
-        75
-      ],
-      "gold_range": [
-        30,
-        80
-      ],
-      "loot": [
-        "Obsidian Murni",
-        "Bunga Teratai Api",
-        "Sisik Naga Perak",
-        "Kristal Bayangan Bakar"
-      ]
-    }
-  },
-  {
     "id": "aldenmoor_outskirts",
     "name": "🌲 Pinggiran Aldenmoor: Kabut Kelabu",
     "description": "Perbatasan utara Kerajaan Aldenmoor yang diselimuti fenomena anomali Kabut Kelabu (The Gray Mite). Suku goblin lokal yang dulunya damai kini bertransformasi menjadi gerombolan agresif oleh sihir asing dari kedalaman Reruntuhan, menghabisi kafilah pasokan medis.",
@@ -140,6 +100,73 @@
         "Telusuri Lembah Sutra Beracun dan temukan bukti keterlibatan Kultis Jubah Ungu.",
         "Kumpulkan 4 sampel jaring racun dan tanaman penawar tersembunyi.",
         "Temukan mulut gua menuju jurang Sarang Ratu Laba-laba!"
+      ]
+    }
+  },
+  {
+    "id": "shadow_volcano",
+    "name": "🌋 Gunung Berapi Bayangan: Kawah Magma Kuno",
+    "description": "Daratan gersang berselimut debu vulkanik dan sungai lava hitam murni di puncak Utara Aldenmoor. Panas terik mematikan merenggut tenaga siapapun yang berani melangkah tanpa perlindungan eliksir es maupun perisai obsidian. Di tengah kawah mendidih, Kultis Agung menyalakan tungku kebangkitan Naga Bayangan Malakor.",
+    "min_level": 15,
+    "travel_cost": 25,
+    "published": true,
+    "version": 1,
+    "encounters": [
+      {
+        "id": "obsidian_warrior",
+        "name": "Prajurit Besi Hitam Magma",
+        "type": "combat",
+        "weight": 35,
+        "enemy": "prajurit_magma",
+        "xp": [
+          45,
+          80
+        ],
+        "gold": [
+          35,
+          75
+        ]
+      },
+      {
+        "id": "hellfire_bats",
+        "name": "Kelelawar Api Neraka & Gila Monster",
+        "type": "combat",
+        "weight": 35,
+        "enemy": "kelelawar_neraka",
+        "xp": [
+          50,
+          85
+        ],
+        "gold": [
+          40,
+          80
+        ]
+      },
+      {
+        "id": "pure_obsidian_vein",
+        "name": "Urat Tambang Obsidian Murni (/mine)",
+        "type": "treasure",
+        "weight": 15,
+        "gold": [
+          50,
+          110
+        ]
+      },
+      {
+        "id": "fire_lotus_blossom",
+        "name": "Taman Rahasia Bunga Teratai Api (/gather)",
+        "type": "event",
+        "weight": 15,
+        "exploration_points": 5
+      }
+    ],
+    "campaign": {
+      "chapter": 3,
+      "title": "Act I - Pengepungan Lembah Magma",
+      "steps": [
+        "Tembus pertahanan Prajurit Besi Hitam di kaki Gunung Berapi Bayangan.",
+        "Tambang Obsidian Murni dan petik Bunga Teratai Api untuk menahan haba ekstrem.",
+        "Temukan gerbang utama menuju Benteng Vulkanik Kuil Bayangan!"
       ]
     }
   }
