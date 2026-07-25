@@ -1,15 +1,16 @@
-# AGENTS.md — Konteks Resmi & Aturan Kerja untuk AI Coding Agent (Updated: Patch 1.2 - Saga I Finale)
+# AGENTS.md — Konteks Resmi & Aturan Kerja untuk AI Coding Agent (Updated: Patch 2.0 - Saga II Active)
 
-File ini merupakan sumber kebenaran tertinggi (Single Source of Truth) bagi setiap agent AI (Antigravity, Claude, ChatGPT, Cursor, atau sejenisnya) yang melanjut, merefaktor, atau menambah fitur pada repositori **Anon-Chat-Game**. 
+File ini merupakan sumber kebenaran tertinggi (Single Source of Truth) bagi setiap agent AI (Antigravity, Codex, Claude, ChatGPT, Cursor, atau sejenisnya) yang melanjut, merefaktor, atau menambah fitur pada repositori **Anon-Chat-Game**. 
 **WAKTU BACA & PATUHI KETENTUAN DI BAWAH INI SEBELUM MEMODIFIKASI SATU BARIS PUN KODE!**
 
 ---
 
 ## 1. 📖 Urutan Baca & Pemahaman Konten
 1. `AGENTS.md` — Aturan arsitektur teknis, batasan VPS, dan hukum keamanan (file ini).
-2. `PRD.md` — Spesifikasi produk live-service berseries (Saga I: Patch 1.0, 1.1, & 1.2 sudah aktif) dan filosofi "Anti-Boredom".
-3. `TASKS.md` — Daftar pencapaian Saga I yang telah purna lunas dan road-map ekspansi berikutnya (Saga II: Patch 2.0+).
-4. `PANDUAN_SETUP_VPS.md` — Aturan deploy ke lingkungan Linux production (Git Pull / PM2 / SSH).
+2. `HANDOFF.md` — Ringkasan status terkini, fitur aktif, dan panduan peralihan agent AI.
+3. `PRD.md` — Spesifikasi produk live-service berseries (Saga I & Saga II Patch 2.0 aktif) dan filosofi "Anti-Boredom".
+4. `TASKS.md` — Daftar pencapaian Saga I & II yang telah purna lunas dan roadmap berikutnya.
+5. `PANDUAN_SETUP_VPS.md` — Aturan deploy ke lingkungan Linux production (Git Pull / PM2 / SSH).
 
 ---
 
