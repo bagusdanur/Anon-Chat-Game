@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { createLedgerService } = require('./ledger');
 const { createEquipmentService } = require('./equipment');
+require('../../../data/patch_loader');
 
 const DUNGEONS_FILE = path.join(__dirname, '../../../data/rpg_dungeons.json');
 const SESSION_TTL_SECONDS = 24 * 60 * 60;

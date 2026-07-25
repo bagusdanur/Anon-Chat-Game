@@ -1,32 +1,41 @@
 [
   {
     "id": "aldenmoor_outskirts",
-    "name": "🌲 Pinggiran Aldenmoor",
-    "description": "Perbatasan kerajaan yang diselimuti kabut. Goblin mulai menyerang jalur dagang dan jejak mereka mengarah ke reruntuhan tua.",
+    "name": "🌲 Pinggiran Aldenmoor: Kabut Kelabu",
+    "description": "Perbatasan utara Kerajaan Aldenmoor yang diselimuti fenomena anomali Kabut Kelabu (The Gray Mite). Suku goblin lokal yang dulunya damai kini bertransformasi menjadi gerombolan agresif oleh sihir asing dari kedalaman Reruntuhan, menghabisi kafilah pasokan medis.",
     "min_level": 1,
     "travel_cost": 0,
     "published": true,
-    "version": 1,
+    "version": 2,
     "encounters": [
       {
         "id": "misty_trail",
-        "name": "Jalur Berkabut",
+        "name": "Jalur Kabut Beracun",
         "type": "combat",
         "weight": 50,
         "enemy": "goblin",
-        "xp": [8, 14],
-        "gold": [4, 10]
+        "xp": [
+          10,
+          18
+        ],
+        "gold": [
+          6,
+          14
+        ]
       },
       {
         "id": "abandoned_cart",
-        "name": "Kereta Terbengkalai",
+        "name": "Kereta Medis Terjarah",
         "type": "treasure",
         "weight": 25,
-        "gold": [6, 16]
+        "gold": [
+          8,
+          20
+        ]
       },
       {
         "id": "wounded_scout",
-        "name": "Pengintai Terluka",
+        "name": "Pengintai Aliansi Sekarat",
         "type": "event",
         "weight": 25,
         "exploration_points": 2
@@ -34,11 +43,63 @@
     ],
     "campaign": {
       "chapter": 1,
-      "title": "Kabut di Perbatasan",
+      "title": "Act I - Misteri Kabut Kelabu",
       "steps": [
-        "Temukan sumber gangguan di Jalur Berkabut.",
-        "Kumpulkan tiga petunjuk dari eksplorasi.",
-        "Buka akses menuju Reruntuhan Goblin."
+        "Selidiki anomali kabut beracun di Jalur Berkabut.",
+        "Kumpulkan tiga petunjuk dari pengintai dan kereta medis terjarah.",
+        "Buka jalur masuk menuju benteng tua di Reruntuhan Goblin."
+      ]
+    }
+  },
+  {
+    "id": "spider_lair_valley",
+    "name": "🕸️ Lembah Sutra Beracun: Sarang Kegelapan",
+    "description": "Lembah terjal di selatan Aldenmoor di mana pepohonan kuno dibungkus jaring sutra ungu bening yang berdenyut bak nadi sihir gelap. Di sinilah Aliansi Kultis Bawah Tanah memeras racun Ratu Laba-laba untuk menyumbat sumber mata air kerajaan.",
+    "min_level": 6,
+    "travel_cost": 15,
+    "published": true,
+    "version": 1,
+    "encounters": [
+      {
+        "id": "cultist_patrol",
+        "name": "Kultis Jubah Ungu & Laba-laba Penjaga",
+        "type": "combat",
+        "weight": 50,
+        "enemy": "kultis_ungu",
+        "xp": [
+          25,
+          45
+        ],
+        "gold": [
+          18,
+          35
+        ]
+      },
+      {
+        "id": "silken_cocoon",
+        "name": "Kepompong Tawanan & Peti Perak",
+        "type": "treasure",
+        "weight": 25,
+        "gold": [
+          25,
+          55
+        ]
+      },
+      {
+        "id": "antidote_herbs",
+        "name": "Rumpun Tanaman Penawar Lembah",
+        "type": "event",
+        "weight": 25,
+        "exploration_points": 3
+      }
+    ],
+    "campaign": {
+      "chapter": 2,
+      "title": "Act I - Jejak Jaring Ungu",
+      "steps": [
+        "Telusuri Lembah Sutra Beracun dan temukan bukti keterlibatan Kultis Jubah Ungu.",
+        "Kumpulkan 4 sampel jaring racun dan tanaman penawar tersembunyi.",
+        "Temukan mulut gua menuju jurang Sarang Ratu Laba-laba!"
       ]
     }
   }

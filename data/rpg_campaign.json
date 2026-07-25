@@ -3,27 +3,91 @@
     "id": "chapter1_mist_clues",
     "chapter": 1,
     "order": 1,
-    "title": "Kabut di Perbatasan",
-    "description": "Telusuri Pinggiran Aldenmoor dan kumpulkan tiga petunjuk.",
-    "version": 1,
+    "title": "Act I - Misteri Kabut Kelabu",
+    "description": "Perbatasan Aldenmoor tertelan oleh Kabut Kelabu (The Gray Mite). Kerajaan menyewa para petualang rahasia dari Kedai Bayangan untuk menyelidiki 3 titik anomali di Pinggiran Aldenmoor serta menyegel penyergapan Goblin.",
+    "version": 2,
     "published": true,
     "objectives": [
-      { "id": "explore_outskirts", "type": "explore", "target": "aldenmoor_outskirts", "count": 3 }
+      {
+        "id": "explore_outskirts",
+        "type": "explore",
+        "target": "aldenmoor_outskirts",
+        "count": 3
+      }
     ],
-    "rewards": { "xp": 30, "gold": 20 }
+    "rewards": {
+      "xp": 40,
+      "gold": 25
+    }
   },
   {
     "id": "chapter1_goblin_ruins",
     "chapter": 1,
     "order": 2,
-    "title": "Jantung Reruntuhan",
-    "description": "Taklukkan Reruntuhan Goblin dan pulihkan jalur dagang.",
+    "title": "Act II - Jantung Reruntuhan & Bisikan Sutra Ungu",
+    "description": "Investigasi mengungkap bahwa para Goblin dikendalikan dari Reruntuhan kuno. Rekrut partner acak dalam mode Duo Co-Op untuk mendobrak 5 lapis penjagaan, gulingkan Kepala Goblin Kabut, dan bongkar misteri dibalik konspirasi benang sutra beracun!",
     "requires": "chapter1_mist_clues",
+    "version": 2,
+    "published": true,
+    "objectives": [
+      {
+        "id": "clear_ruins",
+        "type": "dungeon_complete",
+        "target": "goblin_ruins",
+        "count": 1
+      }
+    ],
+    "rewards": {
+      "xp": 100,
+      "gold": 60,
+      "item": "ramuan_besar",
+      "quantity": 1
+    }
+  },
+  {
+    "id": "chapter2_spider_valley",
+    "chapter": 2,
+    "order": 1,
+    "title": "Act I - Jejak Jaring Ungu & Perburuan Herbal",
+    "description": "Penyelidikan berlanjut ke Lembah Sutra Beracun di Selatan. Kalian menemukan jaring ungu beracun yang sengaja dipasang Kultis untuk menyumbat sumber mata air. Telusuri 4 titik anomali di lembah dan pelajari seni meracik ramuan herbal pembantu pernafasan agar bertahan dari gas racun!",
+    "requires": "chapter1_goblin_ruins",
     "version": 1,
     "published": true,
     "objectives": [
-      { "id": "clear_ruins", "type": "dungeon_complete", "target": "goblin_ruins", "count": 1 }
+      {
+        "id": "explore_valley",
+        "type": "explore",
+        "target": "spider_lair_valley",
+        "count": 4
+      }
     ],
-    "rewards": { "xp": 75, "gold": 45, "item": "ramuan_besar", "quantity": 1 }
+    "rewards": {
+      "xp": 150,
+      "gold": 80
+    }
+  },
+  {
+    "id": "chapter2_spider_nest",
+    "chapter": 2,
+    "order": 2,
+    "title": "Act II - Sarang Ratu Laba-laba & Denyut Kristal Naga",
+    "description": "Peta kultis memandu tim petualangmu menuju terowongan lengket di dalam Jurang Kegelapan! Rekrut partner Co-Op rahasiamu untuk mendobrak sarang kepompong mati, lumpuhkan amukan sang Ratu Laba-laba, dan rebut pecahan Kristal Hitam yang mengendalikan pikirannya!",
+    "requires": "chapter2_spider_valley",
+    "version": 1,
+    "published": true,
+    "objectives": [
+      {
+        "id": "clear_spider_nest",
+        "type": "dungeon_complete",
+        "target": "spider_nest",
+        "count": 1
+      }
+    ],
+    "rewards": {
+      "xp": 350,
+      "gold": 180,
+      "item": "perak",
+      "quantity": 3
+    }
   }
 ]

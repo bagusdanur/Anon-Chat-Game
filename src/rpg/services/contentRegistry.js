@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+require('../../../data/patch_loader');
 
 const REGION_FILE = path.join(__dirname, '../../../data/rpg_regions.json');
 

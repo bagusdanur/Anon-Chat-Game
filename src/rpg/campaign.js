@@ -25,9 +25,10 @@ function setupCampaign(bot, { rateLimitCommand }) {
       ? 'Mulai dari /world. Eksplorasi mengisi objective; saat petunjuk lengkap lanjut /dungeon.'
       : 'Objective selesai. Buka /world untuk melihat langkah berikutnya.';
     return ctx.reply(
-      `<b>📖 CAMPAIGN ALDENMOOR</b>\n\n${lines.join('\n\n')}\n\n` +
-      `<b>➡️ ARAHAN</b>\n${suggestion}\n\n` +
-      `<i>💡 Gunakan party dan mode duo agar progres co-op lebih sering dimainkan.</i>`,
+      `✨ <b>[CURRENT SAGA: PATCH 1.1 - WEBS OF THE SILENT ABYSS]</b>\n` +
+      `<b>📖 CHRONICLES OF ALDENMOOR</b>\n\n${lines.join('\n\n')}\n\n` +
+      `<b>🧭 ARAHAN EKSPLORASI</b>\n${suggestion}\n\n` +
+      `<i>⚔️ Catatan Saga: Gunakan fitur mabar (/coop), profesi kuno (/gather /mine /fish), dan perdagangan pasar (/market) untuk bertahan di Lembah Sutra Beracun!</i>`,
       { parse_mode: 'HTML' },
     );
   });

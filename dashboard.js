@@ -452,8 +452,8 @@ app.get('/api/backup', auth, (req, res) => {
   res.download(dbPath, `bot-backup-${new Date().toISOString().slice(0,10)}.db`);
 });
 
-// Fallback for SPA routing
-app.get('*', (req, res) => {
+// Fallback for SPA routing (Express 5 compatible)
+app.get('/{*path}', (req, res) => {
   res.sendFile(path.join(__dirname, staticDir, 'index.html'));
 });
 

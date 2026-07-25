@@ -9,6 +9,9 @@ node_modules/
 # Database & runtime data
 data/*
 !data/*.json
+!data/*.js
+!data/patches/
+!data/patches/**
 data/maintenance.json
 data/wordfilter.json
 *.db

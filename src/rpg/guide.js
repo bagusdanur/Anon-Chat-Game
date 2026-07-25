@@ -97,9 +97,10 @@ function renderGuide(userId) {
 
   return {
     text:
-      `<b>🧭 PROGRESS GUIDE</b>\n\n` +
+      `✨ <b>[CURRENT SAGA: PATCH 1.1 - WEBS OF THE SILENT ABYSS]</b>\n` +
+      `<b>🧭 ALDENMOOR ADVENTURER'S GUIDE</b>\n\n` +
       `<b>📍 POSISIMU SEKARANG</b>\n${position}\n\n` +
-      `<b>➡️ YANG HARUS DILAKUKAN SEKARANG</b>\n` +
+      `<b>➡️ MISI SAGA SAAT INI</b>\n` +
       `<b>${next.title}</b>\n${next.detail}\n` +
       `👉 Jalankan: <code>${next.command}</code>\n\n` +
       `<b>📋 CHECKLIST MILESTONE PROGRES</b>\n` +
@@ -110,7 +111,7 @@ function renderGuide(userId) {
       `• <b>Combo Skill:</b> ${buildAdvice.skillCombo}\n` +
       `• <b>Perintah Build:</b> <code>/gear</code> · <code>/skill</code> · <code>/inv</code> · <code>/reforge</code> · <code>/socket</code>\n\n` +
       `<b>🔓 UNLOCK SETELAH INI</b>\n${next.unlock}\n\n` +
-      `<i>/guide diperbarui otomatis mengikuti progress world, campaign, dan dungeon.</i>`,
+      `<i>📜 Saga Tracker: Manfaatkan Pasar Gelap (/market) dan 7 Profesi Kuno untuk mengimbangi racun Ratu Laba-laba!</i>`,
     next,
     state,
   };

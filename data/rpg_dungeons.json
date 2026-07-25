@@ -1,161 +1,457 @@
 [
   {
     "id": "goblin_ruins",
-    "name": "🏚️ Reruntuhan Goblin",
-    "description": "Ekspedisi panjang bercabang dengan beberapa gerombolan, elite, dua checkpoint istirahat, harta, dan boss.",
+    "name": "🏚️ Reruntuhan Goblin: Benteng Kabut Kelabu",
+    "description": "Ekspedisi taktis bercabang menembus 5 lapisan pos militer goblin yang terinfeksi hawar magis. Butuh kerja sama sinkronic duo, pengelolaan pemulihan di kuil air suci, dan ketegasan menguji konspirasi bawah tanah!",
     "min_level": 1,
     "recommended_level": 7,
-    "version": 2,
+    "version": 3,
     "published": true,
     "entry_room": "gate",
-    "rewards": { "xp": 160, "gold": 85, "item": "besi_rongsok", "quantity": 3 },
+    "rewards": {
+      "xp": 180,
+      "gold": 95,
+      "item": "besi_rongsok",
+      "quantity": 3
+    },
     "rooms": [
       {
         "id": "gate",
         "type": "event",
-        "name": "Gerbang Retak",
-        "text": "Jejak banyak goblin mengarah ke dua pintu. Jalur penjaga lebih aman dibaca; aula perangkap menyimpan harta.",
+        "name": "Gerbang Batu Retak",
+        "text": "Kabut pekat menyergap di depan gerbang benteng yang terkoyak. Jejak kubangan darah dan kayu patah menuntun pada dua lorong: Jalur pos penjaga yang berisiko kontak senjata, atau terowongan gelap berlantai retak yang menyembunyikan peti perbekalan.",
         "options": [
-          { "id": "left", "label": "⚔️ Hadapi Patroli", "next": "guard_post" },
-          { "id": "right", "label": "🧭 Masuk Aula Perangkap", "next": "trap_hall" }
+          {
+            "id": "left",
+            "label": "⚔️ Serbu Patroli Gerbang",
+            "next": "guard_post"
+          },
+          {
+            "id": "right",
+            "label": "🧭 Menyusup Lorong Perangkap",
+            "next": "trap_hall"
+          }
         ]
       },
       {
         "id": "guard_post",
         "type": "combat",
-        "name": "Pos Penjaga",
-        "text": "Tiga penjaga goblin menutup lorong. Ini baru gerombolan pertama.",
-        "enemy": { "name": "Patroli Goblin", "power": 12, "damage": 6 },
+        "name": "Pos Penjagaan Garda",
+        "text": "Tiga pengawal goblin berseragam kulit kasar memukul genderang perang! Matanya nanar oleh halusinasi kabut beracun dan menerjang kalian tanpa rasa takut!",
+        "enemy": {
+          "name": "Patroli Garda Goblin",
+          "power": 12,
+          "damage": 6
+        },
         "success": "crossroads",
         "failure": "failed"
       },
       {
         "id": "trap_hall",
         "type": "event",
-        "name": "Aula Perangkap",
-        "text": "Lantai batu memiliki pola mencurigakan dan suara langkah terdengar dari bawah.",
+        "name": "Aula Lantai Bergetar",
+        "text": "Lantai batu kuarsit memperlihatkan ukiran kawat duri kuno. Suara derit mesin panah mekanik terdengar samar di bawah tapak kaki kalian.",
         "options": [
-          { "id": "careful", "label": "🔍 Bergerak Hati-hati", "next": "hidden_cache", "damage": 2 },
-          { "id": "rush", "label": "🏃 Terobos Cepat", "next": "crossroads", "damage": 9 }
+          {
+            "id": "careful",
+            "label": "🔍 Membongkar Perangkap (Luka Dikit & Dapat Harta)",
+            "next": "hidden_cache",
+            "damage": 2
+          },
+          {
+            "id": "rush",
+            "label": "🏃 Terobos Nekat Tanpa Peduli (Luka Parah)",
+            "next": "crossroads",
+            "damage": 9
+          }
         ]
       },
       {
         "id": "hidden_cache",
         "type": "treasure",
-        "name": "Gudang Penyelundup",
-        "text": "Peti tua berisi bekal sebelum jalan kembali menyatu.",
-        "reward": { "gold": 16, "item": "ramuan_kecil", "quantity": 1 },
+        "name": "Gudang Penyelundup Medis",
+        "text": "Di balik jebakan panah besi, kalian menemukan peti kayu bergambar lambang Aliansi Medis Aldenmoor yang telah direbut para goblin!",
+        "reward": {
+          "gold": 16,
+          "item": "ramuan_kecil",
+          "quantity": 1
+        },
         "next": "crossroads"
       },
       {
         "id": "crossroads",
         "type": "event",
-        "name": "Persimpangan Bawah Tanah",
-        "text": "Jalur kiri dipenuhi tulang. Jalur kanan menuju barak yang ramai. Keduanya menuju kuil tua.",
+        "name": "Persimpangan Makam Tua",
+        "text": "Kabut kelabu mengental di pusat persimpangan bawah tanah. Jalur kiri bergema dengan suara letupan tulang dari makam pahlawan yang dibangkitkan sihir hitam. Jalur kanan menuju barak militer utama yang dipenuhi amunisi besi.",
         "options": [
-          { "id": "crypt", "label": "💀 Jalur Makam", "next": "bone_pack" },
-          { "id": "barracks", "label": "🛡 Serbu Barak", "next": "goblin_pack" }
+          {
+            "id": "crypt",
+            "label": "💀 Terobos Jalur Makam",
+            "next": "bone_pack"
+          },
+          {
+            "id": "barracks",
+            "label": "🛡️ Serbu & Sabotase Barak",
+            "next": "goblin_pack"
+          }
         ]
       },
       {
         "id": "bone_pack",
         "type": "combat",
-        "name": "Makam yang Bangkit",
-        "text": "Kabut menggerakkan tulang para perampok menjadi satu gerombolan.",
-        "enemy": { "name": "Kawanan Kerangka Kabut", "power": 15, "damage": 7 },
+        "name": "Makam Perompak yang Bangkit",
+        "text": "Hawar kabut merasuki makam kuno! Sekelompok tulang belulang bertameng baja perunggu bangkit menghalau langkah kalian!",
+        "enemy": {
+          "name": "Kawanan Kerangka Kabut",
+          "power": 15,
+          "damage": 7
+        },
         "success": "shrine",
         "failure": "failed"
       },
       {
         "id": "goblin_pack",
         "type": "combat",
-        "name": "Barak Goblin",
-        "text": "Pemanah dan petarung goblin menyerang bersamaan dari dua sisi.",
-        "enemy": { "name": "Gerombolan Barak", "power": 16, "damage": 8 },
+        "name": "Barak Militer Goblin",
+        "text": "Belasan pemanah dan petarung tombak goblin mengepung ketat dari lantai atas beranda! Mereka bersumpah mempertahankan gudang logam klan!",
+        "enemy": {
+          "name": "Milisi Barak Goblin",
+          "power": 16,
+          "damage": 8
+        },
         "success": "armory",
         "failure": "failed"
       },
       {
         "id": "armory",
         "type": "treasure",
-        "name": "Gudang Senjata",
-        "text": "Barak menyimpan logam dan ramuan yang belum sempat dibawa kabur.",
-        "reward": { "gold": 10, "item": "besi_rongsok", "quantity": 1 },
+        "name": "Gudang Senjata & Logam",
+        "text": "Sabotase berhasil! Kalian menyita tumpukan keping emas dan besi rongsok tempaan kuno yang bernilai tinggi untuk penempaan.",
+        "reward": {
+          "gold": 12,
+          "item": "besi_rongsok",
+          "quantity": 1
+        },
         "next": "shrine"
       },
       {
         "id": "shrine",
         "type": "rest",
-        "name": "Kuil Mata Air",
-        "text": "Air jernih memberi checkpoint pertama sebelum turun lebih dalam.",
+        "name": "Kuil Mata Air Suci",
+        "text": "Mata air bening berbasis sihir perak masih menyala di tengah kegelapan, membasuh luka dan menenangkan paru-paru kalian dari sesak kabut beracun.",
         "heal_percent": 30,
         "next": "deep_fork"
       },
       {
         "id": "deep_fork",
         "type": "event",
-        "name": "Lorong Kedalaman",
-        "text": "Raungan binatang datang dari kiri, sementara mantra goblin bergema dari kanan.",
+        "name": "Lorong Menuju Jantung Reruntuhan",
+        "text": "Kalian tiba di depan gua terdalam. Dari lubang kiri, terdengar raungan lapar monster warg beringas berlapis tameng besi. Dari ruang kanan, cahaya ungu aneh memancar dari ritual sihir hitam sang dukun klan.",
         "options": [
-          { "id": "beast", "label": "🐺 Hadapi Kandang Buas", "next": "wolf_pack" },
-          { "id": "shaman", "label": "🔮 Hentikan Ritual", "next": "shaman_guard" }
+          {
+            "id": "beast",
+            "label": "🐺 Tembus Kandang Warg Baja",
+            "next": "wolf_pack"
+          },
+          {
+            "id": "shaman",
+            "label": "🔮 Hancurkan Altar Ritual Dukun",
+            "next": "shaman_guard"
+          }
         ]
       },
       {
         "id": "wolf_pack",
         "type": "combat",
-        "name": "Kandang Warg",
-        "text": "Dua warg lapis baja menerkam bergantian dan memaksa party menjaga tempo.",
-        "enemy": { "name": "Warg Lapis Baja", "power": 18, "damage": 9 },
+        "name": "Kandang Warg Berlapis Tameng",
+        "text": "Dua monster warg pemburu dengan cakar tajam beracun melompat menerjang secara bersamaan! Butuh ritme combo berpasangan untuk meredam ayunan taringnya!",
+        "enemy": {
+          "name": "Warg Lapis Baja Besi",
+          "power": 18,
+          "damage": 9
+        },
         "success": "elite_gate",
         "failure": "failed"
       },
       {
         "id": "shaman_guard",
         "type": "combat",
-        "name": "Ruang Ritual",
-        "text": "Dukun goblin dilindungi kabut dan dua pengawal tombak.",
-        "enemy": { "name": "Dukun dan Pengawal", "power": 19, "damage": 9 },
+        "name": "Altar Ritual Kabut Kelabu",
+        "text": "Seorang Dukun Tua bermuka pucat sedang menuang botol cairan berbau racun ungu ke dalam sumber kabut, dilindungi dua pengawal bertongkat besi!",
+        "enemy": {
+          "name": "Dukun Ritual & Pengawal Hitam",
+          "power": 19,
+          "damage": 9
+        },
         "success": "elite_gate",
         "failure": "failed"
       },
       {
         "id": "elite_gate",
         "type": "combat",
-        "name": "Gerbang Elite",
-        "text": "Kapten penjaga menghadang. Menang di sini membuka checkpoint terakhir.",
-        "enemy": { "name": "Kapten Goblin Kabut", "power": 21, "damage": 10 },
+        "name": "Gerbang Eksekusi Elite",
+        "text": "Kapten Pengawal Pribadi Kepala Suku menjulang tinggi menghalangi gerbang utama! Kapaknya mengeringkan udara di sekeliling kalian!",
+        "enemy": {
+          "name": "Kapten Elite Kabut Kelabu",
+          "power": 21,
+          "damage": 10
+        },
         "success": "camp",
         "failure": "failed"
       },
       {
         "id": "camp",
         "type": "rest",
-        "name": "Api Unggun Terakhir",
-        "text": "Checkpoint terakhir. Di balik pintu batu, Kepala Suku menunggu.",
+        "name": "Api Unggun Sebelum Titik Nadir",
+        "text": "Checkpoint terakhir sebelum memasuki ruang tahta maut. Kalian berdua memanaskan ramuan, membebat luka torehan kapak, dan bersumpah menaklukkan ketegangan pamungkas!",
         "heal_percent": 35,
         "next": "chieftain"
       },
       {
         "id": "chieftain",
         "type": "boss",
-        "name": "Ruang Kepala Suku",
-        "text": "Kepala Goblin memanggil kabut dan mengangkat kapak raksasa. Gunakan defend dan combo pada waktu yang tepat.",
-        "enemy": { "name": "Kepala Goblin Kabut", "power": 25, "damage": 13 },
+        "name": "Ruang Tahta Kepala Suku",
+        "text": "🔥 [BOSS REVELATION]\nDi atas mimbar kuil mati, Kepala Goblin Kabut mengangkat kapak raksasa yang menyala oleh api beracun. Nadi di lehernya ungu memar akibat halusinasi racun kedalaman.\n\nIa melolong marah: <i>\"Anjing suruhan kerajaan! Bukan kami yang mendatangkan hawar kelabu ini! Altar kami telah direbut oleh Kultis dan Jaring Sutra Ungu!\"</i>\n\nTak ada waktu ragu! Sinkronisasi ayunan serangan dan timing bertahan bersama partnermu untuk menjatuhkannya!",
+        "enemy": {
+          "name": "Kepala Goblin Kabut (Chieftain)",
+          "power": 25,
+          "damage": 13
+        },
         "success": "victory",
         "failure": "failed"
       },
       {
         "id": "victory",
         "type": "finish",
-        "name": "Reruntuhan Ditaklukkan",
-        "text": "Lima lapis pertahanan runtuh dan jalur dagang Aldenmoor kembali aman."
+        "name": "Kemenangan Pahit: Jembatan Menuju Patch 1.1",
+        "text": "✨ [VICTORY & TEASER PATCH 1.1]\nKapak raksasa runtuh dan benteng pertahanan goblin takluk di bawah pedang kalian! Saat terhempas, Kepala Goblin menunjuk dengan tangan bergetar ke lubuk air di bawah altar:\n\n<i>\"Lihatlah... di bawah mata air kita... benang sutra Ratu Laba-laba dari lembah Selatan telah menyumbat kesucian bumi... Kalian akan mati dipatuk racun sejati...\"</i>\n\nJalur dagang Aldenmoor untuk sementara pulih dan emas cair kalian dapatkan! Namun sepotong benang sutra ungu pekat yang melekat pada pilar altar menjadi sinyal tanda bahaya: ancaman yang lebih menakutkan dari sarang Ratu Laba-laba sedang menanti di balik Lembah Selatan!"
       },
       {
         "id": "failed",
         "type": "failure",
-        "name": "Ekspedisi Gagal",
-        "text": "Party mundur sebelum seluruh bekal habis. Susun build, pulihkan HP, lalu gunakan checkpoint baru."
+        "name": "Ekspedisi Terhenti oleh Hawar",
+        "text": "Luka bertubi-tubi dan sesaknya kabut kelabu memukul kalian mundur dari arena! Segera obati HP, pertajam senjata di forge, dan koordinasikan peran dengan partnermu sebelum kembali berjuang dari checkpoint!"
+      }
+    ]
+  },
+  {
+    "id": "spider_nest",
+    "name": "🕸️ Sarang Ratu Laba-laba: Jurang Kegelapan",
+    "description": "Dungeon beracun bertaraf survival-thriller di lubuk jurang Selatan. Bertarung melawan konspirasi Kultis Jubah Ungu dan amukan tarantula raksasa! Disarankan melengkapi diri dengan perbekalan herbal dan kolaborasi duo tangguh!",
+    "min_level": 6,
+    "recommended_level": 12,
+    "version": 1,
+    "published": true,
+    "entry_room": "chasm_entrance",
+    "rewards": {
+      "xp": 450,
+      "gold": 220,
+      "item": "perak",
+      "quantity": 5
+    },
+    "rooms": [
+      {
+        "id": "chasm_entrance",
+        "type": "event",
+        "name": "Mulut Jurang Sutra Lengket",
+        "text": "Udara lembab dan aroma racun manis menguar dari bibir gua kedalaman Selatan. Jaring sutra ungu setebal ranting pohon menghalangi lorong utama. Apakah kalian akan membakar jaring itu dengan obor yang mungkin memancing penjaga sarang, atau mengabaikan risiko lengket untuk menyelinap melalui lorong kepompong tawanan?",
+        "options": [
+          {
+            "id": "burn",
+            "label": "🔥 Bakar Jaring dengan Obor (Hadapi Penjaga)",
+            "next": "flame_ambush"
+          },
+          {
+            "id": "sneak",
+            "label": "🕸️ Menyelinap Lorong Kepompong (Risiko Perangkap)",
+            "next": "cocoon_corridor"
+          }
+        ]
+      },
+      {
+        "id": "flame_ambush",
+        "type": "combat",
+        "name": "Penyergapan Penjaga Sarang",
+        "text": "Cahaya obor kalian membakar jaring sutra, namun sinarnya memancing gerombolan laba-laba pemburu bermata delapan yang menyelinap dari langit-langit gua!",
+        "enemy": {
+          "name": "Laba-laba Penjaga Api Hitam",
+          "power": 32,
+          "damage": 15
+        },
+        "success": "spider_nest_fork",
+        "failure": "spider_failed"
+      },
+      {
+        "id": "cocoon_corridor",
+        "type": "event",
+        "name": "Lorong Kepompong Tawanan",
+        "text": "Puluhan kepompong sutra putih menggantung di langit-langit batu. Salah satu kepompong bergerak bergetar! Suara erangan samar terdengar dari dalamnya.",
+        "options": [
+          {
+            "id": "slash_cocoon",
+            "label": "🗡️ Belah Kepompong (Menyelamatkan Tawanan / Dapat Harta)",
+            "next": "scout_stash",
+            "damage": 4
+          },
+          {
+            "id": "ignore_cocoon",
+            "label": "🏃 Abaikan & Berlari Cepat (Jauh Lebih Aman)",
+            "next": "spider_nest_fork"
+          }
+        ]
+      },
+      {
+        "id": "scout_stash",
+        "type": "treasure",
+        "name": "Perbekalan Pengintai Sekutu",
+        "text": "Kalian berhasil menyobek jaring! Seorang Kapten Aliansi yang selamat memberikan kalian pundi emas dan ramuan penawar atas keberanian kalian menolongnya!",
+        "reward": {
+          "gold": 45,
+          "item": "ramuan_kecil",
+          "quantity": 2
+        },
+        "next": "spider_nest_fork"
+      },
+      {
+        "id": "spider_nest_fork",
+        "type": "event",
+        "name": "Persimpangan Jurang Dalam",
+        "text": "Kedalaman jurang terbelah menjadi dua ekor terowongan. Lorong kiri digenangi kolam lendir asam yang memancarkan gelembung beracun. Lorong kanan diterangi cahaya ungu obor dari ritual pemotongan sutra oleh Kultis Gelap.",
+        "options": [
+          {
+            "id": "acid",
+            "label": "🧪 Terobos Kolam Lendir Asam",
+            "next": "acid_pool"
+          },
+          {
+            "id": "cult",
+            "label": "🔮 Sabotase Ritual Altar Kultis",
+            "next": "blood_altar"
+          }
+        ]
+      },
+      {
+        "id": "acid_pool",
+        "type": "combat",
+        "name": "Kolam Asam Berbuih",
+        "text": "Tiga monster arachnid berbisu menyemburkan lelehan asam korosif yang merusak pernafasan serta armor baja kalian!",
+        "enemy": {
+          "name": "Arachnid Semburan Asam",
+          "power": 36,
+          "damage": 17
+        },
+        "success": "underground_oasis",
+        "failure": "spider_failed"
+      },
+      {
+        "id": "blood_altar",
+        "type": "combat",
+        "name": "Altar Pemotongan Sutra Ungu",
+        "text": "Seorang Imam Besar Kultis bermuka topeng besi sedang memeras jaring laba-laba ke dalam saluran air kerajaan! Ia melafalkan kutukan maut saat melihat penyuplikan kalian!",
+        "enemy": {
+          "name": "Imam Besar Kultis Jubah Ungu",
+          "power": 38,
+          "damage": 18
+        },
+        "success": "cult_treasure",
+        "failure": "spider_failed"
+      },
+      {
+        "id": "cult_treasure",
+        "type": "treasure",
+        "name": "Peti Persembahan Kultis",
+        "text": "Sabotase ritual sukses total! Kalian mematahkan pipa saluran racun dan menyulam peti persembahan berisi biji perak tempaan tinggi!",
+        "reward": {
+          "gold": 40,
+          "item": "perak",
+          "quantity": 2
+        },
+        "next": "underground_oasis"
+      },
+      {
+        "id": "underground_oasis",
+        "type": "rest",
+        "name": "Oasis Gua Air Jernih",
+        "text": "Di tengah ngarai yang gelap, sebuah celah kristal memancarkan air mineral alami yang bebas racun. Kalian berbasuh dan menetralisir racun di urat luka kalian.",
+        "heal_percent": 30,
+        "next": "cavern_depths"
+      },
+      {
+        "id": "cavern_depths",
+        "type": "event",
+        "name": "Pusat Janin & Sarang Kegelapan",
+        "text": "Suara degup jantung rajasia bergema dari perut gua. Rute kiri menukik ke sarang penetasan anak laba-laba yang tak terhitung jumlahnya. Rute kanan melewati markas pengawal elit penjaga tahta sang ratu.",
+        "options": [
+          {
+            "id": "swarm",
+            "label": "🕷️ Tumpasan Kawanan Janin Laba-laba",
+            "next": "brood_hatchery"
+          },
+          {
+            "id": "royal",
+            "label": "🛡️ Hadapi Pengawal Elit Tarantula",
+            "next": "royal_guard"
+          }
+        ]
+      },
+      {
+        "id": "brood_hatchery",
+        "type": "combat",
+        "name": "Sarang Kawanan Anak Laba-laba",
+        "text": "Ratusan anak laba-laba beracun berkerubung memanjati boot dan jubah kalian! Butuh sapuan serangan kombinasi cepat untuk membedah gerombolan melumpuhkan ini!",
+        "enemy": {
+          "name": "Kawanan Janin Laba-laba Beracun",
+          "power": 42,
+          "damage": 19
+        },
+        "success": "sanctuary_camp",
+        "failure": "spider_failed"
+      },
+      {
+        "id": "royal_guard",
+        "type": "combat",
+        "name": "Gardu Pengawal Tarantula Elit",
+        "text": "Dua monster tarantula seukuran kereta kuda melompat turun! Cakar gigitan mereka bisa menghancurkan besi tempaan dalam hitungan detik!",
+        "enemy": {
+          "name": "Prajurit Tarantula Raksasa Lapis Baja",
+          "power": 46,
+          "damage": 21
+        },
+        "success": "sanctuary_camp",
+        "failure": "spider_failed"
+      },
+      {
+        "id": "sanctuary_camp",
+        "type": "rest",
+        "name": "Kemah Penawar Sebelum Sarang Ratu",
+        "text": "Pos terakhir sebelum melangkah ke palung tahta ratu yang menakutkan. Kalian menyempurnakan ramuan herbal anti-racun, memuat amunisi co-op, dan mengatur strategi penaklukan!",
+        "heal_percent": 35,
+        "next": "spider_queen_throne"
+      },
+      {
+        "id": "spider_queen_throne",
+        "type": "boss",
+        "name": "Palung Tahta Ratu Laba-laba",
+        "text": "🔥 [BOSS REVELATION]\nDi puncak takhta sutra lengket, Ratu Laba-laba merayap memamerkan delapan kaki tajam bak pedang kristal hitam! Pada jidatnya, terbenam sebongkah pecahan kristal bernyala naga yang berdenyut menyinasi kewarasannya.\n\nIa berteriak parau dalam bahasa kuno: <i>\"Kalian... pemburu serakah! Bukankah kalian menganggap kami wabah?! Kultis Jubah Ungu memberi kami kekuatan dari Kristal Naga Hitam... Kini racunku akan melanggar setiap nadi kehidupan Aldenmoor!\"</i>\n\nTak ada amsal mundur! Pertahankan koordinasi Duo Co-Op tangguhmu untuk meruntuhkannya!",
+        "enemy": {
+          "name": "Ratu Laba-laba (Spider Queen)",
+          "power": 65,
+          "damage": 30
+        },
+        "success": "spider_victory",
+        "failure": "spider_failed"
+      },
+      {
+        "id": "spider_victory",
+        "type": "finish",
+        "name": "Kemenangan Chapter 2: Denyut Kristal Naga",
+        "text": "✨ [VICTORY & TEASER PATCH 1.2]\nJerat jaring sutra pecah berkeping-keping! Saat kristal hitam terlepas dari tengkuknya, Ratu Laba-laba sadar dari halusinasi keji:\n\n<i>\"Terima kasih... kristal hitam ini... dikirim dari puncak Gunung Berapi Bayangan (Shadow Volcano) di Utara... Di sana... Kultis bersatu membangkitkan Naga Bayangan Kuno untuk melenyapkan Aldenmoor dan memusnahkan Guild para pahlawan...\"</i>\n\nKalian memetik pundi emas kental dan perak murni dari dasar ngarai! Namun pecahan Kristal Naga yang menyala terang meramalkan badai peperangan skala masif yang akan melibatkan perang antar Guild di seluruh pelosok kerajaan pada PATCH 1.2!"
+      },
+      {
+        "id": "spider_failed",
+        "type": "failure",
+        "name": "Ekspedisi Tenggelam dalam Racun",
+        "text": "Racun pekat dan sabetan kaki jaring melumpuhkan stamina tim kalian! Segera melipir mundur, racik ramuan dari profesi Herbalisme/Market, upgrade gear dengan perak, dan konsentrasikan koordinasi dengan partnermu sebelum menembus ulang dari pos pemulihan!"
       }
     ]
   }

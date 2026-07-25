@@ -1,0 +1,233 @@
+{
+  "patch": "1.1",
+  "title": "Webs of the Silent Abyss",
+  "published": true,
+  "regions": [
+    {
+      "id": "spider_lair_valley",
+      "name": "🕸️ Lembah Sutra Beracun: Sarang Kegelapan",
+      "description": "Lembah terjal di selatan Aldenmoor di mana pepohonan kuno dibungkus jaring sutra ungu bening yang berdenyut bak nadi sihir gelap. Di sinilah Aliansi Kultis Bawah Tanah memeras racun Ratu Laba-laba untuk menyumbat sumber mata air kerajaan.",
+      "min_level": 6,
+      "travel_cost": 15,
+      "published": true,
+      "version": 1,
+      "encounters": [
+        {
+          "id": "cultist_patrol",
+          "name": "Kultis Jubah Ungu & Laba-laba Penjaga",
+          "type": "combat",
+          "weight": 50,
+          "enemy": "kultis_ungu",
+          "xp": [25, 45],
+          "gold": [18, 35]
+        },
+        {
+          "id": "silken_cocoon",
+          "name": "Kepompong Tawanan & Peti Perak",
+          "type": "treasure",
+          "weight": 25,
+          "gold": [25, 55]
+        },
+        {
+          "id": "antidote_herbs",
+          "name": "Rumpun Tanaman Penawar Lembah",
+          "type": "event",
+          "weight": 25,
+          "exploration_points": 3
+        }
+      ],
+      "campaign": {
+        "chapter": 2,
+        "title": "Act I - Jejak Jaring Ungu",
+        "steps": [
+          "Telusuri Lembah Sutra Beracun dan temukan bukti keterlibatan Kultis Jubah Ungu.",
+          "Kumpulkan 4 sampel jaring racun dan tanaman penawar tersembunyi.",
+          "Temukan mulut gua menuju jurang Sarang Ratu Laba-laba!"
+        ]
+      }
+    }
+  ],
+  "campaigns": [
+    {
+      "id": "chapter2_spider_valley",
+      "chapter": 2,
+      "order": 1,
+      "title": "Act I - Jejak Jaring Ungu & Perburuan Herbal",
+      "description": "Penyelidikan berlanjut ke Lembah Sutra Beracun di Selatan. Kalian menemukan jaring ungu beracun yang sengaja dipasang Kultis untuk menyumbat sumber mata air. Telusuri 4 titik anomali di lembah dan pelajari seni meracik ramuan herbal pembantu pernafasan agar bertahan dari gas racun!",
+      "requires": "chapter1_goblin_ruins",
+      "version": 1,
+      "published": true,
+      "objectives": [
+        { "id": "explore_valley", "type": "explore", "target": "spider_lair_valley", "count": 4 }
+      ],
+      "rewards": { "xp": 150, "gold": 80 }
+    },
+    {
+      "id": "chapter2_spider_nest",
+      "chapter": 2,
+      "order": 2,
+      "title": "Act II - Sarang Ratu Laba-laba & Denyut Kristal Naga",
+      "description": "Peta kultis memandu tim petualangmu menuju terowongan lengket di dalam Jurang Kegelapan! Rekrut partner Co-Op rahasiamu untuk mendobrak sarang kepompong mati, lumpuhkan amukan sang Ratu Laba-laba, dan rebut pecahan Kristal Hitam yang mengendalikan pikirannya!",
+      "requires": "chapter2_spider_valley",
+      "version": 1,
+      "published": true,
+      "objectives": [
+        { "id": "clear_spider_nest", "type": "dungeon_complete", "target": "spider_nest", "count": 1 }
+      ],
+      "rewards": { "xp": 350, "gold": 180, "item": "perak", "quantity": 3 }
+    }
+  ],
+  "dungeons": [
+    {
+      "id": "spider_nest",
+      "name": "🕸️ Sarang Ratu Laba-laba: Jurang Kegelapan",
+      "description": "Dungeon beracun bertaraf survival-thriller di lubuk jurang Selatan. Bertarung melawan konspirasi Kultis Jubah Ungu dan amukan tarantula raksasa! Disarankan melengkapi diri dengan perbekalan herbal dan kolaborasi duo tangguh!",
+      "min_level": 6,
+      "recommended_level": 12,
+      "version": 1,
+      "published": true,
+      "entry_room": "chasm_entrance",
+      "rewards": { "xp": 450, "gold": 220, "item": "perak", "quantity": 5 },
+      "rooms": [
+        {
+          "id": "chasm_entrance",
+          "type": "event",
+          "name": "Mulut Jurang Sutra Lengket",
+          "text": "Udara lembab dan aroma racun manis menguar dari bibir gua kedalaman Selatan. Jaring sutra ungu setebal ranting pohon menghalangi lorong utama. Apakah kalian akan membakar jaring itu dengan obor yang mungkin memancing penjaga sarang, atau mengabaikan risiko lengket untuk menyelinap melalui lorong kepompong tawanan?",
+          "options": [
+            { "id": "burn", "label": "🔥 Bakar Jaring dengan Obor (Hadapi Penjaga)", "next": "flame_ambush" },
+            { "id": "sneak", "label": "🕸️ Menyelinap Lorong Kepompong (Risiko Perangkap)", "next": "cocoon_corridor" }
+          ]
+        },
+        {
+          "id": "flame_ambush",
+          "type": "combat",
+          "name": "Penyergapan Penjaga Sarang",
+          "text": "Cahaya obor kalian membakar jaring sutra, namun sinarnya memancing gerombolan laba-laba pemburu bermata delapan yang menyelinap dari langit-langit gua!",
+          "enemy": { "name": "Laba-laba Penjaga Api Hitam", "power": 32, "damage": 15 },
+          "success": "spider_nest_fork",
+          "failure": "spider_failed"
+        },
+        {
+          "id": "cocoon_corridor",
+          "type": "event",
+          "name": "Lorong Kepompong Tawanan",
+          "text": "Puluhan kepompong sutra putih menggantung di langit-langit batu. Salah satu kepompong bergerak bergetar! Suara erangan samar terdengar dari dalamnya.",
+          "options": [
+            { "id": "slash_cocoon", "label": "🗡️ Belah Kepompong (Menyelamatkan Tawanan / Dapat Harta)", "next": "scout_stash", "damage": 4 },
+            { "id": "ignore_cocoon", "label": "🏃 Abaikan & Berlari Cepat (Jauh Lebih Aman)", "next": "spider_nest_fork" }
+          ]
+        },
+        {
+          "id": "scout_stash",
+          "type": "treasure",
+          "name": "Perbekalan Pengintai Sekutu",
+          "text": "Kalian berhasil menyobek jaring! Seorang Kapten Aliansi yang selamat memberikan kalian pundi emas dan ramuan penawar atas keberanian kalian menolongnya!",
+          "reward": { "gold": 45, "item": "ramuan_kecil", "quantity": 2 },
+          "next": "spider_nest_fork"
+        },
+        {
+          "id": "spider_nest_fork",
+          "type": "event",
+          "name": "Persimpangan Jurang Dalam",
+          "text": "Kedalaman jurang terbelah menjadi dua ekor terowongan. Lorong kiri digenangi kolam lendir asam yang memancarkan gelembung beracun. Lorong kanan diterangi cahaya ungu obor dari ritual pemotongan sutra oleh Kultis Gelap.",
+          "options": [
+            { "id": "acid", "label": "🧪 Terobos Kolam Lendir Asam", "next": "acid_pool" },
+            { "id": "cult", "label": "🔮 Sabotase Ritual Altar Kultis", "next": "blood_altar" }
+          ]
+        },
+        {
+          "id": "acid_pool",
+          "type": "combat",
+          "name": "Kolam Asam Berbuih",
+          "text": "Tiga monster arachnid berbisu menyemburkan lelehan asam korosif yang merusak pernafasan serta armor baja kalian!",
+          "enemy": { "name": "Arachnid Semburan Asam", "power": 36, "damage": 17 },
+          "success": "underground_oasis",
+          "failure": "spider_failed"
+        },
+        {
+          "id": "blood_altar",
+          "type": "combat",
+          "name": "Altar Pemotongan Sutra Ungu",
+          "text": "Seorang Imam Besar Kultis bermuka topeng besi sedang memeras jaring laba-laba ke dalam saluran air kerajaan! Ia melafalkan kutukan maut saat melihat penyuplikan kalian!",
+          "enemy": { "name": "Imam Besar Kultis Jubah Ungu", "power": 38, "damage": 18 },
+          "success": "cult_treasure",
+          "failure": "spider_failed"
+        },
+        {
+          "id": "cult_treasure",
+          "type": "treasure",
+          "name": "Peti Persembahan Kultis",
+          "text": "Sabotase ritual sukses total! Kalian mematahkan pipa saluran racun dan menyulam peti persembahan berisi biji perak tempaan tinggi!",
+          "reward": { "gold": 40, "item": "perak", "quantity": 2 },
+          "next": "underground_oasis"
+        },
+        {
+          "id": "underground_oasis",
+          "type": "rest",
+          "name": "Oasis Gua Air Jernih",
+          "text": "Di tengah ngarai yang gelap, sebuah celah kristal memancarkan air mineral alami yang bebas racun. Kalian berbasuh dan menetralisir racun di urat luka kalian.",
+          "heal_percent": 30,
+          "next": "cavern_depths"
+        },
+        {
+          "id": "cavern_depths",
+          "type": "event",
+          "name": "Pusat Janin & Sarang Kegelapan",
+          "text": "Suara degup jantung rajasia bergema dari perut gua. Rute kiri menukik ke sarang penetasan anak laba-laba yang tak terhitung jumlahnya. Rute kanan melewati markas pengawal elit penjaga tahta sang ratu.",
+          "options": [
+            { "id": "swarm", "label": "🕷️ Tumpasan Kawanan Janin Laba-laba", "next": "brood_hatchery" },
+            { "id": "royal", "label": "🛡️ Hadapi Pengawal Elit Tarantula", "next": "royal_guard" }
+          ]
+        },
+        {
+          "id": "brood_hatchery",
+          "type": "combat",
+          "name": "Sarang Kawanan Anak Laba-laba",
+          "text": "Ratusan anak laba-laba beracun berkerubung memanjati boot dan jubah kalian! Butuh sapuan serangan kombinasi cepat untuk membedah gerombolan melumpuhkan ini!",
+          "enemy": { "name": "Kawanan Janin Laba-laba Beracun", "power": 42, "damage": 19 },
+          "success": "sanctuary_camp",
+          "failure": "spider_failed"
+        },
+        {
+          "id": "royal_guard",
+          "type": "combat",
+          "name": "Gardu Pengawal Tarantula Elit",
+          "text": "Dua monster tarantula seukuran kereta kuda melompat turun! Cakar gigitan mereka bisa menghancurkan besi tempaan dalam hitungan detik!",
+          "enemy": { "name": "Prajurit Tarantula Raksasa Lapis Baja", "power": 46, "damage": 21 },
+          "success": "sanctuary_camp",
+          "failure": "spider_failed"
+        },
+        {
+          "id": "sanctuary_camp",
+          "type": "rest",
+          "name": "Kemah Penawar Sebelum Sarang Ratu",
+          "text": "Pos terakhir sebelum melangkah ke palung tahta ratu yang menakutkan. Kalian menyempurnakan ramuan herbal anti-racun, memuat amunisi co-op, dan mengatur strategi penaklukan!",
+          "heal_percent": 35,
+          "next": "spider_queen_throne"
+        },
+        {
+          "id": "spider_queen_throne",
+          "type": "boss",
+          "name": "Palung Tahta Ratu Laba-laba",
+          "text": "🔥 [BOSS REVELATION]\nDi puncak takhta sutra lengket, Ratu Laba-laba merayap memamerkan delapan kaki tajam bak pedang kristal hitam! Pada jidatnya, terbenam sebongkah pecahan kristal bernyala naga yang berdenyut menyinasi kewarasannya.\n\nIa berteriak parau dalam bahasa kuno: <i>\"Kalian... pemburu serakah! Bukankah kalian menganggap kami wabah?! Kultis Jubah Ungu memberi kami kekuatan dari Kristal Naga Hitam... Kini racunku akan melanggar setiap nadi kehidupan Aldenmoor!\"</i>\n\nTak ada amsal mundur! Pertahankan koordinasi Duo Co-Op tangguhmu untuk meruntuhkannya!",
+          "enemy": { "name": "Ratu Laba-laba (Spider Queen)", "power": 65, "damage": 30 },
+          "success": "spider_victory",
+          "failure": "spider_failed"
+        },
+        {
+          "id": "spider_victory",
+          "type": "finish",
+          "name": "Kemenangan Chapter 2: Denyut Kristal Naga",
+          "text": "✨ [VICTORY & TEASER PATCH 1.2]\nJerat jaring sutra pecah berkeping-keping! Saat kristal hitam terlepas dari tengkuknya, Ratu Laba-laba sadar dari halusinasi keji:\n\n<i>\"Terima kasih... kristal hitam ini... dikirim dari puncak Gunung Berapi Bayangan (Shadow Volcano) di Utara... Di sana... Kultis bersatu membangkitkan Naga Bayangan Kuno untuk melenyapkan Aldenmoor dan memusnahkan Guild para pahlawan...\"</i>\n\nKalian memetik pundi emas kental dan perak murni dari dasar ngarai! Namun pecahan Kristal Naga yang menyala terang meramalkan badai peperangan skala masif yang akan melibatkan perang antar Guild di seluruh pelosok kerajaan pada PATCH 1.2!"
+        },
+        {
+          "id": "spider_failed",
+          "type": "failure",
+          "name": "Ekspedisi Tenggelam dalam Racun",
+          "text": "Racun pekat dan sabetan kaki jaring melumpuhkan stamina tim kalian! Segera melipir mundur, racik ramuan dari profesi Herbalisme/Market, upgrade gear dengan perak, dan konsentrasikan koordinasi dengan partnermu sebelum menembus ulang dari pos pemulihan!"
+        }
+      ]
+    }
+  ]
+}
