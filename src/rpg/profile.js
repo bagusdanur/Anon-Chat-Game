@@ -318,4 +318,4 @@ function setupProfile(bot, { rateLimitCommand }) {
   });
 }
 
-module.exports = { setupProfile, renderHpBar, RARITY_EMOJI };
+module.exports = { setupProfile, renderProfile, renderHpBar, RARITY_EMOJI };
