@@ -119,6 +119,17 @@ function setupGrind(bot, { rateLimitCommand }) {
         { parse_mode: 'HTML' }
       );
     }
+    const safeHuntHp = Math.ceil(user.max_hp * 0.4);
+    if (currentHp < safeHuntHp) {
+      return ctx.reply(
+        `❤️ <b>HP terlalu rendah untuk berburu.</b>\n\n` +
+        `HP: <b>${currentHp}/${user.max_hp}</b> · minimal aman <b>${safeHuntHp}</b>\n` +
+        `Energi tidak dipotong.\n\n` +
+        `<i>Buka /inv untuk memakai potion, /shop untuk membeli Ramuan Kecil, ` +
+        `atau tunggu regen HP (+15% tiap 5 menit).</i>`,
+        { parse_mode: 'HTML' },
+      );
+    }
 
     spendEnergy(userId, energyCost);
 

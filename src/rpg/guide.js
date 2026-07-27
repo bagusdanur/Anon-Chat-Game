@@ -7,7 +7,9 @@ const campaignService = createCampaignService(db);
 
 function readGuideState(userId) {
   const id = String(userId);
-  const user = db.prepare('SELECT level FROM rpg_users WHERE telegram_user_id=?').get(id);
+  const user = db.prepare(`
+    SELECT level,gold,hp,max_hp,energy_current FROM rpg_users WHERE telegram_user_id=?
+  `).get(id);
   if (!user) return { hasCharacter: false };
   const hasAlias = Boolean(db.prepare('SELECT 1 ok FROM rpg_character_aliases WHERE user_id=?').get(id));
   const world = db.prepare(`
@@ -30,6 +32,12 @@ function readGuideState(userId) {
     activeDungeon = { name: activeDungeonRow.name, roomName: room?.name || activeDungeonRow.current_room_id };
   }
   const party = db.prepare('SELECT 1 ok FROM rpg_party_members WHERE user_id=? LIMIT 1').get(id);
+  const hasHealingItem = Boolean(db.prepare(`
+    SELECT 1 ok FROM rpg_inventory i JOIN items_catalog c ON c.item_id=i.item_id
+    WHERE i.telegram_user_id=? AND c.category='consumable'
+      AND json_extract(c.effect_json,'$.heal_pct') > 0 AND i.quantity > 0
+    LIMIT 1
+  `).get(id));
   const quests = campaignService.list(id);
   const activeQuestRow = quests.find(quest => quest.status === 'active');
   let activeQuest = null;
@@ -79,6 +87,11 @@ function readGuideState(userId) {
     explorationPoints: world?.exploration_points || 0,
     hasParty: Boolean(party),
     level: user.level,
+    gold: user.gold,
+    hp: user.hp,
+    maxHp: user.max_hp,
+    energy: user.energy_current,
+    hasHealingItem,
     regionName: world?.region_name || 'Pinggiran Aldenmoor',
     chapter: activeQuest?.chapter || world?.campaign_chapter || 1,
     activeQuest,

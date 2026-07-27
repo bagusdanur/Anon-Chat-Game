@@ -20,6 +20,27 @@ function determineNextStep(state) {
       unlock: 'Selesaikan boss untuk memperbarui objective campaign.',
     };
   }
+  if (state.maxHp > 0 && state.hp / state.maxHp < 0.4) {
+    const hasPotion = Boolean(state.hasHealingItem);
+    return {
+      key: 'recover',
+      title: 'Pulihkan HP sebelum melanjutkan',
+      command: hasPotion ? '/inv' : '/shop',
+      detail: `HP-mu ${state.hp}/${state.maxHp}. ` +
+        (hasPotion
+          ? 'Gunakan potion dari inventory; nomor item terlihat di /inv.'
+          : `Beli Ramuan Kecil (15g) atau tunggu regen. Gold tersedia: ${state.gold}g.`),
+      unlock: `Setelah HP minimal ${Math.ceil(state.maxHp * 0.4)}, tracker kembali ke objective campaign.`,
+    };
+  }
+  if (state.energy < 2 && state.activeQuest?.objective?.type === 'dungeon_complete' &&
+      state.level < (state.activeQuest.objective.recommendedLevel || 7)) {
+    return {
+      key: 'energy', title: 'Istirahat dan pulihkan energi', command: '/inv',
+      detail: `Energi ${state.energy}/10. Hunt membutuhkan 2 energi; regen +1 setiap 3 menit.`,
+      unlock: 'Saat energi minimal 2, lanjutkan hunt atau aktivitas profesi ringan.',
+    };
+  }
   const quest = state.activeQuest;
   const objective = quest?.objective;
   if (objective?.type === 'explore') {

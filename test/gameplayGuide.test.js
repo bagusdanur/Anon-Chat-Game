@@ -121,3 +121,27 @@ test('tracker mengenali objective hunt, class Pencuri, dan chapter Saga II', () 
   assert.match(getSagaHeader(4), /SAGA II/);
   assert.match(getSagaHeader(7), /Chapter 7/);
 });
+
+test('tracker memprioritaskan recovery saat HP kritis sebelum menyuruh hunt lagi', () => {
+  const state = {
+    hasCharacter: true,
+    hasAlias: true,
+    level: 2,
+    gold: 33,
+    hp: 1,
+    maxHp: 58,
+    energy: 0,
+    hasHealingItem: false,
+    activeQuest: {
+      title: 'Jantung Reruntuhan',
+      objective: {
+        type: 'dungeon_complete', label: 'Reruntuhan Goblin',
+        current: 0, target: 1, recommendedLevel: 7,
+      },
+    },
+  };
+  const next = determineNextStep(state);
+  assert.equal(next.key, 'recover');
+  assert.equal(next.command, '/shop');
+  assert.match(next.detail, /1\/58/);
+});
