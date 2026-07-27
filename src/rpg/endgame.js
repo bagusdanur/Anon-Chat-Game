@@ -13,6 +13,7 @@ function setupEndgame(bot, { rateLimitCommand }) {
   const RARITY_LABELS = {
     common: '⚪ Common', uncommon: '🟢 Uncommon', rare: '🔵 Rare', epic: '🟣 Epic', legendary: '🟠 Legendary',
   };
+  const RARITY_DOTS = { common: '⚪', uncommon: '🟢', rare: '🔵', epic: '🟣', legendary: '🟠' };
 
   function requireCharacter(ctx) {
     if (!flags.isEnabled('seasons_v2')) {
@@ -95,10 +96,19 @@ function setupEndgame(bot, { rateLimitCommand }) {
     const safePage = Math.min(Math.max(1, Number(page) || 1), pages);
     const visible = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
     const owned = entries.filter(item => item.owned).length;
+    const grouped = visible.reduce((result, item) => {
+      if (!result[item.category]) result[item.category] = [];
+      result[item.category].push(item);
+      return result;
+    }, {});
+    const itemLines = Object.entries(grouped).map(([itemCategory, items]) =>
+      `<b>${catalog.labels[itemCategory] || itemCategory}</b>\n` +
+      items.map(item => `${item.owned ? '✅' : '▫️'} <code>[${item.number}]</code> ${RARITY_DOTS[item.rarity] || '⚪'} ${item.display_name} <i>${item.rarity}</i>`).join('\n'),
+    ).join('\n\n');
     const text =
       `<b>📖 KATALOG ITEM</b> · ${owned}/${entries.length} ditemukan\n` +
       `<i>Halaman ${safePage}/${pages}${rarity ? ` · ${RARITY_LABELS[rarity]}` : category ? ` · ${catalog.labels[category]}` : ''}</i>\n\n` +
-      visible.map(item => `${item.owned ? '✅' : '▫️'} <code>[${item.number}]</code> ${item.display_name}\n   <i>${RARITY_LABELS[item.rarity] || item.rarity} · ${catalog.labels[item.category] || item.category}</i>`).join('\n') +
+      itemLines +
       `\n\n<i>/catalog [nomor] detail · /catalog legendary filter rarity</i>`;
     const key = category || 'all';
     return {
