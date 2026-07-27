@@ -1,9 +1,9 @@
-import{a as e,c as t,l as n,r,s as i,u as a}from"./index-DygV-4TP.js";async function o(t){t.innerHTML=`<div class="page-enter">
+import{a as e,c as t,l as n,r,s as i,u as a}from"./index-tHrAHEAI.js";async function o(t){t.innerHTML=`<div class="page-enter">
     <div class="card"><div class="card-header">
       <div class="card-title">${u(`activity`)} RPG Operations</div>
       <button class="btn btn-outline btn-sm" id="ops-refresh">${u(`refresh-cw`)}</button>
     </div><div class="card-body" id="ops-body">${e(6)}</div></div>
-  </div>`,document.getElementById(`ops-refresh`).onclick=()=>c(),await c()}function s(){}async function c(){let e=document.getElementById(`ops-body`);try{let n=await t.get(`/api/rpg-operations`),r=Object.values(n.anomalies).reduce((e,t)=>e+t,0);e.innerHTML=`
+  </div>`,document.getElementById(`ops-refresh`).onclick=()=>c(),await c()}function s(){}async function c(){let e=document.getElementById(`ops-body`);try{let n=await t.get(`/api/rpg-operations`),r=Object.values(n.anomalies).reduce((e,t)=>e+t,0),a=n.dungeonBalance||{},o=Number(a.totalRuns||0)>0?`${(Number(a.completed||0)/Number(a.totalRuns)*100).toFixed(1)}%`:`N/A`,s=Number(a.actions||0),u=e=>s>0?`${(Number(e||0)/s*100).toFixed(1)}%`:`N/A`;e.innerHTML=`
       <div class="info-grid">
         ${l(`Total Gold`,`${Number(n.economy.totalGold).toLocaleString()}g`)}
         ${l(`Sources / Sinks`,`${n.economy.sources.toLocaleString()} / ${n.economy.sinks.toLocaleString()}`)}
@@ -13,6 +13,19 @@ import{a as e,c as t,l as n,r,s as i,u as a}from"./index-DygV-4TP.js";async func
         ${l(`Pending Trades`,n.sessions.trades)}
         ${l(`Parties / Guilds`,`${n.sessions.parties} / ${n.sessions.guilds}`)}
         ${l(`Anomalies`,r)}
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="card-header"><div class="card-title">Dungeon Balance (Anonymous)</div></div>
+        <div class="card-body"><div class="info-grid">
+          ${l(`Runs / Completion`,`${Number(a.totalRuns||0)} / ${o}`)}
+          ${l(`Solo / Duo`,`${Number(a.soloRuns||0)} / ${Number(a.duoRuns||0)}`)}
+          ${l(`Attack Rate`,u(a.attacks))}
+          ${l(`Defend Rate`,u(a.defends))}
+          ${l(`Skill Rate`,u(a.skills))}
+          ${l(`Combo Rate`,u(a.combos))}
+          ${l(`Enemy Cycles`,Number(a.enemyCycles||0))}
+          ${l(`Avg. Duration`,`${Math.round(Number(a.averageDurationSeconds||0)/60)}m`)}
+        </div></div>
       </div>
       <div class="card" style="margin-top:16px">
         <div class="card-header"><div class="card-title">Feature Flags</div></div>

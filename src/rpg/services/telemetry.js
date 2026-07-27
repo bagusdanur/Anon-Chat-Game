@@ -25,6 +25,23 @@ function collectRpgTelemetry(db, featureFlags) {
     parties: count("SELECT count(1) count FROM rpg_parties WHERE status='active'"),
     guilds: count('SELECT count(1) count FROM rpg_guilds'),
   };
+  const dungeonBalance = db.prepare(`
+    SELECT
+      count(1) totalRuns,
+      sum(CASE WHEN status='completed' THEN 1 ELSE 0 END) completed,
+      sum(CASE WHEN status IN ('failed','abandoned') THEN 1 ELSE 0 END) unsuccessful,
+      sum(CASE WHEN mode='solo' THEN 1 ELSE 0 END) soloRuns,
+      sum(CASE WHEN mode='duo' THEN 1 ELSE 0 END) duoRuns,
+      coalesce(sum(json_extract(state_json,'$.metrics.actions')),0) actions,
+      coalesce(sum(json_extract(state_json,'$.metrics.attacks')),0) attacks,
+      coalesce(sum(json_extract(state_json,'$.metrics.defends')),0) defends,
+      coalesce(sum(json_extract(state_json,'$.metrics.skills')),0) skills,
+      coalesce(sum(json_extract(state_json,'$.metrics.combos')),0) combos,
+      coalesce(sum(json_extract(state_json,'$.metrics.enemyCycles')),0) enemyCycles,
+      coalesce(avg(CASE WHEN completed_at IS NOT NULL
+        THEN completed_at-created_at END),0) averageDurationSeconds
+    FROM rpg_dungeon_sessions_v2
+  `).get();
   const content = {
     regions: count('SELECT count(1) count FROM rpg_regions WHERE published=1'),
     skills: count('SELECT count(1) count FROM rpg_skill_definitions WHERE published=1'),
@@ -53,7 +70,7 @@ function collectRpgTelemetry(db, featureFlags) {
       ...economy, totalGold,
       sourceSinkRatio: economy.sinks ? Number((economy.sources / economy.sinks).toFixed(2)) : null,
     },
-    market, sessions, content, anomalies, migrations, season,
+    market, sessions, dungeonBalance, content, anomalies, migrations, season,
     featureFlags: featureFlags.list(),
   };
 }

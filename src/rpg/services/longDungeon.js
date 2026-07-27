@@ -232,6 +232,10 @@ function createLongDungeonService(db, options = {}) {
       };
     }
     const combat = state.combat;
+    state.metrics = state.metrics || {
+      actions: 0, attacks: 0, defends: 0, skills: 0, combos: 0,
+      enemyCycles: 0, combatRoomsCleared: 0,
+    };
     const skillId = action.startsWith('skill_') ? action.slice(6) : null;
     const equippedSkill = skillId
       ? db.prepare(`
@@ -255,6 +259,12 @@ function createLongDungeonService(db, options = {}) {
     if (action === 'combo' && (session.mode !== 'duo' || combat.combo < 3)) {
       return { success: false, reason: 'Combo duo membutuhkan 3 energi kerja sama.' };
     }
+    const metricAction = skillId ? 'skills'
+      : action === 'attack' ? 'attacks'
+        : action === 'defend' ? 'defends'
+          : action === 'combo' ? 'combos' : 'skills';
+    state.metrics.actions++;
+    state.metrics[metricAction]++;
 
     const skillDefinition = equippedSkill ? JSON.parse(equippedSkill.definition_json) : null;
     const ranked = value => Array.isArray(value)
@@ -297,6 +307,7 @@ function createLongDungeonService(db, options = {}) {
     });
     if (!defeated && !options.deferIncoming) {
       combat.enemyTurns = (combat.enemyTurns || 0) + 1;
+      state.metrics.enemyCycles++;
       combat.telegraphNext = (combat.enemyTurns + 1) % 3 === 0;
     }
     state.hp = Math.max(0, state.hp - incoming);
@@ -310,6 +321,7 @@ function createLongDungeonService(db, options = {}) {
       return { success: true, nextRoomId: room.failure, transitioned: true };
     }
     if (defeated) {
+      state.metrics.combatRoomsCleared++;
       delete state.combat;
       return { success: true, nextRoomId: room.success, transitioned: true };
     }
@@ -352,6 +364,10 @@ function createLongDungeonService(db, options = {}) {
       turnAliases: [getAlias(owner.user_id), getAlias(partner.user_id)],
       turnIndex: 0,
       actionNumber: 1,
+      metrics: {
+        actions: 0, attacks: 0, defends: 0, skills: 0, combos: 0,
+        enemyCycles: 0, combatRoomsCleared: 0,
+      },
     };
     const info = db.prepare(`
       INSERT INTO rpg_dungeon_sessions_v2
@@ -404,6 +420,10 @@ function createLongDungeonService(db, options = {}) {
         collected: {},
         visited: [JSON.parse(definitionRow.definition_json).entry_room],
         log: 'Ekspedisi dimulai.',
+        metrics: {
+          actions: 0, attacks: 0, defends: 0, skills: 0, combos: 0,
+          enemyCycles: 0, combatRoomsCleared: 0,
+        },
       };
       const info = db.prepare(`
         INSERT INTO rpg_dungeon_sessions_v2

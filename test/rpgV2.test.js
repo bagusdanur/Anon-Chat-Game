@@ -1006,6 +1006,10 @@ test('duo tactical dungeon locks both actions before resolving a fair party cycl
   assert.equal(result.session.state.combat.enemyTurns, 2);
   assert.equal(result.session.state.combat.telegraphNext, true);
   assert.equal(result.session.state.combat.skillCooldowns['1'].ksatria_guard_stance, 1);
+  assert.equal(result.session.state.metrics.actions, 4);
+  assert.equal(result.session.state.metrics.skills, 2);
+  assert.equal(result.session.state.metrics.attacks, 2);
+  assert.equal(result.session.state.metrics.enemyCycles, 2);
   db.close();
 });
 
@@ -1050,6 +1054,8 @@ test('RPG operations telemetry reports economy and invariant anomalies without u
   assert.equal(telemetry.economy.sinks, 45);
   assert.equal(telemetry.anomalies.negativeGold, 0);
   assert.equal(telemetry.anomalies.invalidInventory, 0);
+  assert.equal(telemetry.dungeonBalance.totalRuns, 0);
+  assert.equal(telemetry.dungeonBalance.actions, 0);
   assert.equal(telemetry.migrations[0].version, 18);
   assert.equal(Array.isArray(telemetry.featureFlags), true);
   assert.equal(JSON.stringify(telemetry).includes('telegram_user_id'), false);

@@ -19,6 +19,14 @@ async function load() {
   try {
     const d = await API.get('/api/rpg-operations');
     const anomalies = Object.values(d.anomalies).reduce((sum, value) => sum + value, 0);
+    const dungeon = d.dungeonBalance || {};
+    const completionRate = Number(dungeon.totalRuns || 0) > 0
+      ? `${(Number(dungeon.completed || 0) / Number(dungeon.totalRuns) * 100).toFixed(1)}%`
+      : 'N/A';
+    const actionTotal = Number(dungeon.actions || 0);
+    const actionRate = value => actionTotal > 0
+      ? `${(Number(value || 0) / actionTotal * 100).toFixed(1)}%`
+      : 'N/A';
     body.innerHTML = `
       <div class="info-grid">
         ${cell('Total Gold', `${Number(d.economy.totalGold).toLocaleString()}g`)}
@@ -29,6 +37,19 @@ async function load() {
         ${cell('Pending Trades', d.sessions.trades)}
         ${cell('Parties / Guilds', `${d.sessions.parties} / ${d.sessions.guilds}`)}
         ${cell('Anomalies', anomalies)}
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="card-header"><div class="card-title">Dungeon Balance (Anonymous)</div></div>
+        <div class="card-body"><div class="info-grid">
+          ${cell('Runs / Completion', `${Number(dungeon.totalRuns || 0)} / ${completionRate}`)}
+          ${cell('Solo / Duo', `${Number(dungeon.soloRuns || 0)} / ${Number(dungeon.duoRuns || 0)}`)}
+          ${cell('Attack Rate', actionRate(dungeon.attacks))}
+          ${cell('Defend Rate', actionRate(dungeon.defends))}
+          ${cell('Skill Rate', actionRate(dungeon.skills))}
+          ${cell('Combo Rate', actionRate(dungeon.combos))}
+          ${cell('Enemy Cycles', Number(dungeon.enemyCycles || 0))}
+          ${cell('Avg. Duration', `${Math.round(Number(dungeon.averageDurationSeconds || 0) / 60)}m`)}
+        </div></div>
       </div>
       <div class="card" style="margin-top:16px">
         <div class="card-header"><div class="card-title">Feature Flags</div></div>
