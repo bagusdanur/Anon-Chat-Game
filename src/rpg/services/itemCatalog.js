@@ -3,6 +3,7 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '../../..');
 const readJson = file => JSON.parse(fs.readFileSync(path.join(ROOT, file), 'utf8'));
+const equipmentContent = readJson('data/rpg_affixes.json');
 const CATEGORY_LABELS = {
   consumable: '🧪 Consumable', material: '📦 Material', weapon: '⚔️ Senjata',
   staff: '🪄 Staff', armor: '🛡️ Armor', accessory: '💍 Aksesori',
@@ -41,7 +42,7 @@ function createItemCatalogService(db, options = {}) {
     return [...sources];
   }
 
-  function uses(itemId) {
+  function uses(itemId, item = {}) {
     const result = [];
     for (const recipe of crafting.recipes || []) {
       if (recipe.materials?.some(material => material.item === itemId)) result.push(`Bahan ${recipe.name}`);
@@ -49,6 +50,18 @@ function createItemCatalogService(db, options = {}) {
     if (itemId === 'ore_upgrade') result.push('Dipakai oleh /upgrade');
     if (itemId === 'reforge_catalyst') result.push('Dipakai oleh /gear reforge');
     if (['ruby_gem', 'sapphire_gem', 'emerald_gem'].includes(itemId)) result.push('Dipakai oleh /gear socket');
+    if (['weapon', 'staff', 'armor', 'accessory'].includes(item.category)) {
+      result.push('Forge lewat /gear forge [nomor dari /inv]');
+      const classFit = item.category === 'staff'
+        ? 'Cocok: Penyihir'
+        : item.category === 'weapon'
+          ? 'Cocok: Ksatria dan Pencuri'
+          : 'Cocok: semua class';
+      result.push(classFit);
+      if (['rare', 'epic', 'legendary'].includes(item.rarity)) result.push('Memiliki socket setelah forge');
+      const set = equipmentContent.sets.find(entry => entry.items.includes(itemId));
+      if (set) result.push(`Bagian set: ${set.name}`);
+    }
     return result;
   }
 
@@ -62,7 +75,7 @@ function createItemCatalogService(db, options = {}) {
       ORDER BY CASE category WHEN 'consumable' THEN 1 WHEN 'material' THEN 2 WHEN 'weapon' THEN 3
         WHEN 'staff' THEN 4 WHEN 'armor' THEN 5 WHEN 'accessory' THEN 6 ELSE 9 END, rarity DESC, display_name
     `).all().map((item, index) => ({
-      ...item, number: index + 1, owned: owned.has(item.item_id), sources: dynamicSources(item.item_id), uses: uses(item.item_id),
+      ...item, number: index + 1, owned: owned.has(item.item_id), sources: dynamicSources(item.item_id), uses: uses(item.item_id, item),
     }));
   }
 

@@ -12,7 +12,7 @@ const { db } = require('../db');
 const { createSkillService } = require('./services/skills');
 const { createEquipmentService } = require('./services/equipment');
 const { createSocialService } = require('./services/social');
-const { formatNumberId, formatStat } = require('./equipment');
+const { formatNumberId, formatStat, gearAdvice } = require('./equipment');
 const { readGuideState } = require('./guide');
 const { determineNextStep } = require('./services/gameplayGuide');
 
@@ -172,6 +172,24 @@ function renderProfile(user) {
   if (bonusParts.length > 0) {
     msg += `<i>Bonus: ${bonusParts.join(' · ')}</i>\n`;
   }
+
+  const totalUpgradeTier = v2Equipped.reduce((sum, item) => sum + Number(item.upgrade_tier || 0), 0);
+  const weakestGear = v2Equipped.slice().sort((a, b) => a.item_power - b.item_power)[0];
+  const classPriority = user.class_name === 'penyihir'
+    ? 'Magic, Crit, lalu DEF/HP'
+    : user.class_name === 'pencuri'
+      ? 'ATK, Crit, lalu HP'
+      : 'ATK, DEF, lalu HP';
+  msg += `<b>🧩 Build Efektif</b> · Prioritas: <i>${classPriority}</i>\n`;
+  msg += `Gear aktif ${v2Equipped.length}/${allowedSlots.length} · Total upgrade +${totalUpgradeTier}`;
+  if (weakestGear) {
+    const weakestAdvice = gearAdvice(user.class_name, weakestGear, weakestGear);
+    msg += ` · Terlemah: <b>${weakestGear.display_name}</b> (${weakestGear.item_power} IP)`;
+    msg += `\n<i>${weakestAdvice.action} Buka /gear untuk pengganti.</i>`;
+  } else {
+    msg += `\n<i>Forge dan pasang equipment agar build terasa pada dungeon.</i>`;
+  }
+  msg += `\n`;
 
   if (v2Equipped.length > 0) {
     const totalItemPower = v2Equipped.reduce((sum, item) => sum + item.item_power, 0);

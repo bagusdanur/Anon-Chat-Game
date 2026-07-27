@@ -27,6 +27,25 @@ function formatStat(statKey, value) {
   return `${label} +${formatNumberId(value)}`;
 }
 
+function isClassCompatible(className, item) {
+  const normalized = String(className || '').toLowerCase();
+  if (normalized === 'penyihir') return item.category !== 'weapon';
+  if (['ksatria', 'pencuri'].includes(normalized)) return item.category !== 'staff';
+  return true;
+}
+
+function gearAdvice(className, item, activeItem = null) {
+  if (!isClassCompatible(className, item)) {
+    return { label: '⛔ Tidak cocok untuk class-mu', action: 'Simpan untuk koleksi atau salvage.' };
+  }
+  if (item.equipped_slot) return { label: '✅ Cocok untuk class-mu · terpasang', action: 'Teruskan upgrade bila build-mu cocok.' };
+  if (!activeItem) return { label: '💡 Cocok untuk class-mu · slot kosong', action: 'Bisa langsung dipasang.' };
+  const delta = Number(item.item_power) - Number(activeItem.item_power);
+  if (delta > 0) return { label: `⬆️ Upgrade dari gear aktif (+${delta} IP)`, action: 'Pasang lalu cek perubahan stat di /profile.' };
+  if (delta <= -8) return { label: `♻️ Aman untuk salvage (${Math.abs(delta)} IP di bawah aktif)`, action: 'Salvage bila tidak dibutuhkan untuk koleksi/set.' };
+  return { label: '➖ Selevel dengan gear aktif', action: 'Bandingkan affix; pilih bonus stat yang cocok untuk class-mu.' };
+}
+
 function setupEquipment(bot, { rateLimitCommand }) {
   const equipment = createEquipmentService(db);
 
@@ -59,6 +78,29 @@ function setupEquipment(bot, { rateLimitCommand }) {
         `<b>Affix</b> adalah bonus stat acak. <b>Socket</b> dapat diisi gem. ` +
         `<b>Terikat akun</b> berarti gear sudah dipakai dan tidak dapat diperdagangkan.\n\n` +
         `<i>Urutan: forge → bandingkan IP/bonus → equip → upgrade/socket → reforge bila perlu.</i>`,
+        { parse_mode: 'HTML' },
+      );
+    }
+
+    if (action === 'compare') {
+      const instanceId = resolveGearNumber(ctx.chat.id, args[1]);
+      if (!instanceId) return ctx.reply('Gunakan: /gear compare [nomor gear].');
+      const item = equipment.getInstance(ctx.chat.id, instanceId);
+      const active = equipment.list(ctx.chat.id)
+        .find(candidate => candidate.category === item.category && candidate.equipped_slot);
+      const user = getOrCreateUser(ctx.chat.id);
+      const advice = gearAdvice(user.class_name, item, active);
+      const affixes = item.affixes.map(affix => formatStat(affix.stat_key, affix.stat_value)).join(' · ') || 'Tanpa affix';
+      const activeText = active
+        ? `${active.display_name} +${active.upgrade_tier} · ${active.item_power} IP`
+        : 'Slot kosong';
+      const delta = active ? Number(item.item_power) - Number(active.item_power) : null;
+      return ctx.reply(
+        `<b>⚖️ BANDINGKAN GEAR [${args[1]}]</b>\n\n` +
+        `<b>${item.display_name}</b> +${item.upgrade_tier} · ${item.item_power} IP\n` +
+        `Affix: ${affixes}\n\n` +
+        `Aktif: <b>${activeText}</b>${delta !== null ? ` · ${delta >= 0 ? '+' : ''}${delta} IP` : ''}\n` +
+        `<b>${advice.label}</b>\n<i>${advice.action}</i>`,
         { parse_mode: 'HTML' },
       );
     }
@@ -172,30 +214,24 @@ function setupEquipment(bot, { rateLimitCommand }) {
         : '🔓 Bisa diperdagangkan';
       const set = item.set_id ? `\n   🧩 Set: ${item.set_id}` : '';
       const active = activeByCategory.get(item.category);
-      const comparison = item.equipped_slot
-        ? '✅ Sedang dipakai untuk build aktif'
-        : !active
-          ? '💡 Slot masih kosong — bisa langsung dipasang'
-          : item.item_power > active.item_power
-            ? `⬆️ Lebih tinggi +${item.item_power - active.item_power} IP dari equipment aktif`
-            : item.item_power < active.item_power
-              ? `⬇️ Lebih rendah ${active.item_power - item.item_power} IP dari equipment aktif`
-              : '➖ IP setara dengan equipment aktif — bandingkan bonus stat';
+      const user = getOrCreateUser(ctx.chat.id);
+      const advice = gearAdvice(user.class_name, item, active);
       return `${item.equipped_slot ? '✅ TERPASANG' : '▫️ TERSIMPAN'}  <code>[${index + 1}]</code> <b>${item.display_name}</b>\n` +
         `   ${CATEGORY_LABELS[item.category] || item.category} · ${item.rarity} · Item Lv.${item.item_level} · Upgrade +${item.upgrade_tier}\n` +
         `   💪 <b>${item.item_power} IP</b> · ✨ Kualitas <b>${item.quality}/100</b>\n` +
         `   🎲 ${affixes}\n` +
         `   💎 ${sockets}\n` +
         `   ${status}${set}\n` +
-        `   ${comparison}\n` +
-        `   ➡️ /gear equip ${index + 1} · /gear upgrade ${index + 1} · /gear reforge ${index + 1} · /gear salvage ${index + 1}`;
+        `   ${advice.label}\n` +
+        `   ➡️ /gear compare ${index + 1} · /gear equip ${index + 1} · /gear upgrade ${index + 1} · /gear reforge ${index + 1} · /gear salvage ${index + 1}`;
     });
     return ctx.reply(
       `<b>🛡 EQUIPMENT</b>\n` +
       `<i>Gear unik dengan IP, kualitas, bonus acak, socket, dan set. Halaman ${page}/${totalPages}.</i>\n\n` +
       `${lines.join('\n\n')}\n\n` +
       `<b>💡 Apa itu IP/Quality?</b> Ketik /gear help\n` +
-      `<i>/equip [nomor] · /upgrade [nomor] memakai nomor yang sama dengan /gear\n` +
+      `<i>/gear compare [nomor] menjelaskan pilihan terbaik untuk build-mu\n` +
+      `/equip [nomor] · /upgrade [nomor] memakai nomor yang sama dengan /gear\n` +
       `Forge loot equipment: /gear forge [nomor equipment dari /inv]\n` +
       `Gem: /gear socket [gear] [slot] [nomor gem /inv]` +
       `${totalPages > 1 ? `\nHalaman: /gear page [1-${totalPages}]` : ''}</i>`,
@@ -261,4 +297,4 @@ function setupEquipment(bot, { rateLimitCommand }) {
   });
 }
 
-module.exports = { setupEquipment, formatNumberId, formatStat };
+module.exports = { setupEquipment, formatNumberId, formatStat, isClassCompatible, gearAdvice };
