@@ -51,7 +51,7 @@ const HELP_PAGES = [
       '/tower — Endless Tower\n' +
       '/worldboss — boss global asynchronous\n' +
       '/raid — weekly raid untuk party\n\n' +
-      'Equipment v2, affix, gem, dan set bonus aktif pada seluruh formula combat.',
+      'Equipment, affix, gem, dan set bonus aktif pada seluruh formula combat.',
   },
   {
     id: 'dungeon',
@@ -70,6 +70,7 @@ const HELP_PAGES = [
     text:
       '/gear — satu-satunya daftar equipment bernomor\n' +
       '/gear help — arti IP, Quality, affix, socket, binding\n' +
+      '/gear compare [nomor] — bandingkan dengan gear aktif dan rekomendasi build\n' +
       '/gear forge [nomor /inv] — konversi equipment lama\n' +
       '/gear equip [nomor gear] — pasang dan bind\n' +
       '/gear socket [gear] [slot] [nomor gem /inv]\n' +

@@ -14,6 +14,7 @@
     "simulate:combat": "node scripts/combatBalanceSimulation.js",
     "simulate:dungeon": "node scripts/dungeonBalanceSimulation.js",
     "simulate:equipment": "node scripts/equipmentBalanceSimulation.js",
+    "simulate:progression": "node scripts/progressionSimulation.js",
     "simulate:saga": "node scripts/simulate_live_service_saga.js",
     "build:patches": "node data/patch_loader.js",
     "migration:dry-run": "node scripts/migrationDryRun.js",

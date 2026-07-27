@@ -75,8 +75,8 @@ function determineNextStep(state) {
     if (state.level < recommendedLevel && !state.hasParty) {
       return {
         key: 'prepare', title: `Persiapan: ${quest.title}`, command: '/hunt',
-        detail: `Target berikutnya ${objective.label}. Kamu Lv.${state.level}; solo direkomendasikan Lv.${recommendedLevel}. Naikkan level/gear atau bentuk duo.`,
-        unlock: `Saat siap, gunakan /dungeon solo ${dungeonNumber} atau buat party untuk /dungeon duo ${dungeonNumber}.`,
+        detail: `Target ${objective.label}. Kamu Lv.${state.level}; solo direkomendasikan Lv.${recommendedLevel}. Hunt untuk level, lalu forge/pasang gear lewat /gear. Ramuan HP bisa dibeli di /shop bila diperlukan.`,
+        unlock: `Saat siap, gunakan /dungeon solo ${dungeonNumber}; duo memberi bonus loot setelah partner menyetujui undangan.`,
       };
     }
     return {
@@ -84,7 +84,7 @@ function determineNextStep(state) {
       command: state.hasParty
         ? `/dungeon duo ${dungeonNumber}`
         : `/dungeon solo ${dungeonNumber}`,
-      detail: `Taklukkan target dungeon: ${objective.current}/${objective.target}.`,
+      detail: `Taklukkan target dungeon: ${objective.current}/${objective.target}. Siapkan gear aktif dan maksimal satu ramuan heal per room.`,
       unlock: state.nextQuestTitle
         ? `Berikutnya terbuka: ${state.nextQuestTitle}.`
         : 'Chapter selesai; aktivitas lanjutan dan endgame menjadi tujuan berikutnya.',
@@ -144,10 +144,10 @@ function getClassBuildAdvice(className) {
       gearFocus: 'Pedang/Senjata Fisik + Heavy Armor (Cari Bonus ATK% & DEF)',
       skillCombo: '1️⃣ Guard Stance (Def) ➔ 2️⃣ Tebasan Berat (Burst)',
       commands: [
-        { cmd: '/gear', desc: 'Kelola & pasang equipment V1/V2' },
+        { cmd: '/gear', desc: 'Kelola, bandingkan, dan pasang equipment' },
         { cmd: '/skill', desc: 'Atur kombinasi loadout skill' },
         { cmd: '/inv', desc: 'Pakai potion & periksa item dropped' },
-        { cmd: '/gear reforge [nomor]', desc: 'Acak ulang stat tambahan gear V2' },
+        { cmd: '/gear reforge [nomor]', desc: 'Acak ulang stat tambahan gear' },
         { cmd: '/gear socket [gear] [slot] [gem /inv]', desc: 'Pasang Gem HP & DEF pada gear' },
       ],
     };
