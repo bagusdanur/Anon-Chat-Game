@@ -347,6 +347,38 @@ test('long dungeon combat supports persisted tactical turns', () => {
   db.close();
 });
 
+test('solo long dungeon skill cooldown decreases on subsequent turns', () => {
+  const db = createTestDb();
+  publishSkills(db, loadSkills());
+  publishDungeons(db, loadDungeons());
+  db.prepare(`
+    INSERT INTO rpg_user_skills (user_id,skill_id,rank,equipped_slot,unlocked_at)
+    VALUES ('1','ksatria_heavy_slash',1,1,1)
+  `).run();
+  const dungeon = createLongDungeonService(db, { random: () => 0.5 });
+  let session = dungeon.startSolo('1', 'goblin_ruins').session;
+  session = dungeon.advance('1', session.id, session.state_version, 'left').session;
+
+  session = dungeon.advance(
+    '1', session.id, session.state_version, 'skill_ksatria_heavy_slash',
+  ).session;
+  assert.equal(
+    session.state.combat.skillCooldowns['1'].ksatria_heavy_slash,
+    2,
+  );
+  session = dungeon.advance('1', session.id, session.state_version, 'attack').session;
+  assert.equal(
+    session.state.combat.skillCooldowns['1'].ksatria_heavy_slash,
+    1,
+  );
+  session = dungeon.advance('1', session.id, session.state_version, 'defend').session;
+  assert.equal(
+    session.state.combat.skillCooldowns['1'].ksatria_heavy_slash,
+    0,
+  );
+  db.close();
+});
+
 test('long dungeon completion rewards are idempotent and include treasure', () => {
   const db = createTestDb();
   db.prepare("UPDATE rpg_users SET hp=200,max_hp=200,atk=100,def=100 WHERE telegram_user_id='1'").run();

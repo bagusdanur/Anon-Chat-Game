@@ -399,6 +399,14 @@ function createLongDungeonService(db, options = {}) {
     }
     state.hp = Math.max(0, state.hp - incoming);
     if (action !== 'skill' && combat.skillCooldown > 0) combat.skillCooldown--;
+    if (session.mode === 'solo') {
+      const cooldowns = combat.skillCooldowns[String(actor.telegram_user_id)] || {};
+      for (const cooldownSkillId of Object.keys(cooldowns)) {
+        if (cooldownSkillId !== skillId) {
+          cooldowns[cooldownSkillId] = Math.max(0, cooldowns[cooldownSkillId] - 1);
+        }
+      }
+    }
     const actionLabel = skillDefinition?.name || action;
     state.log = `Turn ${combat.turn}: ${actionLabel}${critical ? ' CRIT' : ''} memberi ${dealt} damage · menerima ${incoming} damage`;
     combat.turn++;
