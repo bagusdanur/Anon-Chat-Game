@@ -139,6 +139,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 18 },
     { version: 19 },
     { version: 20 },
+    { version: 21 },
   ]);
   db.close();
 });
@@ -375,6 +376,7 @@ test('long dungeon completion rewards are idempotent and include treasure', () =
     { item_id: 'besi_rongsok', quantity: 3 },
     { item_id: 'herba_kabut', quantity: 1 },
     { item_id: 'ramuan_kecil', quantity: 1 },
+    { item_id: 'reforge_catalyst', quantity: 1 },
   ]);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_dungeon_reward_claims').get().count, 1);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 1);
@@ -1104,7 +1106,7 @@ test('RPG operations telemetry reports economy and invariant anomalies without u
   assert.equal(telemetry.anomalies.invalidInventory, 0);
   assert.equal(telemetry.dungeonBalance.totalRuns, 0);
   assert.equal(telemetry.dungeonBalance.actions, 0);
-  assert.equal(telemetry.migrations[0].version, 20);
+  assert.equal(telemetry.migrations[0].version, 21);
   assert.equal(Array.isArray(telemetry.featureFlags), true);
   assert.equal(JSON.stringify(telemetry).includes('telegram_user_id'), false);
   db.close();

@@ -364,6 +364,36 @@
         { "item": "serpihan_astral", "qty": 8 },
         { "item": "berlian", "qty": 2 }
       ]
+    },
+    {
+      "id": 25,
+      "result": "ruby_gem",
+      "name": "🔴 Ruby Gem dari Debu",
+      "gold": 300,
+      "materials": [
+        { "item": "gem_dust", "qty": 5 },
+        { "item": "lotus_api", "qty": 1 }
+      ]
+    },
+    {
+      "id": 26,
+      "result": "sapphire_gem",
+      "name": "🔵 Sapphire Gem dari Debu",
+      "gold": 300,
+      "materials": [
+        { "item": "gem_dust", "qty": 5 },
+        { "item": "kristal_nexus", "qty": 1 }
+      ]
+    },
+    {
+      "id": 27,
+      "result": "emerald_gem",
+      "name": "🟢 Emerald Gem dari Debu",
+      "gold": 300,
+      "materials": [
+        { "item": "gem_dust", "qty": 5 },
+        { "item": "obsidian_murni", "qty": 1 }
+      ]
     }
   ]
 }

@@ -207,6 +207,13 @@ function createLongDungeonService(db, options = {}) {
           ON CONFLICT(telegram_user_id,item_id) DO UPDATE SET quantity=quantity+1
         `).run(recipientId, signatureMaterial);
       }
+      if (random() < 0.08) {
+        db.prepare(`
+          INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
+          VALUES (?,'reforge_catalyst',1)
+          ON CONFLICT(telegram_user_id,item_id) DO UPDATE SET quantity=quantity+1
+        `).run(recipientId);
+      }
       const gearPools = {
         goblin_ruins: ['pedang_karatan', 'tongkat_ranting'],
         spider_nest: ['jubah_terkutuk', 'cincin_perak'],

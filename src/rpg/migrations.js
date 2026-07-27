@@ -761,6 +761,20 @@ const MIGRATIONS = [
         ('gem_dust','Debu Gem','material','uncommon',12,NULL);
     `,
   },
+  {
+    version: 21,
+    name: 'limited_shop_purchase_tracking',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_shop_purchase_limits (
+        user_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        item_id TEXT NOT NULL REFERENCES items_catalog(item_id),
+        period_key TEXT NOT NULL,
+        quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (user_id,item_id,period_key)
+      );
+    `,
+  },
 ];
 
 function quoteSql(value) {

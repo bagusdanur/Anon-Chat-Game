@@ -49,6 +49,17 @@ function getCraftingConfig() {
   return [];
 }
 
+function shopWeekKey(timestamp = Math.floor(Date.now() / 1000)) {
+  return `week:${Math.floor(Number(timestamp) / (7 * 24 * 60 * 60))}`;
+}
+
+function limitedShopPurchased(userId, itemId, timestamp = Math.floor(Date.now() / 1000)) {
+  return Number(db.prepare(`
+    SELECT quantity FROM rpg_shop_purchase_limits
+    WHERE user_id=? AND item_id=? AND period_key=?
+  `).get(String(userId), String(itemId), shopWeekKey(timestamp))?.quantity || 0);
+}
+
 // Cache inventory per user (session, bukan persisten) untuk resolusi ID numerik
 // key: userId, value: [item_id, ...] berurutan sesuai tampilan /inv
 const invCache = new Map();
@@ -144,7 +155,14 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
       const catalog = getCatalogItem(s.item_id);
       if (catalog) {
         msg += `<code>[${s.id}]</code> ${RARITY_EMOJI[catalog.rarity]} <b>${catalog.display_name}</b> — ${s.buy_price.toLocaleString()}g`;
-        msg += user.level < s.min_level ? ` 🔒 Lv.${s.min_level}\n` : '\n';
+        if (user.level < s.min_level) {
+          msg += ` 🔒 Lv.${s.min_level}\n`;
+        } else if (s.weekly_limit) {
+          const remaining = Math.max(0, s.weekly_limit - limitedShopPurchased(userId, s.item_id));
+          msg += ` · sisa mingguan ${remaining}/${s.weekly_limit}\n`;
+        } else {
+          msg += '\n';
+        }
       }
     }
     msg += `\n<i>Ketik /buy [nomor atau nama] untuk membeli</i>\n`;
@@ -174,6 +192,38 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     if (!shopEntry) return ctx.reply(`❌ Item "${input}" tidak ada di toko. Cek /shop.`);
 
     const catalog = getCatalogItem(shopEntry.item_id);
+    if (shopEntry.weekly_limit) {
+      const periodKey = shopWeekKey();
+      const purchased = limitedShopPurchased(userId, shopEntry.item_id);
+      if (purchased >= shopEntry.weekly_limit) {
+        return ctx.reply(`⏳ Batas mingguan ${catalog.display_name} sudah habis.`);
+      }
+      try {
+        db.transaction(() => {
+          if (!spendGold(userId, shopEntry.buy_price)) throw new Error('gold');
+          if (!addItem(userId, shopEntry.item_id)) throw new Error('inventory');
+          db.prepare(`
+            INSERT INTO rpg_shop_purchase_limits
+              (user_id,item_id,period_key,quantity,updated_at)
+            VALUES (?,?,?,?,?)
+            ON CONFLICT(user_id,item_id,period_key)
+            DO UPDATE SET quantity=quantity+1,updated_at=excluded.updated_at
+          `).run(String(userId), shopEntry.item_id, periodKey, 1, Math.floor(Date.now() / 1000));
+        })();
+      } catch (error) {
+        if (error.message === 'gold') {
+          return ctx.reply(`❌ Gold tidak cukup! Butuh ${shopEntry.buy_price}g. Saldo: ${user.gold}g.`);
+        }
+        return ctx.reply('❌ Inventory penuh! Jual atau gunakan item dulu.');
+      }
+      invCache.delete(userId.toString());
+      const remaining = shopEntry.weekly_limit - purchased - 1;
+      return ctx.reply(
+        `✅ Berhasil membeli <b>${catalog.display_name}</b> seharga ${shopEntry.buy_price}g. ` +
+        `Sisa minggu ini: ${remaining}/${shopEntry.weekly_limit}.`,
+        { parse_mode: 'HTML' },
+      );
+    }
     if (spendGold(userId, shopEntry.buy_price)) {
       if (!addItem(userId, shopEntry.item_id)) {
         addGold(userId, shopEntry.buy_price);
@@ -786,6 +836,8 @@ module.exports = {
   resolveInvInput,
   orderInventory,
   INVENTORY_CATEGORY_ORDER,
+  shopWeekKey,
+  limitedShopPurchased,
 };
 
 
