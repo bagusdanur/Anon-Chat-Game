@@ -989,6 +989,8 @@ test('duo tactical dungeon locks both actions before resolving a fair party cycl
   session = result.session;
   assert.equal(session.state.pendingActions, undefined);
   assert.equal(session.state.combat.combo, 2);
+  assert.equal(session.state.combat.enemyTurns, 1);
+  assert.equal(session.state.combat.telegraphNext, false);
   assert.equal(session.state.combat.skillCooldowns['1'].ksatria_guard_stance, 2);
   assert.equal(session.state.combat.skillCooldowns['2'].penyihir_fireball, 2);
   session.state.combat.enemyHp = 999;
@@ -1001,6 +1003,8 @@ test('duo tactical dungeon locks both actions before resolving a fair party cycl
   result = dungeon.advance('2', session.id, session.state_version, 'attack');
   assert.equal(result.success, true);
   assert.equal(result.session.state.combat?.combo || 0, 3);
+  assert.equal(result.session.state.combat.enemyTurns, 2);
+  assert.equal(result.session.state.combat.telegraphNext, true);
   assert.equal(result.session.state.combat.skillCooldowns['1'].ksatria_guard_stance, 1);
   db.close();
 });

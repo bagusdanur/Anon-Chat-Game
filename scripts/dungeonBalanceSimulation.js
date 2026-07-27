@@ -42,7 +42,9 @@ function strongestSkill(classId, level) {
     })[0] || null;
 }
 
-function simulateEncounter({ room, classDef, level, mode, strategy, samples, seed }) {
+function simulateEncounter({
+  room, classDef, level, recommendedLevel, mode, strategy, samples, seed,
+}) {
   const random = seededRandom(seed);
   const stats = classStats(classDef, level);
   const actorPower = stats.atk + stats.def + stats.magic + Math.floor(level * 1.5);
@@ -57,16 +59,20 @@ function simulateEncounter({ room, classDef, level, mode, strategy, samples, see
 
   for (let sample = 0; sample < samples; sample++) {
     let hp = maxHp;
-    let enemyHp = enemyMaxHp(room, mode);
+    let enemyHp = enemyMaxHp(room, mode, recommendedLevel);
     let turn = 0;
     let cooldown = 0;
     let combo = 0;
+    let enemyTurns = 0;
     while (hp > 0 && enemyHp > 0 && turn < 100) {
       const actors = mode === 'duo' ? 2 : 1;
+      const telegraphNext = (enemyTurns + 1) % 3 === 0;
       for (let actor = 0; actor < actors && hp > 0 && enemyHp > 0; actor++) {
         let action = 'attack';
         let activeSkillMultiplier;
-        if (strategy === 'rotation' && cooldown === 0 && skillMultiplier) {
+        if (strategy === 'rotation' && telegraphNext) {
+          action = 'defend';
+        } else if (strategy === 'rotation' && cooldown === 0 && skillMultiplier) {
           action = 'skill';
           activeSkillMultiplier = skillMultiplier;
           cooldown = skillCooldown;
@@ -91,7 +97,11 @@ function simulateEncounter({ room, classDef, level, mode, strategy, samples, see
           mode,
           action,
           defeated: enemyHp <= 0,
+          deferIncoming: actor < actors - 1,
+          telegraphed: telegraphNext,
+          mitigationOverride: strategy === 'rotation' && telegraphNext ? 0.25 : undefined,
         });
+        if (enemyHp > 0 && actor === actors - 1) enemyTurns++;
         hp = Math.max(0, hp - received);
         totalDamage += received;
         if (mode === 'duo' && action !== 'combo') combo = Math.min(3, combo + 1);
@@ -126,6 +136,7 @@ for (const dungeon of dungeons) {
                 room,
                 classDef,
                 level,
+                recommendedLevel: dungeon.recommended_level || dungeon.min_level,
                 mode,
                 strategy,
                 samples,
@@ -152,4 +163,3 @@ for (const dungeon of dungeons) {
 }
 
 console.table(rows);
-

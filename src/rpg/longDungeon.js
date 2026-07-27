@@ -50,8 +50,14 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
         ? Object.entries(viewerCooldowns).filter(([, value]) => value > 0)
           .map(([, value]) => `${value}T`).join('/')
         : 'siap';
-      text += `\n⚔️ Combat cycle: <b>${combat?.turn || 1}</b> · Skill CD-mu: <b>${cdText}</b>`;
-      text += `\n\n💡 <i>Attack stabil · Defend mengurangi damage · Skill kuat dengan cooldown.</i>`;
+      text += `\n⚔️ Combat cycle: <b>${(combat?.enemyTurns || 0) + 1}</b> · Skill CD-mu: <b>${cdText}</b>`;
+      if (combat?.telegraphNext) {
+        text += `\n\n🚨 <b>SERANGAN BESAR TERDETEKSI!</b>\n`;
+        text += session.mode === 'duo'
+          ? `🛡 <i>Keduanya pilih Defend untuk perlindungan maksimal cycle ini.</i>`
+          : `🛡 <i>Pilih Defend untuk meredam serangan berikutnya.</i>`;
+      }
+      text += `\n\n💡 <i>Attack stabil · Defend membaca telegraph · Skill kuat dengan cooldown.</i>`;
       if (session.mode === 'duo') {
         text += `\n🤝 Energi Combo: <b>${combat?.combo || 0}/3</b>`;
         text += `\n⚠️ <i>Kedua pemain wajib memilih. Aksi baru diproses saat status 2/2.</i>`;

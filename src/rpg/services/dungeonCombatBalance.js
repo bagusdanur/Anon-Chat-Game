@@ -1,6 +1,7 @@
-function enemyMaxHp(room, mode = 'solo') {
-  const base = Math.max(8, Number(room.enemy.power) * (room.type === 'boss' ? 4 : 3));
-  return Math.floor(base * (mode === 'duo' ? 1.8 : 1));
+function enemyMaxHp(room, mode = 'solo', recommendedLevel = 1) {
+  const base = Math.max(8, Number(room.enemy.power) * (room.type === 'boss' ? 6 : 4));
+  const levelScale = 1 + Math.max(0, Number(recommendedLevel) - 10) * 0.025;
+  return Math.floor(base * levelScale * (mode === 'duo' ? 1.65 : 1));
 }
 
 function combinedPower(actorPower, allyPower = 0, hasAlly = false) {
@@ -9,7 +10,11 @@ function combinedPower(actorPower, allyPower = 0, hasAlly = false) {
 
 function actionMultiplier({ action, skillMultiplier, defensiveSkill = false }) {
   if (action === 'combo') return 1.1;
-  if (action === 'skill') return defensiveSkill ? 0.2 : (Number(skillMultiplier) || 0.8);
+  if (action === 'skill') {
+    if (defensiveSkill) return 0.2;
+    const configured = Number(skillMultiplier);
+    return configured > 0 ? 0.45 + configured * 0.25 : 0.8;
+  }
   if (action === 'defend') return 0.25;
   return 0.5;
 }
@@ -29,11 +34,23 @@ function outgoingDamage({
   return damage;
 }
 
-function incomingDamage({ enemyDamage, mode = 'solo', action, defensiveSkill = false, defeated = false }) {
-  if (defeated) return 0;
+function incomingDamage({
+  enemyDamage,
+  mode = 'solo',
+  action,
+  defensiveSkill = false,
+  defeated = false,
+  deferIncoming = false,
+  telegraphed = false,
+  mitigationOverride,
+}) {
+  if (defeated || deferIncoming) return 0;
   const incomingScale = mode === 'duo' ? 1.2 : 1;
-  const mitigation = action === 'defend' || defensiveSkill ? 0.35 : action === 'combo' ? 0.5 : 1;
-  return Math.max(1, Math.floor(Number(enemyDamage) * incomingScale * mitigation));
+  const mitigation = mitigationOverride ?? (
+    action === 'defend' || defensiveSkill ? 0.35 : action === 'combo' ? 0.5 : 1
+  );
+  const telegraphScale = telegraphed ? 1.75 : 1;
+  return Math.max(1, Math.floor(Number(enemyDamage) * incomingScale * mitigation * telegraphScale));
 }
 
 module.exports = {

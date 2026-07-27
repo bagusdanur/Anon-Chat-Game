@@ -10,9 +10,9 @@ const {
 test('shared dungeon balance formulas preserve production tactical values', () => {
   const combat = { type: 'combat', enemy: { power: 20, damage: 10 } };
   const boss = { type: 'boss', enemy: { power: 20, damage: 10 } };
-  assert.equal(enemyMaxHp(combat, 'solo'), 60);
-  assert.equal(enemyMaxHp(boss, 'solo'), 80);
-  assert.equal(enemyMaxHp(boss, 'duo'), 144);
+  assert.equal(enemyMaxHp(combat, 'solo'), 80);
+  assert.equal(enemyMaxHp(boss, 'solo'), 120);
+  assert.equal(enemyMaxHp(boss, 'duo'), 198);
   assert.equal(combinedPower(100, 80, true), 124);
   assert.equal(combinedPower(100, 15, false), 115);
   assert.equal(outgoingDamage({
@@ -20,8 +20,17 @@ test('shared dungeon balance formulas preserve production tactical values', () =
   }), 50);
   assert.equal(outgoingDamage({
     power: 100, action: 'skill', skillMultiplier: 2, random: () => 0.5,
-  }), 200);
+  }), 95);
   assert.equal(incomingDamage({
     enemyDamage: 10, mode: 'duo', action: 'defend',
   }), 4);
+  assert.equal(incomingDamage({
+    enemyDamage: 10, mode: 'duo', action: 'attack', deferIncoming: true,
+  }), 0);
+  assert.equal(incomingDamage({
+    enemyDamage: 10, mode: 'solo', action: 'attack', telegraphed: true,
+  }), 17);
+  assert.equal(incomingDamage({
+    enemyDamage: 10, mode: 'solo', action: 'defend', telegraphed: true,
+  }), 6);
 });

@@ -122,7 +122,11 @@ function createLongDungeonService(db, options = {}) {
   }
 
   function enemyMaxHp(session, room) {
-    return calculateEnemyMaxHp(room, session.mode);
+    return calculateEnemyMaxHp(
+      room,
+      session.mode,
+      session.definition.recommended_level || session.definition.min_level,
+    );
   }
 
   function awardCompletion(session) {
@@ -209,7 +213,7 @@ function createLongDungeonService(db, options = {}) {
     return success && state.hp > 0 ? room.success : room.failure;
   }
 
-  function resolveTacticalTurn(session, room, actor, ally, action) {
+  function resolveTacticalTurn(session, room, actor, ally, action, options = {}) {
     const state = session.state;
     const actorPower = calculatePower(actor);
     const allyPower = ally ? calculatePower(ally) : Math.floor(actorPower * 0.15);
@@ -223,6 +227,8 @@ function createLongDungeonService(db, options = {}) {
         turn: 1,
         skillCooldown: 0,
         combo: 0,
+        enemyTurns: 0,
+        telegraphNext: false,
       };
     }
     const combat = state.combat;
@@ -285,7 +291,14 @@ function createLongDungeonService(db, options = {}) {
       action,
       defensiveSkill: isDefensiveSkill,
       defeated,
+      deferIncoming: options.deferIncoming,
+      telegraphed: combat.telegraphNext,
+      mitigationOverride: options.mitigationOverride,
     });
+    if (!defeated && !options.deferIncoming) {
+      combat.enemyTurns = (combat.enemyTurns || 0) + 1;
+      combat.telegraphNext = (combat.enemyTurns + 1) % 3 === 0;
+    }
     state.hp = Math.max(0, state.hp - incoming);
     if (action !== 'skill' && combat.skillCooldown > 0) combat.skillCooldown--;
     const actionLabel = skillDefinition?.name || action;
@@ -564,11 +577,24 @@ function createLongDungeonService(db, options = {}) {
           nextRoomId = autoResolve(session, room, combined);
         } else if (session.mode === 'duo' && cycleActions) {
           const orderedIds = session.state.turnOrder || [session.owner_id, session.partner_id];
+          const defendCount = Object.values(cycleActions)
+            .filter(actionId => actionId === 'defend').length;
+          const partyMitigation = defendCount >= 2 ? 0.25 : defendCount === 1 ? 0.55 : undefined;
           let tactical = null;
-          for (const actorId of orderedIds) {
+          for (const [actorIndex, actorId] of orderedIds.entries()) {
             const actor = String(actorId) === String(session.owner_id) ? owner : partner;
             const ally = actor === owner ? partner : owner;
-            tactical = resolveTacticalTurn(session, room, actor, ally, cycleActions[String(actorId)]);
+            tactical = resolveTacticalTurn(
+              session,
+              room,
+              actor,
+              ally,
+              cycleActions[String(actorId)],
+              {
+                deferIncoming: actorIndex < orderedIds.length - 1,
+                mitigationOverride: partyMitigation,
+              },
+            );
             if (!tactical.success) return tactical;
             nextRoomId = tactical.nextRoomId;
             if (nextRoomId !== room.id) break;
