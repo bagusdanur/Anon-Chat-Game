@@ -70,6 +70,15 @@ const upgradeConfirmCache = new Map();
 
 // UX-03: Cache untuk pending sell confirmation (item epic/legendary)
 const sellConfirmCache = new Map();
+const UPGRADE_ORE_ITEM_ID = 'ore_upgrade';
+const ORE_CONVERSION_RATES = Object.freeze({
+  besi_rongsok: 1,
+  tembaga: 2,
+  batu_bara: 2,
+  besi: 3,
+  perak: 5,
+  emas_ore: 8,
+});
 
 function resolveShopInput(input, level = 1) {
   // Bisa angka (ID) atau string (item_id)
@@ -136,15 +145,17 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
 
     let slotNum = 1;
     let msg = `🎒 <b>Inventaris</b> — 💰 ${user.gold}g\n\n`;
-    const upgradeOreIds = getGameSettings().upgrade_settings.allowed_ores || [];
+    const upgradeOreIds = Object.keys(ORE_CONVERSION_RATES);
     const oreBreakdown = upgradeOreBreakdown(items, upgradeOreIds);
+    const upgradeOre = items.find(item => item.item_id === UPGRADE_ORE_ITEM_ID);
 
     for (const [cat, label] of Object.entries(categories)) {
       if (!grouped[cat]) continue;
       msg += `<b>${label}</b>\n`;
       for (const item of grouped[cat]) {
         const tierStr = item.upgrade_tier > 0 ? ` (+${item.upgrade_tier})` : '';
-        const upgradeTag = upgradeOreIds.includes(item.item_id) ? ' · ⛏️ bahan upgrade' : '';
+        const conversionRate = ORE_CONVERSION_RATES[item.item_id];
+        const upgradeTag = conversionRate ? ` · 🔥 ${conversionRate} Ore/buah` : '';
         msg += `<code>[${slotNum}]</code> ${RARITY_EMOJI[item.rarity]} ${item.display_name}${tierStr} x${item.quantity}${upgradeTag}\n`;
         orderedIds.push(item.item_id);
         slotNum++;
@@ -154,17 +165,77 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
 
     invCache.set(userId.toString(), orderedIds);
 
+    msg += `<b>⛏️ Ore Upgrade: ${upgradeOre?.quantity || 0}</b> · dipakai oleh /upgrade\n`;
     if (oreBreakdown.total > 0) {
       const numbered = oreBreakdown.entries.map(item => {
         const number = orderedIds.indexOf(item.itemId) + 1;
-        return `[${number}] ${item.name} x${item.quantity}`;
+        return `[${number}] ${item.name} x${item.quantity} → ${ORE_CONVERSION_RATES[item.itemId]} Ore/buah`;
       });
-      msg += `<b>⛏️ Stok Bahan Upgrade: ${oreBreakdown.total} bijih</b>\n`;
-      msg += `<i>${numbered.join(' → ')}\nUpgrade memakai bahan dari kiri terlebih dahulu.</i>\n\n`;
+      msg += `<i>Bahan yang bisa dilebur:\n${numbered.join('\n')}\nGunakan /ore convert [nomor] [jumlah].</i>\n\n`;
+    } else {
+      msg += `<i>Gunakan /ore untuk panduan peleburan material.</i>\n\n`;
     }
 
     msg += `<i>Gunakan nomor: /use 1 • /sell 2 • /upgrade 3</i>`;
     ctx.reply(msg, { parse_mode: 'HTML' });
+  });
+
+  // ===== /ore — saldo dan konversi material menjadi Ore Upgrade =====
+  bot.command('ore', rateLimitCommand, (ctx) => {
+    const userId = ctx.chat.id;
+    const user = getOrCreateUser(userId);
+    if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
+
+    const items = orderInventory(getInventory(userId));
+    invCache.set(userId.toString(), items.map(item => item.item_id));
+    const args = ctx.message.text.trim().split(/\s+/).slice(1);
+    const oreBalance = getItem(userId, UPGRADE_ORE_ITEM_ID)?.quantity || 0;
+
+    if (args[0]?.toLowerCase() !== 'convert') {
+      const convertible = items
+        .map((item, index) => ({ ...item, number: index + 1, rate: ORE_CONVERSION_RATES[item.item_id] }))
+        .filter(item => item.rate);
+      let msg = `<b>⛏️ ORE UPGRADE</b>\n\nSaldo: <b>${oreBalance} Ore</b>\n`;
+      msg += `Ore Upgrade adalah bahan resmi untuk /upgrade.\n\n<b>Material yang bisa dilebur:</b>\n`;
+      msg += convertible.length
+        ? convertible.map(item =>
+          `<code>[${item.number}]</code> ${item.display_name} x${item.quantity} → <b>${item.rate} Ore/buah</b>`,
+        ).join('\n')
+        : '<i>Belum ada material yang dapat dilebur.</i>';
+      msg += `\n\n<code>/ore convert [nomor /inv] [jumlah]</code>\nContoh: <code>/ore convert 5 6</code>`;
+      return ctx.reply(msg, { parse_mode: 'HTML' });
+    }
+
+    const itemId = resolveInvInput(userId, args[1] || '');
+    const quantity = Number(args[2]);
+    if (!itemId || !Number.isInteger(quantity) || quantity <= 0) {
+      return ctx.reply('Format: <code>/ore convert [nomor /inv] [jumlah]</code>\nContoh: <code>/ore convert 5 6</code>', { parse_mode: 'HTML' });
+    }
+    const rate = ORE_CONVERSION_RATES[itemId];
+    if (!rate) return ctx.reply('❌ Item itu tidak dapat dikonversi menjadi Ore Upgrade.');
+    const source = getItem(userId, itemId);
+    if (!source || source.quantity < quantity) {
+      return ctx.reply(`❌ Material tidak cukup. Tersedia: ${source?.quantity || 0}.`);
+    }
+    const oreReceived = quantity * rate;
+    try {
+      db.transaction(() => {
+        if (!addItem(userId, UPGRADE_ORE_ITEM_ID, oreReceived)) {
+          throw new Error('Inventaris penuh. Kosongkan satu jenis item terlebih dahulu.');
+        }
+        if (!removeItem(userId, itemId, quantity)) throw new Error('Material berubah. Coba lagi.');
+      })();
+    } catch (error) {
+      return ctx.reply(`❌ ${error.message}`);
+    }
+    invCache.delete(userId.toString());
+    return ctx.reply(
+      `🔥 <b>Peleburan Berhasil</b>\n\n` +
+      `${source.display_name} x${quantity} → <b>${oreReceived} Ore Upgrade</b>\n` +
+      `Saldo sekarang: <b>${oreBalance + oreReceived} Ore</b>\n\n` +
+      `<i>Ore ini dapat digunakan melalui /upgrade.</i>`,
+      { parse_mode: 'HTML' },
+    );
   });
 
   // ===== /shop =====
@@ -553,9 +624,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const statType = invItem.category === 'weapon' || invItem.category === 'staff' ? 'ATK/Magic' : 'DEF';
 
     // Hitung total ore yang dimiliki
-    const oreTypes = upgConfig.allowed_ores || [];
-    const oreStock = upgradeOreBreakdown(getInventory(userId), oreTypes);
-    const totalOre = oreStock.total;
+    const totalOre = getItem(userId, UPGRADE_ORE_ITEM_ID)?.quantity || 0;
 
     const canAfford = user.gold >= goldNeeded && totalOre >= oreNeeded;
     const oreStatus = totalOre >= oreNeeded ? `✅ ${totalOre}/${oreNeeded}` : `❌ ${totalOre}/${oreNeeded}`;
@@ -568,9 +637,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
       `📈 Efek: +2 ${statType} permanen\n\n` +
       `<b>Biaya:</b>\n` +
       `💰 Gold: ${goldStatus}\n` +
-      `⛏️ Bahan bijih: ${oreStatus}\n` +
-      `   <i>${oreStock.entries.map(item => `${item.name} x${item.quantity}`).join(' → ') || 'Tidak ada bahan yang cocok'}\n` +
-      `   Dipakai dari kiri terlebih dahulu.</i>\n\n` +
+      `⛏️ Ore Upgrade: ${oreStatus}\n\n` +
       (canAfford ? `_Lanjutkan upgrade?_` : `❌ <b>Material tidak cukup!</b>`);
 
     if (!canAfford) return ctx.reply(previewMsg, { parse_mode: 'HTML' });
@@ -609,12 +676,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     
     const oreNeeded = nextTier <= 3 ? nextTier * upgConfig.base_ore_cost : nextTier * (upgConfig.base_ore_cost - 1);
     const goldNeeded = nextTier <= 3 ? nextTier * upgConfig.base_gold_cost : nextTier * (upgConfig.base_gold_cost * 0.8);
-    const oreTypes = upgConfig.allowed_ores || [];
-    let totalOre = 0;
-    for (const oreId of oreTypes) {
-      const oreItem = getItem(userId, oreId);
-      if (oreItem) totalOre += oreItem.quantity;
-    }
+    const totalOre = getItem(userId, UPGRADE_ORE_ITEM_ID)?.quantity || 0;
 
     if (totalOre < oreNeeded) {
       return ctx.answerCbQuery('Material tidak cukup!', { show_alert: true });
@@ -623,15 +685,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     // Atomic: spendGold + removeItem ore + upgradeItem dalam satu transaction
     const upgradeSuccess = db.transaction(() => {
       if (!spendGold(userId, goldNeeded)) return false;
-      let remaining = oreNeeded;
-      for (const oreId of oreTypes) {
-        if (remaining <= 0) break;
-        const oreItem = getItem(userId, oreId);
-        if (!oreItem) continue;
-        const use = Math.min(remaining, oreItem.quantity);
-        removeItem(userId, oreId, use);
-        remaining -= use;
-      }
+      if (!removeItem(userId, UPGRADE_ORE_ITEM_ID, oreNeeded)) return false;
       upgradeItem(userId, itemId);
       return true;
     })();
@@ -865,6 +919,7 @@ module.exports = {
   shopWeekKey,
   limitedShopPurchased,
   upgradeOreBreakdown,
+  ORE_CONVERSION_RATES,
 };
 
 

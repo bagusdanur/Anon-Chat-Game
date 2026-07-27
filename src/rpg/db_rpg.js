@@ -187,6 +187,7 @@ const SEED_ITEMS = [
   { item_id: 'besi',           display_name: '🔩 Besi',           category: 'material', rarity: 'uncommon', sell_price: 20,  effect_json: null },
   { item_id: 'perak',          display_name: '⬜ Perak',          category: 'material', rarity: 'rare',     sell_price: 50,  effect_json: null },
   { item_id: 'emas_ore',       display_name: '🟡 Bijih Emas',     category: 'material', rarity: 'epic',     sell_price: 150, effect_json: null },
+  { item_id: 'ore_upgrade',    display_name: '⛏️ Ore Upgrade',    category: 'material', rarity: 'uncommon', sell_price: 0,   effect_json: null },
   { item_id: 'berlian',        display_name: '💎 Berlian',        category: 'material', rarity: 'legendary',sell_price: 300, effect_json: null },
   { item_id: 'fragmen_naga',   display_name: '🐉 Fragmen Naga',   category: 'material', rarity: 'legendary',sell_price: 250, effect_json: null },
   { item_id: 'sisik_naga',     display_name: '🐉 Sisik Naga',     category: 'material', rarity: 'legendary',sell_price: 0,   effect_json: null },

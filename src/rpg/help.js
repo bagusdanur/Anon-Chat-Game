@@ -80,6 +80,9 @@ const HELP_PAGES = [
       '/profession — tujuh profession\n' +
       '/gather herb — gathering Herbalism\n' +
       '/craft — Smithing/Alchemy, equipment, potion, dan gem (termasuk Debu Gem)\n' +
+      '/ore — saldo dan daftar material peleburan Ore Upgrade\n' +
+      '/ore convert [nomor /inv] [jumlah] — lebur material; material langka tidak pernah dipakai otomatis\n' +
+      '/upgrade [nomor /inv] — upgrade legacy memakai Ore Upgrade\n' +
       '/salvage [nomor /inv] — bongkar equipment\n' +
       '/refine [nomor /inv] — refinement material\n' +
       '/market — daftar listing bernomor\n' +

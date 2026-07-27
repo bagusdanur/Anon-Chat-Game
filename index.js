@@ -746,6 +746,7 @@ const botCommands = [
   { command: 'equip',    description: '🗡️ Equip item legacy' },
   { command: 'unequip',  description: '📤 Lepas equipment legacy' },
   { command: 'upgrade',  description: '⬆️ Upgrade item legacy' },
+  { command: 'ore',      description: '⛏️ Konversi bahan Ore Upgrade' },
   { command: 'daily',    description: '🎁 Hadiah harian' },
 ];
 
