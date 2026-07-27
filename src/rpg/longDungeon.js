@@ -159,7 +159,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
         { parse_mode: 'HTML' },
       );
     }
-    if (objective.target !== dungeonId) {
+    if (objective.targetId !== dungeonId) {
       return ctx.reply(
         `<b>INFO ALUR CAMPAIGN</b>\n\nDungeon cerita yang aktif: <b>${objective.label}</b>.\n` +
         `Jalankan: <code>${flow.next.command}</code>`,
