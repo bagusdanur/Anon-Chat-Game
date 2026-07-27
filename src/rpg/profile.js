@@ -5,7 +5,7 @@ const { Markup } = require('telegraf');
 const {
   CLASS_DEFS, xpToNextLevel, calcStats,
   getOrCreateUser, createUser, getCurrentEnergy, getDungeonCooldown,
-  getCurrentHp, getEquippedBonus, getEquipped, CLASS_EQUIP_SLOTS
+  getCurrentHp, getEquippedBonus, getEquipped, CLASS_EQUIP_SLOTS, MAX_ENERGY
 } = require('./db_rpg');
 const { progressBar, hpBar, statLine, divider, kvPair, footer, sectionHeader } = require('../format');
 const { db } = require('../db');
@@ -104,7 +104,7 @@ function renderProfile(user) {
 
   const dmgType  = cls.damageType === 'magic' ? '🔮 Magic' : '⚔️ Physical';
   const streak   = user.win_streak || 0;
-  const nextEMin = energy < 10
+  const nextEMin = energy < MAX_ENERGY
     ? (3 - Math.floor(((Date.now() / 1000) - user.energy_last_update) / 60) % 3)
     : 0;
 
@@ -126,12 +126,12 @@ function renderProfile(user) {
   // ── Bars ────────────────────────────────────
   const hpFilled  = Math.min(10, Math.round((Math.max(0, effectiveHp) / effectiveMaxHp) * 10));
   const xpFilled  = Math.min(10, Math.round((user.xp / nextXp) * 10));
-  const enFilled  = Math.min(10, Math.round((energy / 10) * 10));
+  const enFilled  = Math.min(10, Math.round((energy / MAX_ENERGY) * 10));
 
   msg += `❤️ <b>HP</b>  ${'█'.repeat(hpFilled)}${'░'.repeat(10 - hpFilled)} <code>${effectiveHp}/${effectiveMaxHp}</code>\n`;
   msg += `✨ <b>XP</b>  ${'█'.repeat(xpFilled)}${'░'.repeat(10 - xpFilled)} <code>${user.xp}/${nextXp}</code>\n`;
-  msg += `⚡ <b>EN</b>  ${'█'.repeat(enFilled)}${'░'.repeat(10 - enFilled)} <code>${energy}/10</code>`;
-  if (energy < 10) msg += `  <i>(+1 ~${nextEMin}m)</i>`;
+  msg += `⚡ <b>EN</b>  ${'█'.repeat(enFilled)}${'░'.repeat(10 - enFilled)} <code>${energy}/${MAX_ENERGY}</code>`;
+  if (energy < MAX_ENERGY) msg += `  <i>(+1 ~${nextEMin}m)</i>`;
   msg += `\n`;
   msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 
@@ -156,9 +156,13 @@ function renderProfile(user) {
   const slotEmoji = { weapon: '⚔️', staff: '🪄', armor: '🛡️', accessory: '💍' };
   const slotLabel = { weapon: 'Weapon', staff: 'Staff', armor: 'Armor', accessory: 'Accessory' };
 
-  msg += `<b>🗡️ Equipment</b>\n`;
+  msg += `<b>🗡️ Perlengkapan Aktif</b>\n`;
   for (const slot of allowedSlots) {
-    msg += `${slotEmoji[slot]} ${slotLabel[slot].padEnd(9)}: ${renderSlot(equipped[slot])}\n`;
+    const forged = v2Equipped.find(item => item.equipped_slot === slot);
+    const shown = forged
+      ? `<b>${forged.display_name}</b> +${forged.upgrade_tier} · Lv.${forged.item_level} · ${forged.item_power} IP`
+      : renderSlot(equipped[slot]);
+    msg += `${slotEmoji[slot]} ${slotLabel[slot].padEnd(9)}: ${shown}\n`;
   }
 
   // Bonus equip ringkas
@@ -173,7 +177,7 @@ function renderProfile(user) {
 
   if (v2Equipped.length > 0) {
     const totalItemPower = v2Equipped.reduce((sum, item) => sum + item.item_power, 0);
-    msg += `\n<b>💠 Equipment V2</b> · Total <b>${totalItemPower} IP</b>\n`;
+    msg += `\n<b>💠 Detail Perlengkapan Tempaan</b> · Total <b>${totalItemPower} IP</b>\n`;
     for (const item of v2Equipped) {
       const gearNumber = v2Items.findIndex(candidate => candidate.id === item.id) + 1;
       const bonuses = item.affixes.length

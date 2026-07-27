@@ -775,6 +775,21 @@ const MIGRATIONS = [
       );
     `,
   },
+  {
+    version: 22,
+    name: 'energy_capacity_and_daily_activity_bonus',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_energy_bonus_receipts (
+        user_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        period_key TEXT NOT NULL,
+        bonus_type TEXT NOT NULL,
+        amount INTEGER NOT NULL CHECK (amount > 0),
+        reference_id TEXT,
+        created_at INTEGER NOT NULL,
+        PRIMARY KEY (user_id,period_key,bonus_type)
+      );
+    `,
+  },
 ];
 
 function quoteSql(value) {

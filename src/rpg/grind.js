@@ -3,7 +3,7 @@
 const {
   getOrCreateUser, getCurrentEnergy, spendEnergy, getCurrentHp,
   addXp, addGold, addItem, getItem, updateHp, CLASS_DEFS,
-  incrementQuestProgress, getEquippedItem, getEquippedBonus
+  incrementQuestProgress, getEquippedItem, getEquippedBonus, MAX_ENERGY
 } = require('./db_rpg');
 const { RARITY_EMOJI } = require('./profile');
 const { getGameSettings } = require('./config');
@@ -110,7 +110,7 @@ function setupGrind(bot, { rateLimitCommand }) {
     if (energy < energyCost) {
       return ctx.reply(
         `⚡ <b>Energi tidak cukup!</b>\n\n` +
-        `Energi: <b>${energy}/10</b> (butuh ${energyCost})\n` +
+        `Energi: <b>${energy}/${MAX_ENERGY}</b> (butuh ${energyCost})\n` +
         `<i>Regen +1 setiap 3 menit otomatis</i>\n` +
         `atau /use ramuan_energi`,
         { parse_mode: 'HTML' }
@@ -235,7 +235,7 @@ function setupGrind(bot, { rateLimitCommand }) {
     const energyCost = 1;
     const energy = getCurrentEnergy(user);
     if (energy < energyCost) {
-      return ctx.reply(`⚡ <b>Energi tidak cukup!</b>\nEnergi: <b>${energy}/10</b> (butuh ${energyCost})\n<i>Regen +1 tiap 3 menit</i>`, { parse_mode: 'HTML' });
+      return ctx.reply(`⚡ <b>Energi tidak cukup!</b>\nEnergi: <b>${energy}/${MAX_ENERGY}</b> (butuh ${energyCost})\n<i>Regen +1 tiap 3 menit</i>`, { parse_mode: 'HTML' });
     }
 
     spendEnergy(userId, energyCost);
@@ -284,10 +284,10 @@ function setupGrind(bot, { rateLimitCommand }) {
     const user = getOrCreateUser(userId);
     if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
 
-    const energyCost = 3;
+    const energyCost = 2;
     const energy = getCurrentEnergy(user);
     if (energy < energyCost) {
-      return ctx.reply(`⚡ <b>Energi tidak cukup!</b>\nEnergi: <b>${energy}/10</b> (butuh ${energyCost})\n<i>Regen +1 tiap 3 menit</i>`, { parse_mode: 'HTML' });
+      return ctx.reply(`⚡ <b>Energi tidak cukup!</b>\nEnergi: <b>${energy}/${MAX_ENERGY}</b> (butuh ${energyCost})\n<i>Regen +1 tiap 3 menit</i>`, { parse_mode: 'HTML' });
     }
 
     spendEnergy(userId, energyCost);

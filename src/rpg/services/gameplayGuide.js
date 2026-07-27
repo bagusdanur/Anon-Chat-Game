@@ -1,3 +1,5 @@
+const { MAX_ENERGY } = require('../db_rpg');
+
 function determineNextStep(state) {
   if (!state.hasCharacter) {
     return {
@@ -37,7 +39,7 @@ function determineNextStep(state) {
       state.level < (state.activeQuest.objective.recommendedLevel || 7)) {
     return {
       key: 'energy', title: 'Istirahat dan pulihkan energi', command: '/inv',
-      detail: `Energi ${state.energy}/10. Hunt membutuhkan 2 energi; regen +1 setiap 3 menit.`,
+      detail: `Energi ${state.energy}/${MAX_ENERGY}. Hunt dan mine membutuhkan 2 energi; regen +1 setiap 3 menit.`,
       unlock: 'Saat energi minimal 2, lanjutkan hunt atau aktivitas profesi ringan.',
     };
   }

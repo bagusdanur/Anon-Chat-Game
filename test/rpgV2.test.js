@@ -83,6 +83,8 @@ function createTestDb() {
       magic_atk INTEGER NOT NULL DEFAULT 0,
       crit_rate REAL NOT NULL DEFAULT 0.05,
       crit_multi REAL NOT NULL DEFAULT 1.5,
+      energy_current INTEGER NOT NULL DEFAULT 10,
+      energy_last_update INTEGER NOT NULL DEFAULT 0,
       updated_at INTEGER NOT NULL DEFAULT 0
     );
     CREATE TABLE rpg_inventory (
@@ -140,6 +142,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 19 },
     { version: 20 },
     { version: 21 },
+    { version: 22 },
   ]);
   db.close();
 });
@@ -399,8 +402,10 @@ test('long dungeon completion rewards are idempotent and include treasure', () =
     session = result.session;
   }
   assert.equal(session.status, 'completed');
-  const user = db.prepare('SELECT level, xp, gold FROM rpg_users WHERE telegram_user_id = ?').get('1');
-  assert.deepEqual(user, { level: 3, xp: 49, gold: 1111 });
+  const user = db.prepare(
+    'SELECT level, xp, gold, energy_current FROM rpg_users WHERE telegram_user_id = ?',
+  ).get('1');
+  assert.deepEqual(user, { level: 3, xp: 49, gold: 1111, energy_current: 13 });
   const inventory = db.prepare(
     'SELECT item_id, quantity FROM rpg_inventory WHERE telegram_user_id = ? ORDER BY item_id',
   ).all('1');
@@ -413,6 +418,7 @@ test('long dungeon completion rewards are idempotent and include treasure', () =
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_dungeon_reward_claims').get().count, 1);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 1);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_equipment_instances').get().count, 1);
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_energy_bonus_receipts').get().count, 1);
   db.close();
 });
 
@@ -1165,7 +1171,7 @@ test('RPG operations telemetry reports economy and invariant anomalies without u
   assert.equal(telemetry.anomalies.invalidInventory, 0);
   assert.equal(telemetry.dungeonBalance.totalRuns, 0);
   assert.equal(telemetry.dungeonBalance.actions, 0);
-  assert.equal(telemetry.migrations[0].version, 21);
+  assert.equal(telemetry.migrations[0].version, 22);
   assert.equal(Array.isArray(telemetry.featureFlags), true);
   assert.equal(JSON.stringify(telemetry).includes('telegram_user_id'), false);
   db.close();

@@ -2,6 +2,7 @@
 // Layer database khusus untuk sistem RPG persistent
 const { db } = require('../db');
 const { runRpgMigrations } = require('./migrations');
+const MAX_ENERGY = 15;
 
 // ===== SCHEMA =====
 db.exec(`
@@ -307,9 +308,9 @@ function createUser(userId, className) {
     (telegram_user_id, class_name, level, xp, gold, hp, max_hp, atk, def,
      magic_atk, crit_rate, crit_multi, phys_resist, magic_resist,
      energy_current, energy_last_update, last_dungeon_at, created_at, updated_at)
-    VALUES (?, ?, 1, 0, 0, ?, ?, ?, ?, ?, ?, ?, 0, 0, 10, ?, NULL, ?, ?)
+    VALUES (?, ?, 1, 0, 0, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, NULL, ?, ?)
   `).run(id, className, stats.max_hp, stats.max_hp, stats.atk, stats.def,
-         stats.magic_atk, stats.crit_rate, stats.crit_multi, now, now, now);
+         stats.magic_atk, stats.crit_rate, stats.crit_multi, MAX_ENERGY, now, now, now);
   return db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(id);
 }
 
@@ -318,7 +319,7 @@ function getCurrentEnergy(user) {
   const now = Math.floor(Date.now() / 1000);
   const elapsedMin = Math.floor((now - user.energy_last_update) / 60);
   const regen = Math.floor(elapsedMin / 3); // 3 menit per +1 energi (full dari 0 = 27 menit)
-  return Math.min(10, user.energy_current + regen);
+  return Math.min(MAX_ENERGY, user.energy_current + regen);
 }
 
 function spendEnergy(userId, cost) {
@@ -820,6 +821,7 @@ function getEquippedBonus(userId) {
 }
 
 module.exports = {
+  MAX_ENERGY,
   CLASS_DEFS, calcStats, xpToNextLevel,
   getOrCreateUser, createUser,
   getCurrentEnergy, spendEnergy, getCurrentHp,

@@ -7,7 +7,7 @@ const {
   getCatalogItem, upgradeItem, updateHp,
   getCurrentHp, logTransaction, addXp, addGold, spendGold,
   incrementQuestProgress,
-  equipItem, unequipSlot, getEquipped, getEquippedBonus, GOLD_CAP, INVENTORY_CAP
+  equipItem, unequipSlot, getEquipped, getEquippedBonus, GOLD_CAP, INVENTORY_CAP, MAX_ENERGY
 } = require('./db_rpg');
 const { RARITY_EMOJI } = require('./profile');
 const { getGameSettings } = require('./config');
@@ -438,12 +438,12 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
       msg += `❤️ HP dipulihkan +${healAmount} (${newHp}/${user.max_hp})`;
     } else if (effect.energy_restore) {
       const currentEnergy = getCurrentEnergy(user);
-      const newEnergy = Math.min(10, currentEnergy + effect.energy_restore);
+      const newEnergy = Math.min(MAX_ENERGY, currentEnergy + effect.energy_restore);
       // Update energy directly
       const now = Math.floor(Date.now() / 1000);
       db.prepare('UPDATE rpg_users SET energy_current = ?, energy_last_update = ?, updated_at = ? WHERE telegram_user_id = ?')
         .run(newEnergy, now, now, userId.toString());
-      msg += `⚡ Energi dipulihkan +${effect.energy_restore} (${newEnergy}/10)`;
+      msg += `⚡ Energi dipulihkan +${effect.energy_restore} (${newEnergy}/${MAX_ENERGY})`;
     } else {
       msg += `Efek tidak diketahui.`;
     }

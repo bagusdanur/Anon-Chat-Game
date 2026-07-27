@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { createLedgerService } = require('./ledger');
 const { createEquipmentService } = require('./equipment');
+const { MAX_ENERGY } = require('../db_rpg');
 const {
   enemyMaxHp: calculateEnemyMaxHp,
   combinedPower,
@@ -170,6 +171,24 @@ function createLongDungeonService(db, options = {}) {
       `).run(session.id, recipientId, rewardKey, JSON.stringify(reward), timestamp);
       if (claim.changes === 0) continue;
       claimed = true;
+      const periodKey = new Date(timestamp * 1000).toISOString().slice(0, 10);
+      const energyBonuses = [
+        { type: 'daily_dungeon_clear', amount: 3 },
+        ...(session.mode === 'duo' ? [{ type: 'daily_duo_activity', amount: 2 }] : []),
+      ];
+      for (const bonus of energyBonuses) {
+        const receipt = db.prepare(`
+          INSERT OR IGNORE INTO rpg_energy_bonus_receipts
+            (user_id,period_key,bonus_type,amount,reference_id,created_at)
+          VALUES (?,?,?,?,?,?)
+        `).run(recipientId, periodKey, bonus.type, bonus.amount, String(session.id), timestamp);
+        if (receipt.changes > 0) {
+          db.prepare(`
+            UPDATE rpg_users SET energy_current=MIN(?,energy_current+?),updated_at=?
+            WHERE telegram_user_id=?
+          `).run(MAX_ENERGY, bonus.amount, timestamp, recipientId);
+        }
+      }
       if (reward.gold) {
       db.prepare('UPDATE rpg_users SET gold = MIN(50000, gold + ?), updated_at = ? WHERE telegram_user_id = ?')
           .run(reward.gold, timestamp, recipientId);
