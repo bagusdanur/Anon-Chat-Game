@@ -41,16 +41,23 @@ function setupWorld(bot, { rateLimitCommand }) {
       SELECT count(1) count FROM rpg_party_members
       WHERE party_id=(SELECT party_id FROM rpg_party_members WHERE user_id=?)
     `).get(String(ctx.chat.id)).count;
-    const nextGuide = progress.exploration_points < 3
-      ? 'Eksplorasi sampai memperoleh 3 poin petunjuk.'
-      : 'Petunjuk lengkap—lanjutkan ke Adventure Reruntuhan Goblin.';
+    const isIntroRegion = progress.campaign_chapter === 1;
+    const finalStep = currentStep >= campaign.steps.length - 1;
+    const explorationStatus = isIntroRegion
+      ? `${Math.min(progress.exploration_points, 3)}/3 petunjuk`
+      : `${progress.exploration_points} poin region`;
+    const nextGuide = finalStep
+      ? 'Objective aktif siap dituntaskan—buka /dungeon untuk memilih dungeon dan mode solo/duo.'
+      : isIntroRegion && progress.exploration_points < 3
+        ? `Eksplorasi sampai memperoleh ${Math.max(0, 3 - progress.exploration_points)} poin petunjuk lagi.`
+        : 'Lanjutkan /explore untuk membuka langkah campaign berikutnya.';
     return ctx.reply(
       `<b>🌍 ${progress.region_name}</b>\n\n` +
       `${progress.description}\n\n` +
       `<b>📍 STATUS SEKARANG</b>\n` +
       `Campaign: <b>${campaign.title}</b>\n` +
       `Objective: ${campaign.steps[currentStep]}\n` +
-      `Petunjuk eksplorasi: <b>${progress.exploration_points}/3</b>\n` +
+      `Progress eksplorasi: <b>${explorationStatus}</b>\n` +
       `Party: <b>${partySize >= 2 ? `🤝 ${partySize} pemain` : '🧍 Solo'}</b>\n\n` +
       `<b>➡️ LANGKAH BERIKUTNYA</b>\n${nextGuide}\n\n` +
       `<i>💡 Encounter biasa cepat/otomatis. Dungeon dan boss memakai turn-based.</i>`,
