@@ -11,6 +11,7 @@
     "dashboard:build": "cd dashboard && npx vite build",
     "simulate:economy": "node scripts/economySimulation.js",
     "simulate:combat": "node scripts/combatBalanceSimulation.js",
+    "simulate:dungeon": "node scripts/dungeonBalanceSimulation.js",
     "simulate:saga": "node scripts/simulate_live_service_saga.js",
     "build:patches": "node data/patch_loader.js",
     "migration:dry-run": "node scripts/migrationDryRun.js",

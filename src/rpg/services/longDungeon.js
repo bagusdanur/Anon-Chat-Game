@@ -2,6 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const { createLedgerService } = require('./ledger');
 const { createEquipmentService } = require('./equipment');
+const {
+  enemyMaxHp: calculateEnemyMaxHp,
+  combinedPower,
+  outgoingDamage,
+  incomingDamage,
+} = require('./dungeonCombatBalance');
 require('../../../data/patch_loader');
 
 const DUNGEONS_FILE = path.join(__dirname, '../../../data/rpg_dungeons.json');
@@ -116,8 +122,7 @@ function createLongDungeonService(db, options = {}) {
   }
 
   function enemyMaxHp(session, room) {
-    const base = Math.max(8, room.enemy.power * (room.type === 'boss' ? 4 : 3));
-    return Math.floor(base * (session.mode === 'duo' ? 1.8 : 1));
+    return calculateEnemyMaxHp(room, session.mode);
   }
 
   function awardCompletion(session) {
@@ -208,7 +213,7 @@ function createLongDungeonService(db, options = {}) {
     const state = session.state;
     const actorPower = calculatePower(actor);
     const allyPower = ally ? calculatePower(ally) : Math.floor(actorPower * 0.15);
-    const power = actorPower + Math.floor(allyPower * (ally ? 0.3 : 1));
+    const power = combinedPower(actorPower, allyPower, Boolean(ally));
     const maxEnemyHp = enemyMaxHp(session, room);
     if (!state.combat || state.combat.roomId !== room.id) {
       state.combat = {
@@ -251,13 +256,17 @@ function createLongDungeonService(db, options = {}) {
       : value;
     const skillEffect = skillDefinition?.effect || {};
     const isDefensiveSkill = ['guard', 'shield', 'provoke', 'weaken'].includes(skillEffect.type);
-    const multiplier = action === 'combo' ? 1.1
-      : skillId ? (isDefensiveSkill ? 0.2 : (ranked(skillEffect.multiplier) || 0.8))
-        : action === 'skill' ? 0.8 : action === 'defend' ? 0.25 : 0.5;
-    let dealt = Math.max(1, Math.floor(power * multiplier * (0.9 + random() * 0.2)));
     const critRate = Math.min(0.5, Math.max(0, actor.crit_rate || 0));
     const critical = random() < critRate;
-    if (critical) dealt = Math.max(1, Math.floor(dealt * (actor.crit_multi || 1.5)));
+    const dealt = outgoingDamage({
+      power,
+      action: skillId ? 'skill' : action,
+      random,
+      critical,
+      critMultiplier: actor.crit_multi || 1.5,
+      skillMultiplier: skillId ? ranked(skillEffect.multiplier) : undefined,
+      defensiveSkill: isDefensiveSkill,
+    });
     combat.enemyHp = Math.max(0, combat.enemyHp - dealt);
     if (action === 'skill') combat.skillCooldown = 2;
     if (skillId) {
@@ -270,13 +279,13 @@ function createLongDungeonService(db, options = {}) {
       combat.combo = action === 'combo' ? 0 : Math.min(3, combat.combo + 1);
     }
     const defeated = combat.enemyHp <= 0;
-    const incomingScale = session.mode === 'duo' ? 1.2 : 1;
-    const incoming = defeated
-      ? 0
-      : Math.max(1, Math.floor(
-        room.enemy.damage * incomingScale *
-        (action === 'defend' || isDefensiveSkill ? 0.35 : action === 'combo' ? 0.5 : 1),
-      ));
+    const incoming = incomingDamage({
+      enemyDamage: room.enemy.damage,
+      mode: session.mode,
+      action,
+      defensiveSkill: isDefensiveSkill,
+      defeated,
+    });
     state.hp = Math.max(0, state.hp - incoming);
     if (action !== 'skill' && combat.skillCooldown > 0) combat.skillCooldown--;
     const actionLabel = skillDefinition?.name || action;
