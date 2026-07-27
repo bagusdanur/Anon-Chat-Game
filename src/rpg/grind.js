@@ -10,7 +10,9 @@ const { getGameSettings } = require('./config');
 const { db } = require('../db');
 const { createProfessionService } = require('./services/professions');
 const { createEquipmentService } = require('./services/equipment');
-const { buildHuntMonster, simulateHuntBattle } = require('./services/combatBalance');
+const {
+  buildHuntMonster, simulateHuntBattle, huntXpMultiplier,
+} = require('./services/combatBalance');
 
 const professionService = createProfessionService(db);
 const equipmentV2 = createEquipmentService(db);
@@ -159,6 +161,7 @@ function setupGrind(bot, { rateLimitCommand }) {
       const settings = getGameSettings();
       let xpGain   = Math.floor(randInt(...tier.xp) * settings.exp_multiplier);
       let goldGain = Math.floor(randInt(...tier.gold) * settings.gold_multiplier);
+      xpGain = Math.floor(xpGain * huntXpMultiplier(user.level));
       
       if (user.class_name === 'penyihir') xpGain = Math.floor(xpGain * 1.25);
       if (user.class_name === 'pencuri') {

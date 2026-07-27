@@ -5,6 +5,7 @@ const {
   classStats,
   buildHuntMonster,
   simulateHuntBattle,
+  huntXpMultiplier,
 } = require('../src/rpg/services/combatBalance');
 const dungeons = require('../data/rpg_dungeons.json');
 const raids = require('../data/rpg_raids.json');
@@ -38,6 +39,14 @@ test('hunt tidak kembali menjadi pertarungan satu turn tanpa tekanan HP', () => 
       assert.ok(averageHpCost <= 0.60, `${classDef.id} Lv${level} menerima damage berlebihan`);
     }
   }
+});
+
+test('hunt catch-up XP memperpendek grind menuju dungeon pertama', () => {
+  assert.equal(huntXpMultiplier(1), 3);
+  assert.equal(huntXpMultiplier(3), 3);
+  assert.equal(huntXpMultiplier(4), 2.5);
+  assert.equal(huntXpMultiplier(7), 2.5);
+  assert.equal(huntXpMultiplier(8), 1);
 });
 
 test('dungeon pertama menyatakan level rekomendasi boss dengan jujur', () => {

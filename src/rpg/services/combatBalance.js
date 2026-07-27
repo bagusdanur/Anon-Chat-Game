@@ -73,8 +73,15 @@ function simulateHuntBattle(player, monster, random = Math.random) {
   };
 }
 
+function huntXpMultiplier(level) {
+  if (Number(level) <= 3) return 3;
+  if (Number(level) <= 7) return 2.5;
+  return 1;
+}
+
 module.exports = {
   classStats,
   buildHuntMonster,
   simulateHuntBattle,
+  huntXpMultiplier,
 };
