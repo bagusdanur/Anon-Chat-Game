@@ -1,4 +1,4 @@
-const { MAX_ENERGY } = require('../db_rpg');
+const MAX_ENERGY = 15;
 
 function determineNextStep(state) {
   if (!state.hasCharacter) {
