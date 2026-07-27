@@ -4,7 +4,7 @@ const searchCooldowns = new Map();
 
 const MESSAGE_LIMIT = 20;
 const MESSAGE_WINDOW = 60 * 1000; // 1 menit
-const COMMAND_COOLDOWN = 1500;    // 1.5 detik — untuk command umum (silent)
+const COMMAND_COOLDOWN = 1500;    // 1.5 detik — untuk command umum
 const SEARCH_COOLDOWN = 3 * 1000; // 3 detik — khusus /search & /next (dengan reply)
 
 // ===== PERIODIC CLEANUP =====
@@ -80,12 +80,14 @@ function rateLimitMessage(ctx, next) {
   return next();
 }
 
-// Untuk command umum (RPG, shop, inv, dll) — silent skip tanpa reply
-// Mencegah spam tapi tidak mengganggu UX navigasi
+// Untuk command umum (RPG, shop, inv, dll). Jangan dibuang diam-diam:
+// pada Telegram pemain akan mengira command atau bot sedang rusak.
 function rateLimitCommand(ctx, next) {
   const chatId = ctx.chat?.id;
   if (!chatId) return next();
-  if (!checkCommandCooldown(chatId)) return; // silent — tidak reply
+  if (!checkCommandCooldown(chatId)) {
+    return ctx.reply('⏳ Command baru saja diproses. Tunggu sekitar 1 detik lalu coba lagi.');
+  }
   return next();
 }
 

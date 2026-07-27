@@ -13,7 +13,10 @@ function setupWorld(bot, { rateLimitCommand }) {
   publishCampaign(db, loadCampaign());
   const campaignService = createCampaignService(db);
   const world = createWorldService(db, {
-    onEvent: (userId, event) => campaign.recordEvent(userId, event),
+    // Selalu rekam hasil eksplorasi ke campaign service yang aktif. Sebelumnya
+    // callback ini mengarah ke variabel `campaign` yang hanya ada di worldMenu,
+    // sehingga /explore berhenti sebelum sempat mengirim hasil ke pemain.
+    onEvent: (userId, event) => campaignService.recordEvent(userId, event),
   });
 
   function requireWorld(ctx) {
