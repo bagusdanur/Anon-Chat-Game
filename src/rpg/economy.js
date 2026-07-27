@@ -97,6 +97,21 @@ function resolveInvInput(userId, input) {
   return input.toLowerCase();
 }
 
+function upgradeOreBreakdown(items, allowedOreIds) {
+  const allowed = new Set(allowedOreIds || []);
+  const entries = (items || [])
+    .filter(item => allowed.has(item.item_id) && Number(item.quantity) > 0)
+    .map(item => ({
+      itemId: item.item_id,
+      name: item.display_name,
+      quantity: Number(item.quantity),
+    }));
+  return {
+    total: entries.reduce((sum, item) => sum + item.quantity, 0),
+    entries,
+  };
+}
+
 function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
   const directTrade = createDirectTradeService(db);
   // ===== /inv =====
@@ -121,13 +136,16 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
 
     let slotNum = 1;
     let msg = `🎒 <b>Inventaris</b> — 💰 ${user.gold}g\n\n`;
+    const upgradeOreIds = getGameSettings().upgrade_settings.allowed_ores || [];
+    const oreBreakdown = upgradeOreBreakdown(items, upgradeOreIds);
 
     for (const [cat, label] of Object.entries(categories)) {
       if (!grouped[cat]) continue;
       msg += `<b>${label}</b>\n`;
       for (const item of grouped[cat]) {
         const tierStr = item.upgrade_tier > 0 ? ` (+${item.upgrade_tier})` : '';
-        msg += `<code>[${slotNum}]</code> ${RARITY_EMOJI[item.rarity]} ${item.display_name}${tierStr} x${item.quantity}\n`;
+        const upgradeTag = upgradeOreIds.includes(item.item_id) ? ' · ⛏️ bahan upgrade' : '';
+        msg += `<code>[${slotNum}]</code> ${RARITY_EMOJI[item.rarity]} ${item.display_name}${tierStr} x${item.quantity}${upgradeTag}\n`;
         orderedIds.push(item.item_id);
         slotNum++;
       }
@@ -135,6 +153,15 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     }
 
     invCache.set(userId.toString(), orderedIds);
+
+    if (oreBreakdown.total > 0) {
+      const numbered = oreBreakdown.entries.map(item => {
+        const number = orderedIds.indexOf(item.itemId) + 1;
+        return `[${number}] ${item.name} x${item.quantity}`;
+      });
+      msg += `<b>⛏️ Stok Bahan Upgrade: ${oreBreakdown.total} bijih</b>\n`;
+      msg += `<i>${numbered.join(' → ')}\nUpgrade memakai bahan dari kiri terlebih dahulu.</i>\n\n`;
+    }
 
     msg += `<i>Gunakan nomor: /use 1 • /sell 2 • /upgrade 3</i>`;
     ctx.reply(msg, { parse_mode: 'HTML' });
@@ -527,11 +554,8 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
 
     // Hitung total ore yang dimiliki
     const oreTypes = upgConfig.allowed_ores || [];
-    let totalOre = 0;
-    for (const oreId of oreTypes) {
-      const oreItem = getItem(userId, oreId);
-      if (oreItem) totalOre += oreItem.quantity;
-    }
+    const oreStock = upgradeOreBreakdown(getInventory(userId), oreTypes);
+    const totalOre = oreStock.total;
 
     const canAfford = user.gold >= goldNeeded && totalOre >= oreNeeded;
     const oreStatus = totalOre >= oreNeeded ? `✅ ${totalOre}/${oreNeeded}` : `❌ ${totalOre}/${oreNeeded}`;
@@ -544,7 +568,9 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
       `📈 Efek: +2 ${statType} permanen\n\n` +
       `<b>Biaya:</b>\n` +
       `💰 Gold: ${goldStatus}\n` +
-      `⛏️ Ore: ${oreStatus}\n\n` +
+      `⛏️ Bahan bijih: ${oreStatus}\n` +
+      `   <i>${oreStock.entries.map(item => `${item.name} x${item.quantity}`).join(' → ') || 'Tidak ada bahan yang cocok'}\n` +
+      `   Dipakai dari kiri terlebih dahulu.</i>\n\n` +
       (canAfford ? `_Lanjutkan upgrade?_` : `❌ <b>Material tidak cukup!</b>`);
 
     if (!canAfford) return ctx.reply(previewMsg, { parse_mode: 'HTML' });
@@ -838,6 +864,7 @@ module.exports = {
   INVENTORY_CATEGORY_ORDER,
   shopWeekKey,
   limitedShopPurchased,
+  upgradeOreBreakdown,
 };
 
 
