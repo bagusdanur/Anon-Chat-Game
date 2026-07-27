@@ -110,7 +110,9 @@ function createEndgameService(db, options = {}) {
       const enemyPower = 12 + floor * 4;
       const win = playerPower * (0.85 + random() * 0.3) >= enemyPower;
       const timestamp = now();
-      const gold = win ? 5 + floor * 2 : 0;
+      const goldReward = win ? 5 + floor * 2 : 0;
+      const attemptNumber = tower.attempts + 1;
+      let creditedGold = 0;
       db.transaction(() => {
         db.prepare(`
           UPDATE rpg_tower_progress SET
@@ -121,18 +123,27 @@ function createEndgameService(db, options = {}) {
           WHERE user_id = ?
         `).run(win ? 1 : 0, floor, win ? 1 : 0, timestamp, timestamp, String(userId));
         if (win) {
+          const balanceBefore = db.prepare(
+            'SELECT gold FROM rpg_users WHERE telegram_user_id = ?',
+          ).get(String(userId)).gold;
           db.prepare('UPDATE rpg_users SET gold = MIN(50000, gold + ?), updated_at = ? WHERE telegram_user_id = ?')
-            .run(gold, timestamp, String(userId));
+            .run(goldReward, timestamp, String(userId));
           const balance = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id = ?').get(String(userId)).gold;
-          ledger.record({
-            entryKey: `tower:${userId}:${floor}`,
-            userId, amount: gold, balanceAfter: balance, reason: 'tower_reward',
-            referenceType: 'tower_floor', referenceId: floor,
-          });
-          addSeasonPoints(userId, 10 + floor, 1, `tower:${userId}:${floor}`);
+          creditedGold = balance - balanceBefore;
+          if (creditedGold > 0) {
+            ledger.record({
+              entryKey: `tower:${userId}:${floor}:attempt:${attemptNumber}`,
+              userId, amount: creditedGold, balanceAfter: balance, reason: 'tower_reward',
+              referenceType: 'tower_floor', referenceId: floor,
+            });
+          }
+          addSeasonPoints(
+            userId, 10 + floor, 1,
+            `tower:${userId}:${floor}:attempt:${attemptNumber}`,
+          );
         }
       })();
-      return { success: true, win, floor, gold, playerPower, enemyPower };
+      return { success: true, win, floor, gold: creditedGold, playerPower, enemyPower };
     },
     syncAchievements(userId) {
       const uid = String(userId);

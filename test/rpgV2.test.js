@@ -569,6 +569,27 @@ test('tower rewards, cooldown, and floor progress are persistent', () => {
   db.close();
 });
 
+test('tower can recover after progress reset without colliding with immutable ledger history', () => {
+  const db = createTestDb();
+  const ledger = createLedgerService(db);
+  ledger.record({
+    entryKey: 'tower:1:1',
+    userId: '1',
+    amount: 7,
+    balanceAfter: 1007,
+    reason: 'tower_reward',
+  });
+  const endgame = createEndgameService(db, {
+    now: () => 2_000_000_000,
+    random: () => 1,
+  });
+  const result = endgame.attemptTower('1');
+  assert.equal(result.success, true);
+  assert.equal(result.floor, 1);
+  assert.equal(endgame.getTower('1').best_floor, 1);
+  db.close();
+});
+
 test('achievements and item collection derive from persistent game state', () => {
   const db = createTestDb();
   const endgame = createEndgameService(db);
