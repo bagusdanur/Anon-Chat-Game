@@ -36,17 +36,22 @@ function setupWorld(bot, { rateLimitCommand }) {
     if (!progress) return ctx.reply('Region awal belum tersedia.');
     const content = JSON.parse(progress.content_json);
     const campaign = content.campaign;
+    const campaignQuests = campaign.list(String(ctx.chat.id));
+    const activeQuest = campaignQuests.find(quest => quest.status === 'active');
+    const campaignDone = campaignQuests.length > 0 && !activeQuest;
     const currentStep = Math.min(progress.campaign_step, campaign.steps.length - 1);
     const partySize = db.prepare(`
       SELECT count(1) count FROM rpg_party_members
       WHERE party_id=(SELECT party_id FROM rpg_party_members WHERE user_id=?)
     `).get(String(ctx.chat.id)).count;
     const isIntroRegion = progress.campaign_chapter === 1;
-    const finalStep = currentStep >= campaign.steps.length - 1;
+    const finalStep = campaignDone || currentStep >= campaign.steps.length - 1;
     const explorationStatus = isIntroRegion
       ? `${Math.min(progress.exploration_points, 3)}/3 petunjuk`
       : `${progress.exploration_points} poin region`;
-    const nextGuide = finalStep
+    const nextGuide = campaignDone
+      ? 'Campaign tersedia selesai—lanjutkan perkembangan melalui /season, /tower, /raid, achievement, collection, dan equipment.'
+      : finalStep
       ? 'Objective aktif siap dituntaskan—buka /dungeon untuk memilih dungeon dan mode solo/duo.'
       : isIntroRegion && progress.exploration_points < 3
         ? `Eksplorasi sampai memperoleh ${Math.max(0, 3 - progress.exploration_points)} poin petunjuk lagi.`
@@ -56,7 +61,7 @@ function setupWorld(bot, { rateLimitCommand }) {
       `${progress.description}\n\n` +
       `<b>📍 STATUS SEKARANG</b>\n` +
       `Campaign: <b>${campaign.title}</b>\n` +
-      `Objective: ${campaign.steps[currentStep]}\n` +
+      `Objective: ${campaignDone ? '<b>Campaign region selesai</b>' : campaign.steps[currentStep]}\n` +
       `Progress eksplorasi: <b>${explorationStatus}</b>\n` +
       `Party: <b>${partySize >= 2 ? `🤝 ${partySize} pemain` : '🧍 Solo'}</b>\n\n` +
       `<b>➡️ LANGKAH BERIKUTNYA</b>\n${nextGuide}\n\n` +
