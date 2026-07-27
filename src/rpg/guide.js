@@ -2,13 +2,15 @@ const { Markup } = require('telegraf');
 const { db } = require('../db');
 const { determineNextStep, getCompletedChecklist, getClassBuildAdvice, formatObjectiveLabel, getSagaHeader, getSagaFooter } = require('./services/gameplayGuide');
 const { createCampaignService } = require('./services/campaign');
+const { getCurrentHp, getCurrentEnergy } = require('./db_rpg');
 
 const campaignService = createCampaignService(db);
 
 function readGuideState(userId) {
   const id = String(userId);
   const user = db.prepare(`
-    SELECT level,gold,hp,max_hp,energy_current FROM rpg_users WHERE telegram_user_id=?
+    SELECT level,gold,hp,max_hp,energy_current,energy_last_update,updated_at
+    FROM rpg_users WHERE telegram_user_id=?
   `).get(id);
   if (!user) return { hasCharacter: false };
   const hasAlias = Boolean(db.prepare('SELECT 1 ok FROM rpg_character_aliases WHERE user_id=?').get(id));
@@ -88,9 +90,9 @@ function readGuideState(userId) {
     hasParty: Boolean(party),
     level: user.level,
     gold: user.gold,
-    hp: user.hp,
+    hp: getCurrentHp(user),
     maxHp: user.max_hp,
-    energy: user.energy_current,
+    energy: getCurrentEnergy(user),
     hasHealingItem,
     regionName: world?.region_name || 'Pinggiran Aldenmoor',
     chapter: activeQuest?.chapter || world?.campaign_chapter || 1,
