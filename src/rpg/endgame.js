@@ -1,4 +1,5 @@
 const { db } = require('../db');
+const { Markup } = require('telegraf');
 const { getOrCreateUser } = require('./db_rpg');
 const { createFeatureFlagService } = require('./services/featureFlags');
 const { createEndgameService } = require('./services/endgame');
@@ -81,6 +82,31 @@ function setupEndgame(bot, { rateLimitCommand }) {
     return ctx.reply(`<b>🎖 ACHIEVEMENTS</b>\n\n${lines.join('\n\n')}`, { parse_mode: 'HTML' });
   });
 
+  function catalogPageView(userId, page = 1, category = null) {
+    const entries = catalog.all(userId);
+    const filtered = category ? entries.filter(item => item.category === category) : entries;
+    const pageSize = 12;
+    const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    const safePage = Math.min(Math.max(1, Number(page) || 1), pages);
+    const visible = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+    const owned = entries.filter(item => item.owned).length;
+    const text =
+      `<b>📖 KATALOG ITEM</b> · ${owned}/${entries.length} ditemukan\n` +
+      `<i>Halaman ${safePage}/${pages}${category ? ` · ${catalog.labels[category]}` : ''}</i>\n\n` +
+      visible.map(item => `${item.owned ? '✅' : '▫️'} <code>[${item.number}]</code> ${item.display_name} <i>${item.rarity}</i>`).join('\n') +
+      `\n\n<i>/catalog [nomor] untuk sumber & kegunaan</i>`;
+    const key = category || 'all';
+    return {
+      text,
+      options: {
+        parse_mode: 'HTML',
+        ...Markup.inlineKeyboard([Array.from({ length: pages }, (_, index) =>
+          Markup.button.callback(`${index + 1}${index + 1 === safePage ? ' ✅' : ''}`, `catalog:page:${key}:${index + 1}`),
+        )]),
+      },
+    };
+  }
+
   bot.command('catalog', rateLimitCommand, ctx => {
     if (!requireCharacter(ctx)) return;
     const entries = catalog.all(ctx.chat.id);
@@ -90,29 +116,22 @@ function setupEndgame(bot, { rateLimitCommand }) {
       const item = entries[number - 1];
       if (!item) return ctx.reply('Nomor katalog tidak valid. Ketik /catalog.');
       return ctx.reply(
-        `<b>📖 [${item.number}] ${item.display_name}</b>\n` +
-        `${catalog.labels[item.category] || item.category} · ${item.rarity}\n` +
-        `${item.owned ? '✅ Sudah ditemukan' : '▫️ Belum ditemukan'}\n\n` +
-        `<b>📍 Cara mendapatkan</b>\n• ${item.sources.join('\n• ')}\n\n` +
+        `<b>📖 [${item.number}] ${item.display_name}</b>\n${catalog.labels[item.category] || item.category} · ${item.rarity}\n` +
+        `${item.owned ? '✅ Sudah ditemukan' : '▫️ Belum ditemukan'}\n\n<b>📍 Cara mendapatkan</b>\n• ${item.sources.join('\n• ')}\n\n` +
         `<b>🛠 Kegunaan</b>\n• ${(item.uses.length ? item.uses : ['Belum ada resep khusus']).join('\n• ')}`,
         { parse_mode: 'HTML' },
       );
     }
-    const categoryMatch = input.match(/^(consumable|material|weapon|staff|armor|accessory)(?:\s+(\d+))?$/);
-    const category = categoryMatch?.[1] || null;
-    const filtered = category ? entries.filter(item => item.category === category) : entries;
-    const page = Math.max(1, Number(categoryMatch?.[2]) || 1);
-    const pageSize = 12;
-    const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
-    const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
-    const owned = entries.filter(item => item.owned).length;
-    return ctx.reply(
-      `<b>📖 KATALOG ITEM</b> · ${owned}/${entries.length} ditemukan\n` +
-      `<i>Halaman ${page}/${pages}${category ? ` · ${catalog.labels[category]}` : ''}</i>\n\n` +
-      visible.map(item => `${item.owned ? '✅' : '▫️'} <code>[${item.number}]</code> ${item.display_name} <i>${item.rarity}</i>`).join('\n') +
-      `\n\n<i>/catalog [nomor] untuk sumber & kegunaan\n/catalog material 2 · /catalog consumable · /catalog weapon</i>`,
-      { parse_mode: 'HTML' },
-    );
+    const match = input.match(/^(consumable|material|weapon|staff|armor|accessory)(?:\s+(\d+))?$/);
+    const view = catalogPageView(ctx.chat.id, Number(match?.[2]) || 1, match?.[1] || null);
+    return ctx.reply(view.text, view.options);
+  });
+
+  bot.action(/^catalog:page:(all|consumable|material|weapon|staff|armor|accessory):(\d+)$/, rateLimitCommand, async ctx => {
+    const category = ctx.match[1] === 'all' ? null : ctx.match[1];
+    const view = catalogPageView(ctx.chat.id, Number(ctx.match[2]), category);
+    await ctx.answerCbQuery();
+    return ctx.editMessageText(view.text, view.options).catch(() => ctx.reply(view.text, view.options));
   });
 
   bot.command('collection', rateLimitCommand, ctx => {
