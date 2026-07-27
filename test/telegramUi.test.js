@@ -23,11 +23,15 @@ test('UI utama tetap ringkas dan memakai input angka untuk daftar pemain', () =>
   const profile = fs.readFileSync(path.join(root, 'src/rpg/profile.js'), 'utf8');
   const guide = fs.readFileSync(path.join(root, 'src/rpg/guide.js'), 'utf8');
   const dungeon = fs.readFileSync(path.join(root, 'src/rpg/longDungeon.js'), 'utf8');
+  const equipment = fs.readFileSync(path.join(root, 'src/rpg/equipment.js'), 'utf8');
 
   assert.match(profile, /LANGKAH BERIKUTNYA/);
   assert.match(profile, /Skill Loadout/);
   assert.match(profile, /formatNumberId\(effectiveHp\)/);
   assert.match(profile, /Campaign utama selesai/);
+  assert.doesNotMatch(profile, /Equipment V2|Perlengkapan Tempaan/);
+  assert.match(equipment, /bot\.command\('equip'/);
+  assert.match(equipment, /bot\.command\('upgrade'/);
   assert.match(guide, /dungeonNumber/);
   assert.match(dungeon, /index \+ 1/);
   assert.doesNotMatch(guide, /<code>\/reforge<\/code>|<code>\/socket<\/code>/);

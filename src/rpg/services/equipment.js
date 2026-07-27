@@ -19,19 +19,9 @@ function calculateItemPower(level, quality, rarity, upgradeTier = 0) {
 }
 
 function upgradeRequirements(tier) {
-  const rules = {
-    1: [['tembaga', 2]], 2: [['tembaga', 3]], 3: [['tembaga', 4]],
-    4: [['besi_rongsok', 3]], 5: [['besi_rongsok', 5]],
-    6: [['perak', 2]], 7: [['perak', 3]], 8: [['perak', 4]],
-    9: [['obsidian_murni', 3]], 10: [['obsidian_murni', 5]],
-    11: [['emas_ore', 3]], 12: [['kristal_nexus', 3]],
-    13: [['air_mata_gerhana', 3]],
-    14: [['air_mata_gerhana', 4], ['inti_antimateri', 1]],
-    15: [['inti_supernova', 1], ['inti_antimateri', 2]],
-  };
   return {
     gold: 100 + (90 * tier) + (25 * tier * tier),
-    materials: (rules[tier] || []).map(([itemId, quantity]) => ({ itemId, quantity })),
+    materials: [{ itemId: 'ore_upgrade', quantity: 2 + (tier * 2) }],
   };
 }
 
@@ -154,6 +144,23 @@ function createEquipmentService(db, options = {}) {
         WHERE id=? AND owner_id=?
       `).run(item.category, now(), item.id, String(userId));
     })();
+    return { success: true, item: getInstance(userId, item.id) };
+  }
+
+  function unequip(userId, slot) {
+    if (!EQUIPMENT_SLOTS.includes(String(slot))) {
+      return { success: false, reason: 'Slot equipment tidak valid.' };
+    }
+    const item = db.prepare(`
+      SELECT e.id,c.display_name FROM rpg_equipment_instances e
+      JOIN items_catalog c ON c.item_id=e.item_id
+      WHERE e.owner_id=? AND e.equipped_slot=?
+    `).get(String(userId), String(slot));
+    if (!item) return { success: false, reason: `Tidak ada equipment aktif di slot ${slot}.` };
+    db.prepare(`
+      UPDATE rpg_equipment_instances SET equipped_slot=NULL,updated_at=?
+      WHERE id=? AND owner_id=?
+    `).run(now(), item.id, String(userId));
     return { success: true, item: getInstance(userId, item.id) };
   }
 
@@ -356,7 +363,7 @@ function createEquipmentService(db, options = {}) {
     })();
   }
 
-  return { getInstance, list, forge, equip, socketGem, bonuses, upgrade, reforge, salvage };
+  return { getInstance, list, forge, equip, unequip, socketGem, bonuses, upgrade, reforge, salvage };
 }
 
 module.exports = {

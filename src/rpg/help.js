@@ -16,7 +16,7 @@ const HELP_PAGES = [
       '<b>Build</b>\n' +
       '/skill — pelajari dan pasang skill\n' +
       '/build — lihat loadout combat\n' +
-      '/gear — equipment v2 dan item power',
+      '/gear — equipment unik dan item power',
   },
   {
     id: 'world',
@@ -58,9 +58,9 @@ const HELP_PAGES = [
   },
   {
     id: 'equipment',
-    title: '🛡 EQUIPMENT V2',
+    title: '🛡 EQUIPMENT',
     text:
-      '/gear — daftar Equipment V2 bernomor\n' +
+      '/gear — satu-satunya daftar equipment bernomor\n' +
       '/gear help — arti IP, Quality, affix, socket, binding\n' +
       '/gear forge [nomor /inv] — konversi equipment lama\n' +
       '/gear equip [nomor gear] — pasang dan bind\n' +
@@ -68,7 +68,7 @@ const HELP_PAGES = [
       '/gear upgrade [nomor gear] — upgrade hingga +15\n' +
       '/gear reforge [nomor gear] — roll ulang affix (butuh katalis)\n' +
       '/gear salvage [nomor gear] — bongkar gear menjadi material\n\n' +
-      'Set tersedia: Dragon Regalia dan Cursed Sovereign. Sistem /equip dan /upgrade lama tetap kompatibel.',
+      'Set tersedia: Dragon Regalia dan Cursed Sovereign. /equip dan /upgrade memakai nomor yang sama dengan /gear; /inv hanya menampilkan material dan consumable.',
   },
   {
     id: 'economy',
@@ -82,7 +82,7 @@ const HELP_PAGES = [
       '/craft — Smithing/Alchemy, equipment, potion, dan gem (termasuk Debu Gem)\n' +
       '/ore — saldo dan daftar material peleburan Ore Upgrade\n' +
       '/ore convert [nomor /inv] [jumlah] — lebur material; material langka tidak pernah dipakai otomatis\n' +
-      '/upgrade [nomor /inv] — upgrade legacy memakai Ore Upgrade\n' +
+      '/upgrade [nomor /gear] — upgrade equipment memakai Ore Upgrade\n' +
       '/salvage [nomor /inv] — bongkar equipment\n' +
       '/refine [nomor /inv] — refinement material\n' +
       '/market — daftar listing bernomor\n' +

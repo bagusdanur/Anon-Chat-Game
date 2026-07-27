@@ -34,10 +34,20 @@ function setupEquipment(bot, { rateLimitCommand }) {
     return resolveNumberedId(equipment.list(userId), input);
   }
 
-  function resolveInventoryNumber(userId, input) {
-    const items = orderInventory(getInventory(userId));
+  function legacyEquipment(userId) {
+    return orderInventory(getInventory(userId)).filter(item =>
+      ['weapon', 'staff', 'armor', 'accessory'].includes(item.category));
+  }
+
+  function resolveInventoryNumber(userId, input, combinedGearNumbers = false) {
+    const items = orderInventory(getInventory(userId)).filter(item =>
+      !['weapon', 'staff', 'armor', 'accessory'].includes(item.category));
     const number = Number(input);
     if (Number.isInteger(number) && number >= 1) {
+      if (combinedGearNumbers) {
+        const offset = equipment.list(userId).length;
+        return legacyEquipment(userId)[number - offset - 1]?.item_id || null;
+      }
       return items[number - 1]?.item_id || null;
     }
     return input || null;
@@ -52,7 +62,7 @@ function setupEquipment(bot, { rateLimitCommand }) {
 
     if (action === 'help') {
       return ctx.reply(
-        `<b>📘 PANDUAN EQUIPMENT V2</b>\n\n` +
+        `<b>📘 PANDUAN EQUIPMENT</b>\n\n` +
         `<b>IP (Item Power)</b> adalah skor untuk membandingkan kekuatan item. ` +
         `IP bukan tambahan damage langsung dan memakai skala ringkas berdasarkan level, rarity, Quality, dan upgrade.\n\n` +
         `<b>Quality</b> adalah kualitas hasil forge 50–100. Quality tinggi memberi IP awal dan tier affix lebih baik.\n\n` +
@@ -64,12 +74,12 @@ function setupEquipment(bot, { rateLimitCommand }) {
     }
 
     if (action === 'forge') {
-      const itemId = resolveInventoryNumber(ctx.chat.id, args[1]);
-      if (!itemId) return ctx.reply('Gunakan: /gear forge [nomor dari /inv]');
+      const itemId = resolveInventoryNumber(ctx.chat.id, args[1], true);
+      if (!itemId) return ctx.reply('Gunakan nomor bagian “Belum Ditempa” dari /gear.');
       const result = equipment.forge(ctx.chat.id, itemId);
       if (!result.success) return ctx.reply(`❌ ${result.reason}`);
       return ctx.reply(
-        `⚒️ <b>${result.item.display_name}</b> berhasil ditempa menjadi Equipment V2.\n` +
+        `⚒️ <b>${result.item.display_name}</b> berhasil menjadi equipment unik.\n` +
         `💪 Kekuatan: <b>${result.item.item_power} IP</b>\n` +
         `✨ Kualitas: <b>${result.item.quality}/100</b>\n` +
         `🎲 ${result.item.affixes.length} bonus acak · ${result.item.sockets.length} socket\n\n` +
@@ -144,8 +154,9 @@ function setupEquipment(bot, { rateLimitCommand }) {
     }
 
     const items = equipment.list(ctx.chat.id);
-    if (!items.length) {
-      return ctx.reply('Belum ada Equipment V2. Buka /inv lalu gunakan /gear forge [nomor].');
+    const legacy = legacyEquipment(ctx.chat.id);
+    if (!items.length && !legacy.length) {
+      return ctx.reply('Belum ada equipment. Dapatkan equipment dari dungeon, crafting, atau loot.');
     }
     const pageSize = 6;
     const requestedPage = action === 'page' ? Number(args[1]) : 1;
@@ -176,15 +187,61 @@ function setupEquipment(bot, { rateLimitCommand }) {
         `   ${status}${set}\n` +
         `   ➡️ /gear equip ${index + 1} · /gear upgrade ${index + 1} · /gear reforge ${index + 1} · /gear salvage ${index + 1}`;
     });
+    const legacyLines = legacy.map((item, index) => {
+      const number = items.length + index + 1;
+      return `<code>[${number}]</code> ${item.display_name} +${item.upgrade_tier || 0} x${item.quantity}` +
+        `\n   ➡️ /gear forge ${number}`;
+    });
     return ctx.reply(
-      `<b>🛡 EQUIPMENT V2</b>\n` +
+      `<b>🛡 EQUIPMENT</b>\n` +
       `<i>Gear unik dengan IP, kualitas, bonus acak, socket, dan set. Halaman ${page}/${totalPages}.</i>\n\n` +
       `${lines.join('\n\n')}\n\n` +
+      `${legacyLines.length ? `<b>📦 Belum Ditempa</b>\n${legacyLines.join('\n')}\n\n` : ''}` +
       `<b>💡 Apa itu IP/Quality?</b> Ketik /gear help\n` +
-      `<i>Forge: /gear forge [nomor /inv]\n` +
+      `<i>/equip [nomor] · /upgrade [nomor] memakai nomor yang sama dengan /gear\n` +
+      `Forge item lama: /gear forge [nomor bagian Belum Ditempa]\n` +
       `Gem: /gear socket [gear] [slot] [nomor gem /inv]` +
       `${totalPages > 1 ? `\nHalaman: /gear page [1-${totalPages}]` : ''}</i>`,
       { parse_mode: 'HTML' },
+    );
+  });
+
+  bot.command('equip', rateLimitCommand, ctx => {
+    if (!getOrCreateUser(ctx.chat.id)) return ctx.reply('Buat karakter dahulu dengan /profile.');
+    const input = ctx.message.text.trim().split(/\s+/)[1];
+    if (!input) return ctx.reply('Buka /gear, lalu gunakan /equip [nomor].');
+    const instanceId = resolveGearNumber(ctx.chat.id, input);
+    if (!instanceId) return ctx.reply('❌ Nomor equipment tidak valid. Buka /gear.');
+    const result = equipment.equip(ctx.chat.id, instanceId);
+    return ctx.reply(result.success
+      ? `✅ ${result.item.display_name} dipasang di slot ${result.item.equipped_slot}.`
+      : `❌ ${result.reason}`);
+  });
+
+  bot.command('unequip', rateLimitCommand, ctx => {
+    if (!getOrCreateUser(ctx.chat.id)) return ctx.reply('Buat karakter dahulu dengan /profile.');
+    const slot = ctx.message.text.trim().split(/\s+/)[1]?.toLowerCase();
+    if (!slot) return ctx.reply('Gunakan /unequip [weapon/staff/armor/accessory].');
+    const result = equipment.unequip(ctx.chat.id, slot);
+    return ctx.reply(result.success
+      ? `✅ ${result.item.display_name} dilepas dari slot ${slot}.`
+      : `❌ ${result.reason}`);
+  });
+
+  bot.command('upgrade', rateLimitCommand, ctx => {
+    if (!getOrCreateUser(ctx.chat.id)) return ctx.reply('Buat karakter dahulu dengan /profile.');
+    const input = ctx.message.text.trim().split(/\s+/)[1];
+    if (!input) return ctx.reply('Buka /gear, lalu gunakan /upgrade [nomor].');
+    const instanceId = resolveGearNumber(ctx.chat.id, input);
+    if (!instanceId) return ctx.reply('❌ Nomor equipment tidak valid. Buka /gear.');
+    const key = `telegram:${ctx.chat.id}:${ctx.message.message_id}:equipment_upgrade`;
+    const result = equipment.upgrade(ctx.chat.id, instanceId, key);
+    if (!result.success) return ctx.reply(`❌ ${result.reason}`);
+    const ore = result.materials.find(item => item.itemId === 'ore_upgrade')?.quantity || 0;
+    return ctx.reply(
+      `⚒️ ${result.item.display_name} berhasil menjadi +${result.item.upgrade_tier}.\n` +
+      `💪 IP ${result.item.item_power} · biaya ${result.goldCost}g + ${ore} Ore Upgrade.\n` +
+      `✅ /profile langsung memakai peningkatan ini.`,
     );
   });
 

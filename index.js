@@ -547,7 +547,7 @@ bot.command('help', (ctx) => {
 });
 
 
-bot.command('equip', rateLimitCommand, (ctx) => {
+bot.command('__legacy_equip_disabled', rateLimitCommand, (ctx) => {
   const userId = ctx.chat.id;
   const args = ctx.message.text.split(' ').slice(1);
   const input = args.join('_').toLowerCase();
@@ -606,7 +606,7 @@ bot.command('equip', rateLimitCommand, (ctx) => {
   ctx.reply(`✅ <b>${result.item}</b> terpasang di slot <b>${result.slot}</b>!`, { parse_mode: 'HTML' });
 });
 
-bot.command('unequip', rateLimitCommand, (ctx) => {
+bot.command('__legacy_unequip_disabled', rateLimitCommand, (ctx) => {
   const userId = ctx.chat.id;
   const args = ctx.message.text.split(' ').slice(1);
   const slot = args[0]?.toLowerCase();
@@ -710,7 +710,7 @@ const botCommands = [
   { command: 'explore',  description: '🧭 Eksplorasi region' },
   { command: 'skill',    description: '✨ Skill tree dan loadout' },
   { command: 'build',    description: '🧩 Build combat aktif' },
-  { command: 'gear',     description: '🛡️ Equipment v2' },
+  { command: 'gear',     description: '🛡️ Equipment karakter' },
   { command: 'dungeon',  description: '🏰 Dungeon panjang turn-based' },
   { command: 'adventure',description: '🧭 Alias menu dungeon' },
   { command: 'party',    description: '👥 Party persisten' },
@@ -743,9 +743,9 @@ const botCommands = [
   { command: 'trade',    description: '🤝 Direct trade aman' },
   { command: 'salvage',  description: '♻️ Bongkar equipment' },
   { command: 'refine',   description: '🔥 Refinement material' },
-  { command: 'equip',    description: '🗡️ Equip item legacy' },
-  { command: 'unequip',  description: '📤 Lepas equipment legacy' },
-  { command: 'upgrade',  description: '⬆️ Upgrade item legacy' },
+  { command: 'equip',    description: '🗡️ Pasang equipment bernomor' },
+  { command: 'unequip',  description: '📤 Lepas equipment aktif' },
+  { command: 'upgrade',  description: '⬆️ Upgrade equipment bernomor' },
   { command: 'ore',      description: '⛏️ Konversi bahan Ore Upgrade' },
   { command: 'daily',    description: '🎁 Hadiah harian' },
 ];

@@ -94,7 +94,8 @@ function resolveInvInput(userId, input) {
   // Auto-populate cache jika kosong (biar /equip 1 tanpa /inv dulu tetep work)
   let cache = invCache.get(userId.toString());
   if (!cache) {
-    const items = orderInventory(getInventory(userId));
+    const items = orderInventory(getInventory(userId)).filter(item =>
+      !['weapon', 'staff', 'armor', 'accessory'].includes(item.category));
     cache = items.map(i => i.item_id);
     invCache.set(userId.toString(), cache);
   }
@@ -129,7 +130,8 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const user = getOrCreateUser(userId);
     if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
 
-    const items = orderInventory(getInventory(userId));
+    const items = orderInventory(getInventory(userId)).filter(item =>
+      !['weapon', 'staff', 'armor', 'accessory'].includes(item.category));
     if (items.length === 0) {
       return ctx.reply('🎒 <b>Inventaris kosong.</b>\n<i>Coba /hunt, /fish, atau /mine untuk mendapatkan item!</i>', { parse_mode: 'HTML' });
     }
@@ -186,7 +188,8 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const user = getOrCreateUser(userId);
     if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
 
-    const items = orderInventory(getInventory(userId));
+    const items = orderInventory(getInventory(userId)).filter(item =>
+      !['weapon', 'staff', 'armor', 'accessory'].includes(item.category));
     invCache.set(userId.toString(), items.map(item => item.item_id));
     const args = ctx.message.text.trim().split(/\s+/).slice(1);
     const oreBalance = getItem(userId, UPGRADE_ORE_ITEM_ID)?.quantity || 0;
@@ -595,7 +598,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
   });
 
   // ===== /upgrade (terima nomor ID dari /inv atau nama) =====
-  bot.command('upgrade', rateLimitCommand, (ctx) => {
+  bot.command('__legacy_upgrade_disabled', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
     const args = ctx.message.text.split(' ').slice(1);
     const input = args.join('_').toLowerCase();

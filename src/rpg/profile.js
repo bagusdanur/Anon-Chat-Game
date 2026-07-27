@@ -5,7 +5,7 @@ const { Markup } = require('telegraf');
 const {
   CLASS_DEFS, xpToNextLevel, calcStats,
   getOrCreateUser, createUser, getCurrentEnergy, getDungeonCooldown,
-  getCurrentHp, getEquippedBonus, getEquipped, CLASS_EQUIP_SLOTS, MAX_ENERGY
+  getCurrentHp, CLASS_EQUIP_SLOTS, MAX_ENERGY
 } = require('./db_rpg');
 const { progressBar, hpBar, statLine, divider, kvPair, footer, sectionHeader } = require('../format');
 const { db } = require('../db');
@@ -52,8 +52,6 @@ function renderProfile(user) {
   const energy = getCurrentEnergy(user);
   const cooldownSecs = getDungeonCooldown(user);
   const hp = getCurrentHp(user);
-  const equip = getEquippedBonus(user.telegram_user_id);
-  const equipped = getEquipped(user.telegram_user_id);
   const v2Bonus = equipmentV2.bonuses(user.telegram_user_id);
   const v2Items = equipmentV2.list(user.telegram_user_id);
   const v2Equipped = v2Items
@@ -87,16 +85,16 @@ function renderProfile(user) {
     'SELECT COALESCE(SUM(quantity),0) count FROM rpg_inventory WHERE telegram_user_id=?',
   ).get(userId).count;
 
-  const totalAtkBonus = equip.atkBonus + (v2Bonus.atk || 0);
-  const totalDefBonus = equip.defBonus + (v2Bonus.def || 0);
-  const totalMagicBonus = equip.magicAtkBonus + (v2Bonus.magic_atk || 0);
+  const totalAtkBonus = v2Bonus.atk || 0;
+  const totalDefBonus = v2Bonus.def || 0;
+  const totalMagicBonus = v2Bonus.magic_atk || 0;
   const effectiveMaxHp = user.max_hp + (v2Bonus.max_hp || 0);
   const effectiveHp = Math.min(effectiveMaxHp, hp + (v2Bonus.max_hp || 0));
   const effectiveAtk    = user.atk + totalAtkBonus;
   const effectiveDef    = user.def + totalDefBonus;
   const effectiveMagic  = (user.magic_atk || 0) + totalMagicBonus;
-  const totalCrit       = Math.min(95, Math.round(((user.crit_rate || 0.05) + equip.critRate + (v2Bonus.crit_rate || 0)) * 100));
-  const totalCritMulti  = Math.round(((user.crit_multi || 1.5) + equip.critMulti) * 100);
+  const totalCrit       = Math.min(95, Math.round(((user.crit_rate || 0.05) + (v2Bonus.crit_rate || 0)) * 100));
+  const totalCritMulti  = Math.round((user.crit_multi || 1.5) * 100);
 
   const dungeonStatus = cooldownSecs > 0
     ? `⏳ ${Math.ceil(cooldownSecs / 60)}m cooldown`
@@ -161,23 +159,23 @@ function renderProfile(user) {
     const forged = v2Equipped.find(item => item.equipped_slot === slot);
     const shown = forged
       ? `<b>${forged.display_name}</b> +${forged.upgrade_tier} · Lv.${forged.item_level} · ${forged.item_power} IP`
-      : renderSlot(equipped[slot]);
+      : '<i>(Kosong)</i>';
     msg += `${slotEmoji[slot]} ${slotLabel[slot].padEnd(9)}: ${shown}\n`;
   }
 
   // Bonus equip ringkas
   const bonusParts = [];
-  if (equip.atkBonus > 0)      bonusParts.push(`ATK+${equip.atkBonus}`);
-  if (equip.defBonus > 0)      bonusParts.push(`DEF+${equip.defBonus}`);
-  if (equip.magicAtkBonus > 0) bonusParts.push(`Magic+${equip.magicAtkBonus}`);
-  if (equip.critRate > 0)      bonusParts.push(`Crit+${Math.round(equip.critRate*100)}%`);
+  if (v2Bonus.atk > 0)         bonusParts.push(`ATK+${formatNumberId(v2Bonus.atk)}`);
+  if (v2Bonus.def > 0)         bonusParts.push(`DEF+${formatNumberId(v2Bonus.def)}`);
+  if (v2Bonus.magic_atk > 0)   bonusParts.push(`Magic+${formatNumberId(v2Bonus.magic_atk)}`);
+  if (v2Bonus.crit_rate > 0)   bonusParts.push(`Crit+${formatNumberId(v2Bonus.crit_rate*100, 1)}%`);
   if (bonusParts.length > 0) {
     msg += `<i>Bonus: ${bonusParts.join(' · ')}</i>\n`;
   }
 
   if (v2Equipped.length > 0) {
     const totalItemPower = v2Equipped.reduce((sum, item) => sum + item.item_power, 0);
-    msg += `\n<b>💠 Detail Perlengkapan Tempaan</b> · Total <b>${totalItemPower} IP</b>\n`;
+    msg += `\n<b>💠 Detail Equipment</b> · Total <b>${totalItemPower} IP</b>\n`;
     for (const item of v2Equipped) {
       const gearNumber = v2Items.findIndex(candidate => candidate.id === item.id) + 1;
       const bonuses = item.affixes.length

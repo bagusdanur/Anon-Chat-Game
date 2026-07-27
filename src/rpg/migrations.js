@@ -790,6 +790,18 @@ const MIGRATIONS = [
       );
     `,
   },
+  {
+    version: 23,
+    name: 'canonical_unique_equipment_and_upgrade_ore',
+    up: `
+      INSERT OR IGNORE INTO items_catalog
+        (item_id,display_name,category,rarity,sell_price,effect_json)
+      VALUES
+        ('ore_upgrade','⛏️ Ore Upgrade','material','uncommon',0,NULL);
+
+      UPDATE rpg_inventory SET equipped=0 WHERE equipped=1;
+    `,
+  },
 ];
 
 function quoteSql(value) {

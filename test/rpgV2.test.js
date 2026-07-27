@@ -144,6 +144,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 20 },
     { version: 21 },
     { version: 22 },
+    { version: 23 },
   ]);
   db.close();
 });
@@ -939,7 +940,7 @@ test('equipment upgrades and reforges are atomic audited gold sinks', () => {
   `).run();
   db.prepare(`
     INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
-    VALUES ('1','upgrade_blade',1),('1','tembaga',10),('1','reforge_catalyst',2)
+    VALUES ('1','upgrade_blade',1),('1','ore_upgrade',100),('1','reforge_catalyst',2)
   `).run();
   const equipment = createEquipmentService(db, { random: () => 0.25, now: () => 2_000_000_000 });
   const instance = equipment.forge('1', 'upgrade_blade').item;
@@ -962,7 +963,9 @@ test('equipment tier costs rise and salvage is confirmed through an idempotent r
   const db = createTestDb();
   for (let tier = 2; tier <= 15; tier++) {
     assert.ok(upgradeRequirements(tier).gold > upgradeRequirements(tier - 1).gold);
-    assert.ok(upgradeRequirements(tier).materials.length > 0);
+    assert.deepEqual(upgradeRequirements(tier).materials, [
+      { itemId: 'ore_upgrade', quantity: 2 + tier * 2 },
+    ]);
   }
   db.prepare(`
     INSERT INTO items_catalog (item_id,display_name,category,rarity,sell_price)
@@ -1212,7 +1215,7 @@ test('RPG operations telemetry reports economy and invariant anomalies without u
   assert.equal(telemetry.anomalies.invalidInventory, 0);
   assert.equal(telemetry.dungeonBalance.totalRuns, 0);
   assert.equal(telemetry.dungeonBalance.actions, 0);
-  assert.equal(telemetry.migrations[0].version, 22);
+  assert.equal(telemetry.migrations[0].version, 23);
   assert.equal(Array.isArray(telemetry.featureFlags), true);
   assert.equal(JSON.stringify(telemetry).includes('telegram_user_id'), false);
   db.close();
