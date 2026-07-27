@@ -32,20 +32,33 @@ function determineNextStep(state) {
     };
   }
   if (objective?.type === 'dungeon_complete') {
-    if (state.level < 7 && !state.hasParty) {
+    const dungeonNumber = objective.dungeonNumber || 1;
+    const recommendedLevel = objective.recommendedLevel || 7;
+    if (state.level < recommendedLevel && !state.hasParty) {
       return {
         key: 'prepare', title: `Persiapan: ${quest.title}`, command: '/hunt',
-        detail: `Objective berikutnya adalah dungeon. Kamu Lv.${state.level}; solo direkomendasikan Lv.7. Naikkan level/gear atau bentuk duo.`,
-        unlock: 'Saat siap, gunakan /dungeon solo 1 atau buat party untuk /dungeon duo 1.',
+        detail: `Target berikutnya ${objective.label}. Kamu Lv.${state.level}; solo direkomendasikan Lv.${recommendedLevel}. Naikkan level/gear atau bentuk duo.`,
+        unlock: `Saat siap, gunakan /dungeon solo ${dungeonNumber} atau buat party untuk /dungeon duo ${dungeonNumber}.`,
       };
     }
     return {
       key: 'dungeon', title: quest.title,
-      command: state.hasParty ? '/dungeon duo 1' : '/dungeon solo 1',
+      command: state.hasParty
+        ? `/dungeon duo ${dungeonNumber}`
+        : `/dungeon solo ${dungeonNumber}`,
       detail: `Taklukkan target dungeon: ${objective.current}/${objective.target}.`,
       unlock: state.nextQuestTitle
         ? `Berikutnya terbuka: ${state.nextQuestTitle}.`
         : 'Chapter selesai; aktivitas lanjutan dan endgame menjadi tujuan berikutnya.',
+    };
+  }
+  if (objective?.type === 'hunt') {
+    return {
+      key: 'hunt', title: quest.title, command: '/hunt',
+      detail: `Kalahkan monster target: ${objective.current}/${objective.target}.`,
+      unlock: state.nextQuestTitle
+        ? `Berikutnya terbuka: ${state.nextQuestTitle}.`
+        : 'Chapter berikutnya akan terbuka setelah target perburuan selesai.',
     };
   }
   if (quest && objective) {
@@ -96,8 +109,8 @@ function getClassBuildAdvice(className) {
         { cmd: '/gear', desc: 'Kelola & pasang equipment V1/V2' },
         { cmd: '/skill', desc: 'Atur kombinasi loadout skill' },
         { cmd: '/inv', desc: 'Pakai potion & periksa item dropped' },
-        { cmd: '/reforge', desc: 'Acak ulang stat tambahan gear V2' },
-        { cmd: '/socket', desc: 'Pasang Gem HP & DEF pada gear' },
+        { cmd: '/gear reforge [nomor]', desc: 'Acak ulang stat tambahan gear V2' },
+        { cmd: '/gear socket [gear] [slot] [gem /inv]', desc: 'Pasang Gem HP & DEF pada gear' },
       ],
     };
   }
@@ -110,8 +123,22 @@ function getClassBuildAdvice(className) {
       commands: [
         { cmd: '/gear', desc: 'Pasang Tongkat & Jubah Magic' },
         { cmd: '/skill', desc: 'Atur loadout skill sihir' },
-        { cmd: '/socket', desc: 'Pasang Gem Magic ATK pada socket' },
-        { cmd: '/reforge', desc: 'Cari stat Magic & Crit Multiplier' },
+        { cmd: '/gear socket [gear] [slot] [gem /inv]', desc: 'Pasang Gem Magic ATK pada socket' },
+        { cmd: '/gear reforge [nomor]', desc: 'Cari stat Magic & Crit Multiplier' },
+      ],
+    };
+  }
+  if (norm.includes('pencuri') || norm.includes('rogue') || norm.includes('thief')) {
+    return {
+      className: '🗡️ Pencuri (Crit/Control DPS)',
+      statFocus: 'ATK, Crit Rate & Crit Multiplier',
+      gearFocus: 'Senjata Fisik + Aksesori Crit (jaga HP karena DEF lebih rendah)',
+      skillCombo: '1️⃣ Bom Asap saat telegraph ➔ 2️⃣ Backstab/Flurry untuk burst',
+      commands: [
+        { cmd: '/gear', desc: 'Pasang senjata dan aksesori ATK/Crit' },
+        { cmd: '/skill', desc: 'Atur Backstab, Bom Asap, dan Flurry' },
+        { cmd: '/inv', desc: 'Siapkan potion untuk dungeon panjang' },
+        { cmd: '/gear reforge [nomor]', desc: 'Cari affix ATK dan Crit' },
       ],
     };
   }
@@ -124,7 +151,7 @@ function getClassBuildAdvice(className) {
       commands: [
         { cmd: '/gear', desc: 'Pasang Busur & Aksesori Crit' },
         { cmd: '/skill', desc: 'Set loadout tembakan crit' },
-        { cmd: '/reforge', desc: 'Maksimalkan Crit Chance pada gear' },
+        { cmd: '/gear reforge [nomor]', desc: 'Maksimalkan Crit Chance pada gear' },
       ],
     };
   }
@@ -137,7 +164,7 @@ function getClassBuildAdvice(className) {
       { cmd: '/gear', desc: 'Kelola equipment' },
       { cmd: '/skill', desc: 'Atur slot skill' },
       { cmd: '/inv', desc: 'Kelola tas & potion' },
-      { cmd: '/reforge', desc: 'Tingkatkan stat bonus' },
+      { cmd: '/gear reforge [nomor]', desc: 'Tingkatkan stat bonus' },
     ],
   };
 }
@@ -150,6 +177,14 @@ function formatObjectiveLabel(id) {
     clear_spider_nest: 'Taklukkan Sarang Ratu Laba-laba',
     explore_volcano: 'Jelajahi Gunung Berapi Bayangan',
     clear_volcano_fortress: 'Taklukkan Benteng Vulkanik Kuil Bayangan',
+    explore_ethereal: 'Jelajahi Kepulauan Melayang Ethereal',
+    hunt_astral: 'Kalahkan Monster Astral',
+    explore_astral_nexus: 'Selidiki Titik Temu Dimensi Astral',
+    clear_astral_citadel: 'Taklukkan Benteng Kristal Astral',
+    explore_eclipse: 'Jelajahi Suaka Gerhana Abadi',
+    clear_antimatter_spire: 'Taklukkan Menara Anti-Materi',
+    explore_throne: 'Jelajahi Singgasana Ruang Hampa',
+    clear_emperor_throne: 'Runtuhkan Kaisar Kosmik Xylarion',
   };
   return map[id] || (id || '').replace(/_/g, ' ');
 }
@@ -159,13 +194,17 @@ function getSagaHeader(chapter) {
   if (num === 1) return '✨ <b>[SAGA I: PATCH 1.0 - THE MISTY FRONTIER] (Chapter 1)</b>';
   if (num === 2) return '✨ <b>[SAGA I: PATCH 1.1 - WEBS OF THE SILENT ABYSS] (Chapter 2)</b>';
   if (num === 3) return '✨ <b>[SAGA I: PATCH 1.2 - SHADOW DRAGON\'S WRATH] (Chapter 3 - Finale)</b>';
-  return '✨ <b>[SAGA I: THE ALDENMOOR CRISIS - COMPLETE FINALE]</b>';
+  if (num === 4) return '🌌 <b>[SAGA II: PATCH 2.0 - THE ASTRAL HORIZON] (Chapter 4)</b>';
+  if (num === 5) return '🌌 <b>[SAGA II: PATCH 2.1 - COSMIC LEVIATHAN] (Chapter 5)</b>';
+  if (num === 6) return '🌑 <b>[SAGA II: PATCH 2.2 - ANTIMATTER SHATTER] (Chapter 6)</b>';
+  if (num === 7) return '👑 <b>[SAGA II: PATCH 2.3 - CELESTIAL EMPEROR] (Chapter 7 - Finale)</b>';
+  return '✨ <b>[CHRONICLES OF ALDENMOOR - CAMPAIGN COMPLETE]</b>';
 }
 
 function getSagaFooter(chapter) {
   const num = Number(chapter) || 1;
   if (num === 1) {
-    return '<i>📜 Saga Tracker: Jelajahi Pinggiran Aldenmoor dan taklukkan Reruntuhan Goblin berbekal penempaan gear (/reforge)!</i>';
+    return '<i>📜 Saga Tracker: Jelajahi Pinggiran Aldenmoor dan taklukkan Reruntuhan Goblin berbekal penempaan gear (/gear reforge)!</i>';
   }
   if (num === 2) {
     return '<i>📜 Saga Tracker: Manfaatkan Pasar Gelap (/market) dan 7 Profesi Kuno untuk mengimbangi racun Ratu Laba-laba!</i>';
@@ -173,7 +212,19 @@ function getSagaFooter(chapter) {
   if (num === 3) {
     return '<i>📜 Saga Tracker: Bersatu dalam Aliansi Guild (/coop), tambang Obsidian Murni, dan redam amarah Naga Malakor di Kawah Magma!</i>';
   }
-  return '<i>📜 Saga Tracker: Seluruh tantangan Saga I telah lunas ditaklukkan! Bersiap menyambut Invasi Astral pada Saga II!</i>';
+  if (num === 4) {
+    return '<i>📜 Saga Tracker: Jelajahi Kepulauan Ethereal, buru pasukan Astral, dan siapkan Bahtera Guild menuju Void!</i>';
+  }
+  if (num === 5) {
+    return '<i>📜 Saga Tracker: Temukan Nexus Astral lalu taklukkan Leviathan Kosmik di Benteng Kristal!</i>';
+  }
+  if (num === 6) {
+    return '<i>📜 Saga Tracker: Baca telegraph boss dan rebut Menara Anti-Materi dari Archon Valtharor!</i>';
+  }
+  if (num === 7) {
+    return '<i>📜 Saga Tracker: Bentuk duo, sempurnakan build, dan runtuhkan Kaisar Kosmik pada final Saga II!</i>';
+  }
+  return '<i>📜 Saga Tracker: Campaign aktif sudah selesai. Lanjutkan season, tower, raid, collection, dan mastery.</i>';
 }
 
 module.exports = {
@@ -184,5 +235,3 @@ module.exports = {
   getSagaHeader,
   getSagaFooter,
 };
-
-

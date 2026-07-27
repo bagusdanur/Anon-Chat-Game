@@ -43,10 +43,27 @@ function readGuideState(userId) {
       objective: {
         type: objective.type,
         label: formatObjectiveLabel(objective.id),
+        targetId: objective.target || null,
         current: activeQuestRow.progress[objective.id] || 0,
         target: objective.count,
       },
     };
+    if (objective.type === 'dungeon_complete' && objective.target) {
+      const availableDungeons = db.prepare(`
+        SELECT dungeon_id,min_level,definition_json
+        FROM rpg_dungeon_definitions
+        WHERE published=1
+        ORDER BY min_level,dungeon_id
+      `).all();
+      const dungeonIndex = availableDungeons.findIndex(row => row.dungeon_id === objective.target);
+      const targetDungeon = dungeonIndex >= 0 ? availableDungeons[dungeonIndex] : null;
+      if (targetDungeon) {
+        const definition = JSON.parse(targetDungeon.definition_json);
+        activeQuest.objective.dungeonNumber = dungeonIndex + 1;
+        activeQuest.objective.recommendedLevel =
+          definition.recommended_level || targetDungeon.min_level;
+      }
+    }
     nextQuestTitle = db.prepare(`
       SELECT title FROM rpg_campaign_definitions
       WHERE published=1 AND (chapter>? OR (chapter=? AND sort_order>?))
@@ -102,7 +119,7 @@ function renderGuide(userId) {
       `• <b>Prioritas Stat:</b> ${buildAdvice.statFocus}\n` +
       `• <b>Fokus Equipment:</b> ${buildAdvice.gearFocus}\n` +
       `• <b>Combo Skill:</b> ${buildAdvice.skillCombo}\n` +
-      `• <b>Perintah Build:</b> <code>/gear</code> · <code>/skill</code> · <code>/inv</code> · <code>/reforge</code> · <code>/socket</code>\n\n` +
+      `• <b>Perintah Build:</b> <code>/gear</code> · <code>/skill</code> · <code>/inv</code>\n\n` +
       `<b>🔓 UNLOCK SETELAH INI</b>\n${next.unlock}\n\n` +
       `${getSagaFooter(state.chapter)}`,
     next,
@@ -156,7 +173,7 @@ function setupGuide(bot, { rateLimitCommand }) {
     const hints = {
       world: '🌍 Alur world: /world → /campaign → /explore → /dungeon.',
       campaign: '📜 /campaign menampilkan seluruh quest chapter; /guide memilih satu objective aktif untukmu.',
-      dungeon: '🏰 Solo: /dungeon solo 1. Duo: /dungeon duo 1. Raid klasik: /dungeon raid.',
+      dungeon: '🏰 Buka /dungeon. Tracker /guide menunjukkan nomor dungeon campaign yang harus ditaklukkan.',
     };
     return ctx.reply(hints[ctx.match[1]]);
   });
