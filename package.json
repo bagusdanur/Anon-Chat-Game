@@ -10,6 +10,7 @@
     "dashboard:dev": "cd dashboard && npx vite",
     "dashboard:build": "cd dashboard && npx vite build",
     "simulate:economy": "node scripts/economySimulation.js",
+    "report:economy": "node scripts/economyProductionReport.js",
     "simulate:combat": "node scripts/combatBalanceSimulation.js",
     "simulate:dungeon": "node scripts/dungeonBalanceSimulation.js",
     "simulate:saga": "node scripts/simulate_live_service_saga.js",
