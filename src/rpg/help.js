@@ -6,9 +6,9 @@ const HELP_PAGES = [
     id: 'flow_update',
     title: 'RPG FLOW UPDATE',
     text:
-      'Alur aktif: /world -> /campaign -> /explore -> Story Dungeon -> boss.\n' +
-      '/explore memakai 1 energi. Setelah campaign selesai, explore hanya farming material terbatas.\n' +
-      'Dungeon STORY membuka cerita; dungeon ENDGAME dapat diulang. Mode duo menunggu persetujuan partner.',
+      'Satu-satunya tracker langkah adalah /guide. Jangan mengikuti urutan command yang statis.\n' +
+      'Guide dapat mengarahkan ke /explore, /travel, /hunt, recovery HP, atau /dungeon sesuai objective aktif.\n' +
+      '/explore dan /coopcampaign explore memakai 1 energi. Dungeon duo selalu menunggu persetujuan partner.',
   },
   {
     id: 'start',
@@ -62,7 +62,7 @@ const HELP_PAGES = [
       '/dungeon duo [nomor] — turn-based bersama party\n' +
       '/dungeon raid — raid boss co-op klasik\n' +
       '/adventure — alias menu dungeon panjang\n\n' +
-      'Dungeon bertanda STORY adalah bagian campaign dan boss-nya membuka cerita. Dungeon ENDGAME dapat diulang setelah campaign selesai. Semua dungeon memiliki gerombolan, elite, jalur bercabang, treasure, rest point, boss, dan checkpoint 24 jam. Mode duo baru dimulai setelah partner menerima undangan. Setiap cycle, kedua pemain memilih aksi lalu hasil diproses saat 2/2 siap dan musuh membalas satu kali. Pilihan room seperti istirahat wajib disetujui berdua. Skill memakai loadout /skill dengan cooldown masing-masing.',
+      'Dungeon STORY hanya dapat dimulai saat menjadi objective /guide; nomor dungeon mengikuti objective itu. Semua dungeon memiliki gerombolan, elite, jalur bercabang, treasure, rest point, boss, dan checkpoint 24 jam. Mode duo baru dimulai setelah partner menerima undangan. Setiap cycle, kedua pemain memilih aksi lalu hasil diproses saat 2/2 siap dan musuh membalas satu kali. Pilihan room seperti istirahat wajib disetujui berdua. Skill memakai loadout /skill dengan cooldown masing-masing.',
   },
   {
     id: 'equipment',

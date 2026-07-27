@@ -203,6 +203,15 @@ function setupGuide(bot, { rateLimitCommand }) {
       });
       return ctx.reply(msg, { parse_mode: 'HTML' });
     }
+    const flow = getGuideFlow(ctx.chat.id);
+    if (['world', 'campaign', 'dungeon'].includes(ctx.match[1])) {
+      return ctx.reply(
+        `<b>ARAHAN GUIDE SAAT INI</b>\n\n<b>${flow.next.title}</b>\n${flow.next.detail}\n` +
+        `Jalankan: <code>${flow.next.command}</code>\n\n` +
+        `<i>/world dan /campaign hanya menampilkan status; /dungeon hanya terbuka saat objective ini meminta dungeon.</i>`,
+        { parse_mode: 'HTML' },
+      );
+    }
     const hints = {
       world: '🌍 Alur world: /world → /campaign → /explore → /dungeon.',
       campaign: '📜 /campaign menampilkan seluruh quest chapter; /guide memilih satu objective aktif untukmu.',

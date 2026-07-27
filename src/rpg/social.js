@@ -1,6 +1,7 @@
 const { db } = require('../db');
 const { getOrCreateUser } = require('./db_rpg');
 const { createSocialService } = require('./services/social');
+const { getGuideFlow } = require('./guide');
 
 function setupSocial(bot, { getPartnerId, rateLimitCommand }) {
   const social = createSocialService(db);
@@ -27,10 +28,19 @@ function setupSocial(bot, { getPartnerId, rateLimitCommand }) {
             '2. /party create\n' +
             '3. /party invite\n' +
             '4. Partner menggunakan /party accept\n\n' +
-            '<i>Setelah aktif, buka /coop atau /dungeon duo 1.</i>',
+            '<i>Setelah aktif, buka /coop atau /guide. Nomor dungeon selalu mengikuti objective campaign aktif.</i>',
             { parse_mode: 'HTML' },
           );
         }
+        const flow = getGuideFlow(ctx.chat.id);
+        return ctx.reply(
+          `<b>PARTY #${party.id}</b>\n\n` +
+          `Party siap untuk aktivitas anonymous co-op.\n\n` +
+          `<b>Langkah campaign-mu:</b> ${flow.next.detail}\n` +
+          `Jalankan: <code>${flow.next.command}</code>\n\n` +
+          `<i>/coop · /bounty · /raid · /party info · /party leave</i>`,
+          { parse_mode: 'HTML' },
+        );
         const lines = party.members.map(member =>
           `${member.role === 'owner' ? '👑' : '•'} <b>${member.alias}</b>`,
         );

@@ -58,6 +58,16 @@ function setupCoopActivities(bot, { rateLimitCommand }) {
   });
 
   bot.action(/^coop:guide:(party|dungeon|bounty|campaign|raid|duel)$/, ctx => {
+    if (ctx.match[1] === 'dungeon') {
+      const flow = getGuideFlow(ctx.chat.id);
+      ctx.answerCbQuery();
+      return ctx.reply(
+        `<b>DUNGEON DUO MENGIKUTI GUIDE</b>\n\n<b>${flow.next.title}</b>\n${flow.next.detail}\n` +
+        `Jalankan: <code>${flow.next.command}</code>\n\n` +
+        `<i>Jika Guide belum meminta dungeon, selesaikan langkah tersebut dahulu. Tidak ada nomor dungeon tetap.</i>`,
+        { parse_mode: 'HTML' },
+      );
+    }
     const guides = {
       party: '👥 Saat terhubung anonymous chat: /party create → /party invite. Partner menekan /party accept.',
       dungeon: '🏰 Gunakan /dungeon duo 1. Keduanya pilih aksi; cycle berjalan saat 2/2 siap. Kumpulkan 3 energi lalu tekan 🤝 Combo.',
@@ -125,6 +135,20 @@ function setupCoopActivities(bot, { rateLimitCommand }) {
       }
       spendEnergy(ctx.chat.id, 1);
       const result = world.explore(ctx.chat.id);
+      if (result.success) {
+        const after = getGuideFlow(ctx.chat.id);
+        const objective = flow.state.activeQuest.objective;
+        const current = Math.min(objective.target, (objective.current || 0) + 1);
+        return ctx.reply(
+          `<b>CO-OP EKSPLORASI: ${result.encounter.name}</b>\n` +
+          `Petunjuk campaign-mu: <b>${current}/${objective.target}</b>\n` +
+          `Energi terpakai: <b>1</b>\n\n` +
+          `<b>Langkah berikutnya:</b> ${after.next.detail}\n` +
+          `Jalankan: <code>${after.next.command}</code>\n\n` +
+          `<i>Partner tetap perlu melakukan aksinya sendiri untuk progress ceritanya.</i>`,
+          { parse_mode: 'HTML' },
+        );
+      }
       if (!result.success) return ctx.reply(`❌ ${result.reason}`);
       return ctx.reply(
         `🧭 ${result.encounter.name}: progress campaign karaktermu bertambah.\n` +
