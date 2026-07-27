@@ -14,12 +14,15 @@ const { renderHpBar } = require('./profile');
 const { db } = require('../db');
 const { createSkillService } = require('./services/skills');
 const { createEquipmentService } = require('./services/equipment');
+const { effectiveDropChance, rollDrop } = require('./services/dropBalance');
+const { createLedgerService } = require('./services/ledger');
 const {
   tickSkillCooldowns, getSkillCooldown, findLoadoutSkill, resolveCombatSkill,
 } = require('./services/combatSkills');
 
 const skillService = createSkillService(db);
 const equipmentV2 = createEquipmentService(db);
+const ledger = createLedgerService(db);
 
 // In-memory raid state keyed by pairKey
 let botRef = null;
@@ -360,17 +363,61 @@ function checkRaidResolve(bot, pairKey) {
     const settings = getGameSettings();
     const xpReward = Math.floor((raid.boss.xpReward || Math.floor(raid.boss.baseHp * 2)) * settings.exp_multiplier);
     const goldReward = Math.floor((raid.boss.goldReward || Math.floor(raid.boss.baseHp * 1.2)) * settings.gold_multiplier);
-    const lootWinner = Math.random() < 0.5 ? chatIdA : chatIdB;
+    const hasLegendaryDrop = rollDrop(
+      raid.boss.legendaryDropChance,
+      settings.drop_rate_multiplier,
+    );
+    const lootWinner = hasLegendaryDrop ? (Math.random() < 0.5 ? chatIdA : chatIdB) : null;
 
-    const xpResultA = addXp(chatIdA, xpReward);
-    const xpResultB = addXp(chatIdB, xpReward);
-    addGold(chatIdA, goldReward);
-    incrementQuestProgress(chatIdA, 'dungeon');
-    incrementQuestProgress(chatIdB, 'dungeon');
-    addGold(chatIdB, goldReward);
-    addItem(lootWinner, raid.boss.legendaryDrop);
-
-    finalizeDungeonRun(raid.runId, 'win', { item: raid.boss.legendaryDrop, winner: lootWinner.toString() });
+    let xpResultA;
+    let xpResultB;
+    let lootGranted = false;
+    db.transaction(() => {
+      const beforeA = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?')
+        .get(String(chatIdA)).gold;
+      const beforeB = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?')
+        .get(String(chatIdB)).gold;
+      xpResultA = addXp(chatIdA, xpReward);
+      xpResultB = addXp(chatIdB, xpReward);
+      addGold(chatIdA, goldReward);
+      addGold(chatIdB, goldReward);
+      incrementQuestProgress(chatIdA, 'dungeon');
+      incrementQuestProgress(chatIdB, 'dungeon');
+      if (lootWinner) lootGranted = addItem(lootWinner, raid.boss.legendaryDrop);
+      const afterA = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?')
+        .get(String(chatIdA)).gold;
+      const afterB = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?')
+        .get(String(chatIdB)).gold;
+      if (afterA !== beforeA) {
+        ledger.record({
+          entryKey: `classic_raid:${raid.runId}:${chatIdA}:gold`,
+          userId: chatIdA,
+          amount: afterA - beforeA,
+          balanceAfter: afterA,
+          reason: 'classic_raid_reward',
+          referenceType: 'dungeon_run',
+          referenceId: raid.runId,
+        });
+      }
+      if (afterB !== beforeB) {
+        ledger.record({
+          entryKey: `classic_raid:${raid.runId}:${chatIdB}:gold`,
+          userId: chatIdB,
+          amount: afterB - beforeB,
+          balanceAfter: afterB,
+          reason: 'classic_raid_reward',
+          referenceType: 'dungeon_run',
+          referenceId: raid.runId,
+        });
+      }
+      finalizeDungeonRun(
+        raid.runId,
+        'win',
+        lootGranted
+          ? { item: raid.boss.legendaryDrop, winner: lootWinner.toString() }
+          : { item: null, rolled: hasLegendaryDrop, granted: false },
+      );
+    })();
     raidSessions.delete(pairKey);
 
     // Cek level-up untuk masing-masing pemain
@@ -385,8 +432,14 @@ function checkRaidResolve(bot, pairKey) {
       logs.join('\n') + `\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
       `✨ +<b>${xpReward}</b> XP | 💰 +<b>${goldReward}g</b> untuk KEDUA pemain!\n\n` +
-      `🎁 <b>LEGENDARY DROP:</b>\n` +
-      `🟠 <b>${raid.boss.legendaryDrop.replace(/_/g, ' ')}</b> → ${players[lootWinner].className}!` +
+      (lootGranted
+        ? `🎁 <b>LEGENDARY DROP:</b>\n` +
+          `🟠 <b>${raid.boss.legendaryDrop.replace(/_/g, ' ')}</b> → ${players[lootWinner].className}!`
+        : hasLegendaryDrop
+          ? `🎒 Drop legendary ditemukan, tetapi inventaris penerima penuh.`
+          : `🎲 Legendary tidak jatuh kali ini. Peluang tier ini <b>${Math.round(
+            effectiveDropChance(raid.boss.legendaryDropChance, settings.drop_rate_multiplier) * 100,
+          )}%</b>.`) +
       `\n━━━━━━━━━━━━━━━━━━━━`;
 
     bot.telegram.sendMessage(chatIdA, winMsgBase + levelUpA, { parse_mode: 'HTML' }).catch(() => {});
@@ -486,7 +539,13 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
     for (const t of unlockedTiers) {
       msg += `${t.ui_emoji} <b>${t.ui_label}</b> <i>(Min. Lv ${t.minAvgLv})</i>\n`;
       msg += `   ${t.ui_desc}\n`;
-      msg += `   💰 ${t.ui_reward}\n\n`;
+      const settings = getGameSettings();
+      const shownXp = Math.floor(t.xpReward * settings.exp_multiplier);
+      const shownGold = Math.floor(t.goldReward * settings.gold_multiplier);
+      const shownChance = Math.round(
+        effectiveDropChance(t.legendaryDropChance, settings.drop_rate_multiplier) * 100,
+      );
+      msg += `   💰 ${shownXp} XP · ${shownGold}g/orang · Legendary ${shownChance}%\n\n`;
     }
     if (lockedTiers.length > 0) {
       msg += `*🔒 Belum Terbuka:*\n`;
@@ -621,6 +680,7 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
         physResist: bossTier.physResist || 0,
         magicResist: bossTier.magicResist || 0,
         legendaryDrop: bossTier.legendaryDrop,
+        legendaryDropChance: bossTier.legendaryDropChance,
         xpReward: bossTier.xpReward,
         goldReward: bossTier.goldReward,
       },
