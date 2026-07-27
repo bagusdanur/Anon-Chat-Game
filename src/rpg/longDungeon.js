@@ -7,6 +7,7 @@ const {
   loadDungeons, publishDungeons, createLongDungeonService,
 } = require('./services/longDungeon');
 const { loadCampaign, publishCampaign, createCampaignService } = require('./services/campaign');
+const { getGuideFlow } = require('./guide');
 
 function setupLongDungeon(bot, { rateLimitCommand }) {
   const flags = createFeatureFlagService(db);
@@ -148,6 +149,30 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
       ctx.reply('♻️ Melanjutkan checkpoint ekspedisi terakhir.');
       return showSession(ctx, active);
     }
+    const flow = getGuideFlow(ctx.chat.id);
+    const objective = flow.state.activeQuest?.objective;
+    if (objective?.type !== 'dungeon_complete') {
+      return ctx.reply(
+        `<b>INFO ALUR CAMPAIGN</b>\n\nDungeon belum menjadi objective aktif.\n\n` +
+        `<b>${flow.next.title}</b>\n${flow.next.detail}\n` +
+        `Jalankan: <code>${flow.next.command}</code>`,
+        { parse_mode: 'HTML' },
+      );
+    }
+    if (objective.target !== dungeonId) {
+      return ctx.reply(
+        `<b>INFO ALUR CAMPAIGN</b>\n\nDungeon cerita yang aktif: <b>${objective.label}</b>.\n` +
+        `Jalankan: <code>${flow.next.command}</code>`,
+        { parse_mode: 'HTML' },
+      );
+    }
+    if (mode === 'solo' && user.level < (objective.recommendedLevel || 1)) {
+      return ctx.reply(
+        `<b>INFO ALUR CAMPAIGN</b>\n\n<b>${flow.next.title}</b>\n${flow.next.detail}\n` +
+        `Jalankan: <code>${flow.next.command}</code>`,
+        { parse_mode: 'HTML' },
+      );
+    }
     if (mode === 'duo') {
       const result = service.inviteDuo(ctx.chat.id, dungeonId);
       if (!result.success) return ctx.reply(`❌ ${result.reason}`);
@@ -198,6 +223,31 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
         },
       );
     }
+    const flow = getGuideFlow(ctx.chat.id);
+    if (flow.next.key !== 'dungeon') {
+      return ctx.reply(
+        `<b>INFO ALUR CAMPAIGN</b>\n\n<b>${flow.next.title}</b>\n${flow.next.detail}\n` +
+        `Jalankan: <code>${flow.next.command}</code>`,
+        { parse_mode: 'HTML' },
+      );
+    }
+    const targetNumber = flow.state.activeQuest.objective.dungeonNumber;
+    const targetName = flow.state.activeQuest.objective.label;
+    return ctx.reply(
+      `<b>DUNGEON OBJECTIVE GUIDE</b>\n\n` +
+      `Target cerita: <b>${targetName}</b>\n` +
+      `${flow.next.detail}\n\n` +
+      `Pilih mode. Duo selalu menunggu persetujuan partner dan setiap cycle diproses setelah 2/2 aksi siap.`,
+      {
+        parse_mode: 'HTML',
+        ...Markup.inlineKeyboard([
+          [Markup.button.callback('Mulai Duo (Disarankan)', `adventure:start:duo:${targetNumber}`)],
+          [Markup.button.callback('Mulai Solo', `adventure:start:solo:${targetNumber}`)],
+          [Markup.button.callback('Buka Guide', 'guide:open')],
+        ]),
+      },
+    );
+    /* istanbul ignore next -- replay/endgame list remains below for future menu split */
     const dungeons = service.list(user.level);
     const list = dungeons.map((item, index) =>
       `<code>[${index + 1}]</code> <b>${item.name}</b> · ${dungeonCategory(item.dungeon_id)}\n` +

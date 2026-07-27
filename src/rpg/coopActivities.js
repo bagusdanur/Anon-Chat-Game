@@ -1,6 +1,7 @@
 const { db } = require('../db');
 const { Markup } = require('telegraf');
-const { getOrCreateUser } = require('./db_rpg');
+const { getOrCreateUser, getCurrentEnergy, spendEnergy, MAX_ENERGY } = require('./db_rpg');
+const { getGuideFlow } = require('./guide');
 const { loadRegions, publishRegions } = require('./services/contentRegistry');
 const { loadCampaign, publishCampaign, createCampaignService } = require('./services/campaign');
 const { createWorldService } = require('./services/world');
@@ -109,6 +110,20 @@ function setupCoopActivities(bot, { rateLimitCommand }) {
     if (!party || party.members.length < 2) return ctx.reply('❌ Co-op campaign memerlukan party minimal 2 pemain.');
     const action = ctx.message.text.trim().split(/\s+/)[1]?.toLowerCase() || 'status';
     if (action === 'explore') {
+      const flow = getGuideFlow(ctx.chat.id);
+      if (flow.next.key !== 'explore') {
+        return ctx.reply(
+          `<b>INFO ALUR CAMPAIGN</b>\n\n<b>${flow.next.title}</b>\n${flow.next.detail}\n` +
+          `Jalankan: <code>${flow.next.command}</code>`,
+          { parse_mode: 'HTML' },
+        );
+      }
+      const user = getOrCreateUser(ctx.chat.id);
+      const energy = getCurrentEnergy(user);
+      if (energy < 1) {
+        return ctx.reply(`Energi tidak cukup. Energi: <b>${energy}/${MAX_ENERGY}</b>.`, { parse_mode: 'HTML' });
+      }
+      spendEnergy(ctx.chat.id, 1);
       const result = world.explore(ctx.chat.id);
       if (!result.success) return ctx.reply(`❌ ${result.reason}`);
       return ctx.reply(

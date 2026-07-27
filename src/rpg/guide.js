@@ -116,8 +116,7 @@ function readGuideState(userId) {
 }
 
 function renderGuide(userId) {
-  const state = readGuideState(userId);
-  const next = determineNextStep(state);
+  const { state, next } = getGuideFlow(userId);
   const userRow = db.prepare('SELECT class_name FROM rpg_users WHERE telegram_user_id=?').get(String(userId));
   const buildAdvice = getClassBuildAdvice(userRow?.class_name);
 
@@ -152,6 +151,13 @@ function renderGuide(userId) {
     next,
     state,
   };
+}
+
+// One source of truth for the current RPG action. Other command handlers use
+// this instead of recreating exploration, level, or dungeon rules locally.
+function getGuideFlow(userId) {
+  const state = readGuideState(userId);
+  return { state, next: determineNextStep(state) };
 }
 
 function setupGuide(bot, { rateLimitCommand }) {
@@ -206,4 +212,4 @@ function setupGuide(bot, { rateLimitCommand }) {
   });
 }
 
-module.exports = { readGuideState, renderGuide, setupGuide };
+module.exports = { readGuideState, getGuideFlow, renderGuide, setupGuide };

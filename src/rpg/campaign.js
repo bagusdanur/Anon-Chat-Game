@@ -2,6 +2,7 @@ const { db } = require('../db');
 const { getOrCreateUser, calcStats, xpToNextLevel } = require('./db_rpg');
 const { loadCampaign, publishCampaign, createCampaignService } = require('./services/campaign');
 const { formatObjectiveLabel, getSagaHeader, getSagaFooter } = require('./services/gameplayGuide');
+const { getGuideFlow } = require('./guide');
 
 function setupCampaign(bot, { rateLimitCommand }) {
   publishCampaign(db, loadCampaign());
@@ -23,9 +24,8 @@ function setupCampaign(bot, { rateLimitCommand }) {
     });
     const active = quests.find(quest => quest.status === 'active');
     const currentCh = active ? active.chapter : (quests.length > 0 ? quests[quests.length - 1].chapter : 1);
-    const suggestion = active
-      ? 'Mulai dari /world. Eksplorasi mengisi objective; saat petunjuk lengkap lanjut /dungeon.'
-      : 'Objective selesai. Buka /world untuk melihat langkah berikutnya.';
+    const flow = getGuideFlow(ctx.chat.id);
+    const suggestion = `<b>${flow.next.title}</b>\n${flow.next.detail}\nJalankan: <code>${flow.next.command}</code>`;
     return ctx.reply(
       `${getSagaHeader(currentCh)}\n` +
       `<b>📖 CHRONICLES OF ALDENMOOR</b>\n\n${lines.join('\n\n')}\n\n` +

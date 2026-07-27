@@ -64,16 +64,9 @@ function createWorldService(db, options = {}) {
       db.prepare(`
         UPDATE rpg_world_progress
         SET exploration_points = exploration_points + ?,
-            campaign_step = CASE
-              WHEN campaign_chapter = 1
-               AND campaign_step < 2
-               AND exploration_points + ? >= 3
-              THEN 2
-              ELSE campaign_step
-            END,
             updated_at = ?
         WHERE user_id = ?
-      `).run(points, points, now(), String(userId));
+      `).run(points, now(), String(userId));
       const updated = ensureProgress(userId);
       onEvent(userId, {
         key: `explore:${userId}:${updated.exploration_points}`,
