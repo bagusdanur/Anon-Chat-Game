@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const { HELP_PAGES, pageMessage, indexMessage } = require('../src/rpg/help');
+const { formatNumberId, formatStat } = require('../src/rpg/equipment');
 
 const TELEGRAM_MESSAGE_LIMIT = 4096;
 const root = path.join(__dirname, '..');
@@ -35,4 +36,11 @@ test('UI utama tetap ringkas dan memakai input angka untuk daftar pemain', () =>
   assert.match(guide, /dungeonNumber/);
   assert.match(dungeon, /index \+ 1/);
   assert.doesNotMatch(guide, /<code>\/reforge<\/code>|<code>\/socket<\/code>/);
+});
+
+test('angka profile dan equipment dibulatkan agar mudah dibaca', () => {
+  assert.equal(formatNumberId(515.853), '516');
+  assert.equal(formatNumberId(123.58), '124');
+  assert.equal(formatStat('def', 6.58), '🛡 DEF +7');
+  assert.equal(formatStat('crit_rate', 0.049), '💥 Crit +5%');
 });

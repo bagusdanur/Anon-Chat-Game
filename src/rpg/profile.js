@@ -168,7 +168,7 @@ function renderProfile(user) {
   if (v2Bonus.atk > 0)         bonusParts.push(`ATK+${formatNumberId(v2Bonus.atk)}`);
   if (v2Bonus.def > 0)         bonusParts.push(`DEF+${formatNumberId(v2Bonus.def)}`);
   if (v2Bonus.magic_atk > 0)   bonusParts.push(`Magic+${formatNumberId(v2Bonus.magic_atk)}`);
-  if (v2Bonus.crit_rate > 0)   bonusParts.push(`Crit+${formatNumberId(v2Bonus.crit_rate*100, 1)}%`);
+  if (v2Bonus.crit_rate > 0)   bonusParts.push(`Crit+${formatNumberId(v2Bonus.crit_rate*100, 0)}%`);
   if (bonusParts.length > 0) {
     msg += `<i>Bonus: ${bonusParts.join(' · ')}</i>\n`;
   }
