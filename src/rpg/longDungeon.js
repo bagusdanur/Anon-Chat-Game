@@ -20,6 +20,11 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     onEvent: (userId, event) => campaign.recordEvent(userId, event),
   });
 
+  function dungeonCategory(dungeonId) {
+    if (dungeonId === 'emperor_throne_citadel') return '🔥 ENDGAME';
+    return '📖 STORY · 🤝 CO-OP';
+  }
+
   function renderSession(session, viewerId) {
     const room = service.getRoom(session);
     const combat = session.state.combat?.roomId === room.id
@@ -195,10 +200,13 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     }
     const dungeons = service.list(user.level);
     const list = dungeons.map((item, index) =>
-      `<code>[${index + 1}]</code> <b>${item.name}</b> · masuk Lv.${item.min_level} · rekomendasi Lv.${item.recommended_level}`,
+      `<code>[${index + 1}]</code> <b>${item.name}</b> · ${dungeonCategory(item.dungeon_id)}\n` +
+      `   Masuk Lv.${item.min_level} · rekomendasi Lv.${item.recommended_level}`,
     ).join('\n');
     return ctx.reply(
       `<b>🏰 DUNGEON PANJANG — TURN-BASED</b>\n\n${list}\n\n` +
+      `<b>Alur:</b> Dungeon bertanda 📖 adalah bagian campaign/story. Selesaikan boss untuk membuka progres cerita.\n` +
+      `Dungeon bertanda 🔥 adalah aktivitas endgame berulang. Semua dungeon mendukung mode solo dan duo.\n\n` +
       `<b>Pilih mode:</b>\n🧍 Solo memakai companion NPC.\n` +
       `🤝 Duo direkomendasikan: HP digabung; keduanya memilih aksi sebelum cycle diproses.\n\n` +
       `<i>Contoh: /dungeon solo 1 atau /dungeon duo 1</i>`,
