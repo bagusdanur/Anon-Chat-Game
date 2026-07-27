@@ -238,6 +238,27 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     );
   });
 
+  function buildShopPage(userId, requestedPage) {
+    const user = getOrCreateUser(userId);
+    const sections = [...new Set(getShopConfig().map(item => item.section))];
+    const section = sections[requestedPage - 1];
+    if (!section) return null;
+    let msg = `<b>🏪 TOKO — ${section}</b>\n💰 Saldo: <b>${user.gold}g</b>\n<i>Beli: /buy [nomor]</i>\n\n`;
+    for (const entry of getShopConfig().filter(item => item.section === section)) {
+      const item = getCatalogItem(entry.item_id);
+      if (!item) continue;
+      msg += `<code>[${entry.id}]</code> ${RARITY_EMOJI[item.rarity]} <b>${item.display_name}</b> — ${entry.buy_price.toLocaleString()}g`;
+      if (user.level < entry.min_level) msg += ` · 🔒 Lv.${entry.min_level}`;
+      else if (entry.weekly_limit) {
+        const remaining = Math.max(0, entry.weekly_limit - limitedShopPurchased(userId, entry.item_id));
+        msg += ` · sisa ${remaining}/${entry.weekly_limit} minggu ini`;
+      }
+      msg += '\n';
+    }
+    msg += `\n<i>Halaman ${requestedPage}/${sections.length} · Nomor /buy tetap global.</i>`;
+    return { msg, sections };
+  }
+
   // ===== /shop =====
   bot.command('shop', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
@@ -270,7 +291,25 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     msg += `\n<i>Ketik /buy [nomor atau nama] untuk membeli</i>\n`;
     msg += `Contoh: <code>/buy 1</code> atau <code>/buy ramuan_kecil</code>`;
     msg += `\n<i>Halaman shop: ${sections.map((name, index) => `${index + 1}.${name}`).join(' · ')}</i>`;
-    ctx.reply(msg, { parse_mode: 'HTML' });
+    ctx.reply(msg, {
+      parse_mode: 'HTML',
+      ...Markup.inlineKeyboard([sections.map((name, index) =>
+        Markup.button.callback(`${index + 1}${index + 1 === requestedPage ? ' ✅' : ''}`, `shop:page:${index + 1}`),
+      )]),
+    });
+  });
+
+  bot.action(/^shop:page:(\d+)$/, rateLimitCommand, async ctx => {
+    const page = Number(ctx.match[1]);
+    const view = buildShopPage(ctx.chat.id, page);
+    if (!view) return ctx.answerCbQuery('Halaman shop tidak valid.', { show_alert: true });
+    await ctx.answerCbQuery();
+    return ctx.editMessageText(view.msg, {
+      parse_mode: 'HTML',
+      ...Markup.inlineKeyboard([view.sections.map((name, index) =>
+        Markup.button.callback(`${index + 1}${index + 1 === page ? ' ✅' : ''}`, `shop:page:${index + 1}`),
+      )]),
+    }).catch(() => ctx.reply(view.msg, { parse_mode: 'HTML' }));
   });
 
   // ===== /buy (terima nomor ID atau nama) =====
