@@ -10,6 +10,9 @@ function setupEndgame(bot, { rateLimitCommand }) {
   const endgame = createEndgameService(db);
   const catalog = createItemCatalogService(db);
   catalog.validate();
+  const RARITY_LABELS = {
+    common: '⚪ Common', uncommon: '🟢 Uncommon', rare: '🔵 Rare', epic: '🟣 Epic', legendary: '🟠 Legendary',
+  };
 
   function requireCharacter(ctx) {
     if (!flags.isEnabled('seasons_v2')) {
@@ -84,7 +87,9 @@ function setupEndgame(bot, { rateLimitCommand }) {
 
   function catalogPageView(userId, page = 1, category = null) {
     const entries = catalog.all(userId);
-    const filtered = category ? entries.filter(item => item.category === category) : entries;
+    const rarity = category?.startsWith('rarity_') ? category.slice(7) : null;
+    const filtered = rarity ? entries.filter(item => item.rarity === rarity)
+      : category ? entries.filter(item => item.category === category) : entries;
     const pageSize = 12;
     const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
     const safePage = Math.min(Math.max(1, Number(page) || 1), pages);
@@ -92,9 +97,9 @@ function setupEndgame(bot, { rateLimitCommand }) {
     const owned = entries.filter(item => item.owned).length;
     const text =
       `<b>📖 KATALOG ITEM</b> · ${owned}/${entries.length} ditemukan\n` +
-      `<i>Halaman ${safePage}/${pages}${category ? ` · ${catalog.labels[category]}` : ''}</i>\n\n` +
-      visible.map(item => `${item.owned ? '✅' : '▫️'} <code>[${item.number}]</code> ${item.display_name} <i>${item.rarity}</i>`).join('\n') +
-      `\n\n<i>/catalog [nomor] untuk sumber & kegunaan</i>`;
+      `<i>Halaman ${safePage}/${pages}${rarity ? ` · ${RARITY_LABELS[rarity]}` : category ? ` · ${catalog.labels[category]}` : ''}</i>\n\n` +
+      visible.map(item => `${item.owned ? '✅' : '▫️'} <code>[${item.number}]</code> ${item.display_name}\n   <i>${RARITY_LABELS[item.rarity] || item.rarity} · ${catalog.labels[item.category] || item.category}</i>`).join('\n') +
+      `\n\n<i>/catalog [nomor] detail · /catalog legendary filter rarity</i>`;
     const key = category || 'all';
     return {
       text,
@@ -122,12 +127,13 @@ function setupEndgame(bot, { rateLimitCommand }) {
         { parse_mode: 'HTML' },
       );
     }
-    const match = input.match(/^(consumable|material|weapon|staff|armor|accessory)(?:\s+(\d+))?$/);
-    const view = catalogPageView(ctx.chat.id, Number(match?.[2]) || 1, match?.[1] || null);
+    const match = input.match(/^(consumable|material|weapon|staff|armor|accessory|common|uncommon|rare|epic|legendary)(?:\s+(\d+))?$/);
+    const filter = match && RARITY_LABELS[match[1]] ? `rarity_${match[1]}` : match?.[1] || null;
+    const view = catalogPageView(ctx.chat.id, Number(match?.[2]) || 1, filter);
     return ctx.reply(view.text, view.options);
   });
 
-  bot.action(/^catalog:page:(all|consumable|material|weapon|staff|armor|accessory):(\d+)$/, rateLimitCommand, async ctx => {
+  bot.action(/^catalog:page:(all|consumable|material|weapon|staff|armor|accessory|rarity_common|rarity_uncommon|rarity_rare|rarity_epic|rarity_legendary):(\d+)$/, rateLimitCommand, async ctx => {
     const category = ctx.match[1] === 'all' ? null : ctx.match[1];
     const view = catalogPageView(ctx.chat.id, Number(ctx.match[2]), category);
     await ctx.answerCbQuery();
