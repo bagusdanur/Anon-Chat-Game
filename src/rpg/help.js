@@ -3,6 +3,14 @@ const { Markup } = require('telegraf');
 
 const HELP_PAGES = [
   {
+    id: 'flow_update',
+    title: 'RPG FLOW UPDATE',
+    text:
+      'Alur aktif: /world -> /campaign -> /explore -> Story Dungeon -> boss.\n' +
+      '/explore memakai 1 energi. Setelah campaign selesai, explore hanya farming material terbatas.\n' +
+      'Dungeon STORY membuka cerita; dungeon ENDGAME dapat diulang. Mode duo menunggu persetujuan partner.',
+  },
+  {
     id: 'start',
     title: '📖 RPG BESAR — MULAI',
     text:
@@ -54,7 +62,7 @@ const HELP_PAGES = [
       '/dungeon duo [nomor] — turn-based bersama party\n' +
       '/dungeon raid — raid boss co-op klasik\n' +
       '/adventure — alias menu dungeon panjang\n\n' +
-      'Dungeon memiliki banyak gerombolan, elite, jalur bercabang, treasure, dua rest point, boss, dan checkpoint 24 jam. Mode duo baru dimulai setelah partner menerima undangan. Setiap cycle, kedua pemain memilih aksi lalu hasil diproses saat 2/2 siap dan musuh membalas satu kali. Saat peringatan serangan berat muncul, Defend berdua memberi perlindungan maksimum. Pilihan room seperti istirahat juga wajib disetujui berdua. Skill memakai loadout /skill dengan cooldown masing-masing.',
+      'Dungeon bertanda STORY adalah bagian campaign dan boss-nya membuka cerita. Dungeon ENDGAME dapat diulang setelah campaign selesai. Semua dungeon memiliki gerombolan, elite, jalur bercabang, treasure, rest point, boss, dan checkpoint 24 jam. Mode duo baru dimulai setelah partner menerima undangan. Setiap cycle, kedua pemain memilih aksi lalu hasil diproses saat 2/2 siap dan musuh membalas satu kali. Pilihan room seperti istirahat wajib disetujui berdua. Skill memakai loadout /skill dengan cooldown masing-masing.',
   },
   {
     id: 'equipment',
