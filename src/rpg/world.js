@@ -1,6 +1,6 @@
 const { Markup } = require('telegraf');
 const { db } = require('../db');
-const { getOrCreateUser } = require('./db_rpg');
+const { getOrCreateUser, getCurrentEnergy, spendEnergy, MAX_ENERGY } = require('./db_rpg');
 const { createFeatureFlagService } = require('./services/featureFlags');
 const { loadRegions, publishRegions } = require('./services/contentRegistry');
 const { createWorldService } = require('./services/world');
@@ -108,6 +108,11 @@ function setupWorld(bot, { rateLimitCommand }) {
   async function explore(ctx) {
     const user = requireWorld(ctx);
     if (!user) return;
+    const energy = getCurrentEnergy(user);
+    if (energy < 1) {
+      return ctx.reply(`⚡ <b>Energi tidak cukup untuk eksplorasi.</b>\nEnergi: <b>${energy}/${MAX_ENERGY}</b>\n<i>Regenerasi +1 setiap 3 menit, atau gunakan Ramuan Energi.</i>`, { parse_mode: 'HTML' });
+    }
+    spendEnergy(ctx.chat.id, 1);
     const result = world.explore(ctx.chat.id);
     if (!result.success) return ctx.reply(`❌ ${result.reason}`);
     const encounter = result.encounter;
@@ -116,7 +121,11 @@ function setupWorld(bot, { rateLimitCommand }) {
       treasure: '🎁 Harta',
       event: '📜 Peristiwa',
     };
-    const stepUnlocked = result.progress.campaign_step >= 2
+    const campaignFinished = campaignService.list(String(ctx.chat.id)).length > 0
+      && !campaignService.list(String(ctx.chat.id)).some(quest => quest.status === 'active');
+    const stepUnlocked = campaignFinished
+      ? '\n\n✅ Campaign selesai. Eksplorasi ini menjadi farming material terbatas.'
+      : result.progress.campaign_step >= 2
       ? '\n\n🔓 Petunjuk cukup! Langkah berikutnya: buka /dungeon dan pilih mode duo atau solo.'
       : `\n\n➡️ Cari ${Math.max(0, 3 - result.progress.exploration_points)} poin lagi.`;
     return ctx.reply(
