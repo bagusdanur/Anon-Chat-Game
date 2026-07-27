@@ -943,9 +943,12 @@ test('equipment upgrades and reforges are atomic audited gold sinks', () => {
   `).run();
   const equipment = createEquipmentService(db, { random: () => 0.25, now: () => 2_000_000_000 });
   const instance = equipment.forge('1', 'upgrade_blade').item;
+  assert.equal(equipment.equip('1', instance.id).success, true);
+  const attackBeforeUpgrade = equipment.bonuses('1').atk || 0;
   const upgraded = equipment.upgrade('1', instance.id, 'upgrade:test:1');
   assert.equal(upgraded.success, true);
   assert.equal(upgraded.item.upgrade_tier, 1);
+  assert.equal((equipment.bonuses('1').atk || 0) - attackBeforeUpgrade, 2);
   assert.equal(equipment.upgrade('1', instance.id, 'upgrade:test:1').success, false);
   const reforged = equipment.reforge('1', instance.id, 'reforge:test:1');
   assert.equal(reforged.success, true);

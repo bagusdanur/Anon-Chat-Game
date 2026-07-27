@@ -194,6 +194,21 @@ function createEquipmentService(db, options = {}) {
       result[row.stat_key] = (result[row.stat_key] || 0) + row.stat_value;
       return result;
     }, {});
+    const upgraded = db.prepare(`
+      SELECT c.category,e.upgrade_tier
+      FROM rpg_equipment_instances e
+      JOIN items_catalog c ON c.item_id=e.item_id
+      WHERE e.owner_id=? AND e.equipped_slot IS NOT NULL AND e.upgrade_tier>0
+    `).all(String(userId));
+    for (const item of upgraded) {
+      const value = Number(item.upgrade_tier) * 2;
+      const stat = item.category === 'weapon'
+        ? 'atk'
+        : item.category === 'staff'
+          ? 'magic_atk'
+          : 'def';
+      total[stat] = (total[stat] || 0) + value;
+    }
     const setCounts = db.prepare(`
       SELECT set_id,count(1) pieces FROM rpg_equipment_instances
       WHERE owner_id=? AND equipped_slot IS NOT NULL AND set_id IS NOT NULL GROUP BY set_id

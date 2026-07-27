@@ -4,7 +4,7 @@ const { Markup } = require('telegraf');
 const { db } = require('../db');
 const {
   getOrCreateUser, getInventory, getItem, removeItem, addItem,
-  getCatalogItem, upgradeItem, updateHp,
+  getCatalogItem, updateHp,
   getCurrentHp, logTransaction, addXp, addGold, spendGold,
   incrementQuestProgress,
   equipItem, unequipSlot, getEquipped, getEquippedBonus, GOLD_CAP, INVENTORY_CAP, MAX_ENERGY
@@ -611,9 +611,14 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const invItem = getItem(userId, itemId);
     if (!invItem) return ctx.reply(`❌ Kamu tidak punya item tersebut.`);
     if (!['weapon', 'armor', 'staff', 'accessory'].includes(invItem.category)) return ctx.reply(`❌ Hanya senjata, armor, staff, atau aksesori yang bisa di-upgrade.`);
-    if (invItem.upgrade_tier >= 5) return ctx.reply(`⚠️ <b>${invItem.display_name}</b> sudah di tier maksimal (+5)!`, { parse_mode: 'HTML' });
+    const activeForged = db.prepare(`
+      SELECT id,upgrade_tier FROM rpg_equipment_instances
+      WHERE owner_id=? AND item_id=? AND equipped_slot IS NOT NULL
+      LIMIT 1
+    `).get(String(userId), itemId);
+    const currentTier = Math.max(invItem.upgrade_tier, activeForged?.upgrade_tier || 0);
+    if (currentTier >= 5) return ctx.reply(`⚠️ <b>${invItem.display_name}</b> sudah di tier maksimal legacy (+5)! Gunakan /gear upgrade untuk melanjutkan.`, { parse_mode: 'HTML' });
 
-    const currentTier = invItem.upgrade_tier;
     const nextTier = currentTier + 1;
     
     const settings = getGameSettings();
@@ -643,7 +648,11 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     if (!canAfford) return ctx.reply(previewMsg, { parse_mode: 'HTML' });
 
     // Simpan pending upgrade di cache
-    upgradeConfirmCache.set(userId.toString(), { itemId, currentTier });
+    upgradeConfirmCache.set(userId.toString(), {
+      itemId,
+      currentTier,
+      forgedInstanceId: activeForged?.id || null,
+    });
 
     ctx.reply(previewMsg, {
       parse_mode: 'HTML',
@@ -660,12 +669,16 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     if (!pending) return ctx.answerCbQuery('Tidak ada upgrade yang pending.', { show_alert: true });
     upgradeConfirmCache.delete(userId.toString());
 
-    const { itemId, currentTier } = pending;
+    const { itemId, currentTier, forgedInstanceId } = pending;
     const user = getOrCreateUser(userId);
     if (!user) return ctx.answerCbQuery('Data tidak ditemukan.', { show_alert: true });
 
     const invItem = getItem(userId, itemId);
-    if (!invItem || invItem.upgrade_tier !== currentTier) {
+    const activeForged = forgedInstanceId
+      ? db.prepare('SELECT id,upgrade_tier FROM rpg_equipment_instances WHERE id=? AND owner_id=? AND equipped_slot IS NOT NULL')
+        .get(forgedInstanceId, String(userId))
+      : null;
+    if (!invItem || Math.max(invItem.upgrade_tier, activeForged?.upgrade_tier || 0) !== currentTier) {
       return ctx.answerCbQuery('Item berubah sejak preview. Coba lagi.', { show_alert: true });
     }
 
@@ -682,11 +695,22 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
       return ctx.answerCbQuery('Material tidak cukup!', { show_alert: true });
     }
 
-    // Atomic: spendGold + removeItem ore + upgradeItem dalam satu transaction
+    // Atomic: gold, Ore Upgrade, tier legacy, dan instance tempaan aktif.
     const upgradeSuccess = db.transaction(() => {
       if (!spendGold(userId, goldNeeded)) return false;
       if (!removeItem(userId, UPGRADE_ORE_ITEM_ID, oreNeeded)) return false;
-      upgradeItem(userId, itemId);
+      db.prepare(`
+        UPDATE rpg_inventory SET upgrade_tier=?
+        WHERE telegram_user_id=? AND item_id=?
+      `).run(nextTier, String(userId), itemId);
+      if (activeForged) {
+        const powerGain = Math.max(0, nextTier - activeForged.upgrade_tier) * 3;
+        db.prepare(`
+          UPDATE rpg_equipment_instances
+          SET upgrade_tier=?,item_power=item_power+?,updated_at=?
+          WHERE id=? AND owner_id=?
+        `).run(nextTier, powerGain, Math.floor(Date.now() / 1000), activeForged.id, String(userId));
+      }
       return true;
     })();
 
@@ -700,7 +724,9 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     incrementQuestProgress(userId, 'upgrade');
     professionService.grantXp(userId, 'enchanting', 18, `telegram:${ctx.update.update_id}:upgrade`);
     ctx.editMessageText(
-      `⚒️ <b>Upgrade Berhasil!</b>\n\n<b>${invItem.display_name}</b> → <b>+${nextTier}</b>\n+2 ${statType} ditambahkan ke karakter!\n\n<i>Cek /profile untuk stats terbaru.</i>`,
+      `⚒️ <b>Upgrade Berhasil!</b>\n\n<b>${invItem.display_name}</b> → <b>+${nextTier}</b>\n` +
+      `+2 ${statType} ditambahkan ke karakter!${activeForged ? '\n✅ Perlengkapan aktif dan profil ikut disinkronkan.' : ''}` +
+      `\n\n<i>Cek /profile untuk stats terbaru.</i>`,
       { parse_mode: 'HTML' }
     );
   });
