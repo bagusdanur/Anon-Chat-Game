@@ -403,17 +403,18 @@ function addXp(userId, amount) {
   xp += amount;
   const leveled = [];
 
-  while (xp >= xpToNextLevel(level)) {
+  while (level < LEVEL_CAP && xp >= xpToNextLevel(level)) {
     xp -= xpToNextLevel(level);
     level++;
     leveled.push(level);
   }
+  if (level >= LEVEL_CAP) xp = 0;
 
   const stats = calcStats(user.class_name, level);
   const now = Math.floor(Date.now() / 1000);
-  db.prepare(`UPDATE rpg_users SET level = ?, xp = ?, max_hp = ?, atk = ?, def = ?,
+  db.prepare(`UPDATE rpg_users SET level = ?, xp = ?, hp = MIN(hp, ?), max_hp = ?, atk = ?, def = ?,
     magic_atk = ?, crit_rate = ?, crit_multi = ?, updated_at = ? WHERE telegram_user_id = ?`)
-    .run(level, xp, stats.max_hp, stats.atk, stats.def,
+    .run(level, xp, stats.max_hp, stats.max_hp, stats.atk, stats.def,
          stats.magic_atk, stats.crit_rate, stats.crit_multi, now, id);
 
   return { leveled, newLevel: level };
@@ -421,6 +422,7 @@ function addXp(userId, amount) {
 
 // ===== GOLD CAP =====
 const GOLD_CAP = 50000; // Maksimal gold yang bisa dimiliki
+const LEVEL_CAP = 60;
 
 function addGold(userId, amount) {
   const now = Math.floor(Date.now() / 1000);

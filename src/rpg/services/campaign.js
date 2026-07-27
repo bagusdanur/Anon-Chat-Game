@@ -4,6 +4,7 @@ const { createLedgerService } = require('./ledger');
 require('../../../data/patch_loader');
 
 const CAMPAIGN_FILE = path.join(__dirname, '../../../data/rpg_campaign.json');
+const LEVEL_CAP = 60;
 
 function validateCampaign(definitions) {
   if (!Array.isArray(definitions)) throw new TypeError('Campaign content must be an array');
@@ -98,16 +99,17 @@ function createCampaignService(db, options = {}) {
       const user = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id=?').get(String(userId));
       let level = user.level;
       let xp = user.xp + reward.xp;
-      while (xp >= xpToNextLevel(level)) {
+      while (level < LEVEL_CAP && xp >= xpToNextLevel(level)) {
         xp -= xpToNextLevel(level);
         level++;
       }
+      if (level >= LEVEL_CAP) xp = 0;
       const stats = calcStats(user.class_name, level);
       if (stats) {
         db.prepare(`
-          UPDATE rpg_users SET level=?,xp=?,max_hp=?,atk=?,def=?,magic_atk=?,
+          UPDATE rpg_users SET level=?,xp=?,hp=MIN(hp,?),max_hp=?,atk=?,def=?,magic_atk=?,
             crit_rate=?,crit_multi=?,updated_at=? WHERE telegram_user_id=?
-        `).run(level, xp, stats.max_hp, stats.atk, stats.def, stats.magic_atk,
+        `).run(level, xp, stats.max_hp, stats.max_hp, stats.atk, stats.def, stats.magic_atk,
           stats.crit_rate, stats.crit_multi, now(), String(userId));
       } else {
         db.prepare('UPDATE rpg_users SET level=?,xp=?,updated_at=? WHERE telegram_user_id=?')
