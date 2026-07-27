@@ -1034,8 +1034,16 @@ test('duo dungeon requires recipient consent and supports decline or expiry', ()
 test('RPG operations telemetry reports economy and invariant anomalies without user identities', () => {
   const db = createTestDb();
   const flags = createFeatureFlagService(db);
+  const ledger = createLedgerService(db);
+  ledger.record({ entryKey: 'telemetry:reward', userId: '1', amount: 100, reason: 'tower_reward' });
+  ledger.record({ entryKey: 'telemetry:sink', userId: '1', amount: -40, reason: 'equipment_upgrade' });
+  ledger.record({ entryKey: 'telemetry:market:buyer', userId: '1', amount: -50, reason: 'market_purchase' });
+  ledger.record({ entryKey: 'telemetry:market:seller', userId: '2', amount: 45, reason: 'market_sale' });
+  ledger.record({ entryKey: 'telemetry:market:tax', userId: null, amount: 5, reason: 'market_tax' });
   const telemetry = collectRpgTelemetry(db, flags);
   assert.equal(telemetry.economy.totalGold, 2000);
+  assert.equal(telemetry.economy.sources, 100);
+  assert.equal(telemetry.economy.sinks, 45);
   assert.equal(telemetry.anomalies.negativeGold, 0);
   assert.equal(telemetry.anomalies.invalidInventory, 0);
   assert.equal(telemetry.migrations[0].version, 18);

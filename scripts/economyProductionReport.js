@@ -14,12 +14,17 @@ const reasons = db.prepare(`
   ORDER BY ABS(SUM(amount)) DESC
 `).all(since);
 
+const transferReasons = new Set([
+  'market_purchase', 'market_sale',
+  'direct_trade_send', 'direct_trade_receive',
+]);
+const taxReasons = new Set(['market_tax', 'direct_trade_tax']);
 const sources = reasons
-  .filter(row => row.total > 0)
+  .filter(row => !transferReasons.has(row.reason) && !taxReasons.has(row.reason) && row.total > 0)
   .reduce((sum, row) => sum + row.total, 0);
-const sinks = Math.abs(reasons
-  .filter(row => row.total < 0)
-  .reduce((sum, row) => sum + row.total, 0));
+const sinks = reasons
+  .filter(row => !transferReasons.has(row.reason) && (row.total < 0 || taxReasons.has(row.reason)))
+  .reduce((sum, row) => sum + Math.abs(row.total), 0);
 const balances = db.prepare(`
   SELECT COUNT(*) players, COALESCE(SUM(gold), 0) total_gold,
          COALESCE(AVG(gold), 0) average_gold, COALESCE(MAX(gold), 0) max_gold
@@ -33,6 +38,14 @@ const legacy = db.prepare(`
   GROUP BY reason
   ORDER BY ABS(SUM(amount)) DESC
 `).all(since);
+const legacySources = legacy
+  .filter(row => row.reason === 'reward')
+  .reduce((sum, row) => sum + row.total, 0);
+const legacySinks = legacy
+  .filter(row => row.reason === 'spend')
+  .reduce((sum, row) => sum + row.total, 0);
+const combinedSources = sources + legacySources;
+const combinedSinks = sinks + legacySinks;
 
 process.stdout.write(`${JSON.stringify({
   databasePath,
@@ -43,6 +56,13 @@ process.stdout.write(`${JSON.stringify({
     sourceSinkRatio: sinks ? Number((sources / sinks).toFixed(3)) : null,
     coverageWarning: 'Legacy gold paths may only exist in transactions_log until migrated.',
     reasons,
+  },
+  combined: {
+    sources: combinedSources,
+    sinks: combinedSinks,
+    sourceSinkRatio: combinedSinks
+      ? Number((combinedSources / combinedSinks).toFixed(3))
+      : null,
   },
   balances: {
     ...balances,

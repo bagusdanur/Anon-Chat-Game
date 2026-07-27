@@ -1,7 +1,13 @@
 function collectRpgTelemetry(db, featureFlags) {
   const economy = db.prepare(`
-    SELECT coalesce(sum(CASE WHEN amount>0 THEN amount ELSE 0 END),0) sources,
-      abs(coalesce(sum(CASE WHEN amount<0 THEN amount ELSE 0 END),0)) sinks,
+    SELECT coalesce(sum(CASE
+        WHEN reason NOT IN ('market_purchase','market_sale','direct_trade_send','direct_trade_receive',
+                            'market_tax','direct_trade_tax')
+          AND amount>0 THEN amount ELSE 0 END),0) sources,
+      coalesce(sum(CASE
+        WHEN reason IN ('market_tax','direct_trade_tax') THEN abs(amount)
+        WHEN reason NOT IN ('market_purchase','market_sale','direct_trade_send','direct_trade_receive')
+          AND amount<0 THEN abs(amount) ELSE 0 END),0) sinks,
       count(1) ledger_entries FROM rpg_currency_ledger
   `).get();
   const totalGold = db.prepare('SELECT coalesce(sum(gold),0) total FROM rpg_users').get().total;
