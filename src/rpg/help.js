@@ -68,7 +68,7 @@ const HELP_PAGES = [
       '/gear upgrade [nomor gear] — upgrade hingga +15\n' +
       '/gear reforge [nomor gear] — roll ulang affix (butuh katalis)\n' +
       '/gear salvage [nomor gear] — bongkar gear menjadi material\n\n' +
-      'Set tersedia: Dragon Regalia dan Cursed Sovereign. /equip dan /upgrade memakai nomor yang sama dengan /gear; /inv hanya menampilkan material dan consumable.',
+      'Set tersedia: Dragon Regalia dan Cursed Sovereign. /equip dan /upgrade memakai nomor yang sama dengan /gear. Loot equipment yang belum ditempa tetap berada di /inv agar bisa dijual, diperdagangkan, atau ditempa melalui /gear forge [nomor /inv].',
   },
   {
     id: 'economy',

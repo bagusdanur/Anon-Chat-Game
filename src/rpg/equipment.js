@@ -34,20 +34,10 @@ function setupEquipment(bot, { rateLimitCommand }) {
     return resolveNumberedId(equipment.list(userId), input);
   }
 
-  function legacyEquipment(userId) {
-    return orderInventory(getInventory(userId)).filter(item =>
-      ['weapon', 'staff', 'armor', 'accessory'].includes(item.category));
-  }
-
-  function resolveInventoryNumber(userId, input, combinedGearNumbers = false) {
-    const items = orderInventory(getInventory(userId)).filter(item =>
-      !['weapon', 'staff', 'armor', 'accessory'].includes(item.category));
+  function resolveInventoryNumber(userId, input) {
+    const items = orderInventory(getInventory(userId));
     const number = Number(input);
     if (Number.isInteger(number) && number >= 1) {
-      if (combinedGearNumbers) {
-        const offset = equipment.list(userId).length;
-        return legacyEquipment(userId)[number - offset - 1]?.item_id || null;
-      }
       return items[number - 1]?.item_id || null;
     }
     return input || null;
@@ -74,8 +64,8 @@ function setupEquipment(bot, { rateLimitCommand }) {
     }
 
     if (action === 'forge') {
-      const itemId = resolveInventoryNumber(ctx.chat.id, args[1], true);
-      if (!itemId) return ctx.reply('Gunakan nomor bagian “Belum Ditempa” dari /gear.');
+      const itemId = resolveInventoryNumber(ctx.chat.id, args[1]);
+      if (!itemId) return ctx.reply('Gunakan: /gear forge [nomor equipment dari /inv].');
       const result = equipment.forge(ctx.chat.id, itemId);
       if (!result.success) return ctx.reply(`❌ ${result.reason}`);
       return ctx.reply(
@@ -154,9 +144,8 @@ function setupEquipment(bot, { rateLimitCommand }) {
     }
 
     const items = equipment.list(ctx.chat.id);
-    const legacy = legacyEquipment(ctx.chat.id);
-    if (!items.length && !legacy.length) {
-      return ctx.reply('Belum ada equipment. Dapatkan equipment dari dungeon, crafting, atau loot.');
+    if (!items.length) {
+      return ctx.reply('Belum ada equipment unik. Cek loot di /inv lalu gunakan /gear forge [nomor /inv].');
     }
     const pageSize = 6;
     const requestedPage = action === 'page' ? Number(args[1]) : 1;
@@ -187,19 +176,13 @@ function setupEquipment(bot, { rateLimitCommand }) {
         `   ${status}${set}\n` +
         `   ➡️ /gear equip ${index + 1} · /gear upgrade ${index + 1} · /gear reforge ${index + 1} · /gear salvage ${index + 1}`;
     });
-    const legacyLines = legacy.map((item, index) => {
-      const number = items.length + index + 1;
-      return `<code>[${number}]</code> ${item.display_name} +${item.upgrade_tier || 0} x${item.quantity}` +
-        `\n   ➡️ /gear forge ${number}`;
-    });
     return ctx.reply(
       `<b>🛡 EQUIPMENT</b>\n` +
       `<i>Gear unik dengan IP, kualitas, bonus acak, socket, dan set. Halaman ${page}/${totalPages}.</i>\n\n` +
       `${lines.join('\n\n')}\n\n` +
-      `${legacyLines.length ? `<b>📦 Belum Ditempa</b>\n${legacyLines.join('\n')}\n\n` : ''}` +
       `<b>💡 Apa itu IP/Quality?</b> Ketik /gear help\n` +
       `<i>/equip [nomor] · /upgrade [nomor] memakai nomor yang sama dengan /gear\n` +
-      `Forge item lama: /gear forge [nomor bagian Belum Ditempa]\n` +
+      `Forge loot equipment: /gear forge [nomor equipment dari /inv]\n` +
       `Gem: /gear socket [gear] [slot] [nomor gem /inv]` +
       `${totalPages > 1 ? `\nHalaman: /gear page [1-${totalPages}]` : ''}</i>`,
       { parse_mode: 'HTML' },
