@@ -11,7 +11,7 @@ function setupWorld(bot, { rateLimitCommand }) {
   const regions = loadRegions();
   publishRegions(db, regions);
   publishCampaign(db, loadCampaign());
-  const campaign = createCampaignService(db);
+  const campaignService = createCampaignService(db);
   const world = createWorldService(db, {
     onEvent: (userId, event) => campaign.recordEvent(userId, event),
   });
@@ -36,7 +36,7 @@ function setupWorld(bot, { rateLimitCommand }) {
     if (!progress) return ctx.reply('Region awal belum tersedia.');
     const content = JSON.parse(progress.content_json);
     const campaign = content.campaign;
-    const campaignQuests = campaign.list(String(ctx.chat.id));
+    const campaignQuests = campaignService.list(String(ctx.chat.id));
     const activeQuest = campaignQuests.find(quest => quest.status === 'active');
     const campaignDone = campaignQuests.length > 0 && !activeQuest;
     const currentStep = Math.min(progress.campaign_step, campaign.steps.length - 1);
