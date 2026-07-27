@@ -44,6 +44,21 @@ function determineNextStep(state) {
   const quest = state.activeQuest;
   const objective = quest?.objective;
   if (objective?.type === 'explore') {
+    if (objective.targetId && state.currentRegionId !== objective.targetId) {
+      if (state.level < (objective.targetRegionMinLevel || 1)) {
+        return {
+          key: 'prepare', title: `Persiapan menuju ${objective.label}`, command: '/hunt',
+          detail: `Region tujuan membutuhkan Lv.${objective.targetRegionMinLevel}; level-mu Lv.${state.level}.`,
+          unlock: `Saat level cukup, gunakan /travel ${objective.targetRegionNumber}.`,
+        };
+      }
+      return {
+        key: 'travel', title: `Perjalanan menuju ${objective.label}`,
+        command: `/travel ${objective.targetRegionNumber}`,
+        detail: `Kamu masih berada di ${state.regionName}. Pindah region agar objective eksplorasi dihitung.`,
+        unlock: 'Setelah tiba, gunakan /explore.',
+      };
+    }
     return {
       key: 'explore', title: quest.title, command: '/explore',
       detail: `Kumpulkan petunjuk: ${objective.current}/${objective.target}. Masih perlu ${Math.max(0, objective.target - objective.current)} progres.`,

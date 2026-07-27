@@ -15,7 +15,7 @@ function readGuideState(userId) {
   if (!user) return { hasCharacter: false };
   const hasAlias = Boolean(db.prepare('SELECT 1 ok FROM rpg_character_aliases WHERE user_id=?').get(id));
   const world = db.prepare(`
-    SELECT p.exploration_points, p.campaign_chapter, r.name region_name
+    SELECT p.exploration_points,p.campaign_chapter,p.current_region_id,r.name region_name
     FROM rpg_world_progress p
     LEFT JOIN rpg_regions r ON r.region_id=p.current_region_id
     WHERE p.user_id=?
@@ -74,6 +74,17 @@ function readGuideState(userId) {
           definition.recommended_level || targetDungeon.min_level;
       }
     }
+    if (objective.type === 'explore' && objective.target) {
+      const regions = db.prepare(`
+        SELECT region_id,min_level FROM rpg_regions WHERE published=1
+        ORDER BY min_level,region_id
+      `).all();
+      const regionIndex = regions.findIndex(region => region.region_id === objective.target);
+      if (regionIndex >= 0) {
+        activeQuest.objective.targetRegionNumber = regionIndex + 1;
+        activeQuest.objective.targetRegionMinLevel = regions[regionIndex].min_level;
+      }
+    }
     nextQuestTitle = db.prepare(`
       SELECT title FROM rpg_campaign_definitions
       WHERE published=1 AND (chapter>? OR (chapter=? AND sort_order>?))
@@ -95,6 +106,7 @@ function readGuideState(userId) {
     energy: getCurrentEnergy(user),
     hasHealingItem,
     regionName: world?.region_name || 'Pinggiran Aldenmoor',
+    currentRegionId: world?.current_region_id || 'aldenmoor_outskirts',
     chapter: activeQuest?.chapter || world?.campaign_chapter || 1,
     activeQuest,
     nextQuestTitle,

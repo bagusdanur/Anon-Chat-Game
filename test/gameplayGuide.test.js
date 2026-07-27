@@ -145,3 +145,22 @@ test('tracker memprioritaskan recovery saat HP kritis sebelum menyuruh hunt lagi
   assert.equal(next.command, '/shop');
   assert.match(next.detail, /1\/58/);
 });
+
+test('tracker meminta travel sebelum eksplorasi region campaign berikutnya', () => {
+  const next = determineNextStep({
+    hasCharacter: true, hasAlias: true, level: 7,
+    hp: 98, maxHp: 98, energy: 10,
+    currentRegionId: 'aldenmoor_outskirts',
+    regionName: 'Pinggiran Aldenmoor',
+    activeQuest: {
+      title: 'Jejak Jaring Ungu',
+      objective: {
+        type: 'explore', label: 'Jelajahi Lembah Sutra Beracun',
+        targetId: 'spider_lair_valley', targetRegionNumber: 2,
+        targetRegionMinLevel: 6, current: 0, target: 4,
+      },
+    },
+  });
+  assert.equal(next.key, 'travel');
+  assert.equal(next.command, '/travel 2');
+});
