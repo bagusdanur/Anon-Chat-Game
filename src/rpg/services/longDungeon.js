@@ -350,6 +350,7 @@ function createLongDungeonService(db, options = {}) {
       enemyCycles: 0, combatRoomsCleared: 0,
     };
     const skillId = action.startsWith('skill_') ? action.slice(6) : null;
+    const potionId = action.startsWith('potion_') ? action.slice(7) : null;
     const equippedSkill = skillId
       ? db.prepare(`
           SELECT us.rank, sd.definition_json
@@ -358,8 +359,8 @@ function createLongDungeonService(db, options = {}) {
           WHERE us.user_id=? AND us.skill_id=? AND us.equipped_slot IS NOT NULL
         `).get(String(actor.telegram_user_id), skillId)
       : null;
-    if (!['attack', 'defend', 'skill', 'combo'].includes(action) && !skillId) {
-      return { success: false, reason: 'Pilih Attack, Defend, Skill, atau Combo.' };
+    if (!['attack', 'defend', 'skill', 'combo'].includes(action) && !skillId && !potionId) {
+      return { success: false, reason: 'Pilih Attack, Defend, Skill, Combo, atau Ramuan.' };
     }
     if (skillId && !equippedSkill) {
       return { success: false, reason: 'Skill tidak terpasang pada loadout-mu.' };
@@ -372,10 +373,26 @@ function createLongDungeonService(db, options = {}) {
     if (action === 'combo' && (session.mode !== 'duo' || combat.combo < 3)) {
       return { success: false, reason: 'Combo duo membutuhkan 3 energi kerja sama.' };
     }
+    let potion = null;
+    let potionHeal = 0;
+    if (potionId) {
+      potion = db.prepare(`
+        SELECT i.item_id,i.quantity,c.display_name,c.effect_json
+        FROM rpg_inventory i JOIN items_catalog c ON c.item_id=i.item_id
+        WHERE i.telegram_user_id=? AND i.item_id=? AND c.category='consumable'
+      `).get(String(actor.telegram_user_id), potionId);
+      const effect = potion?.effect_json ? JSON.parse(potion.effect_json) : {};
+      const healPct = Number(effect.heal_pct) || 0;
+      if (!potion || potion.quantity < 1 || healPct <= 0) {
+        return { success: false, reason: 'Ramuan heal itu tidak tersedia di inventory.' };
+      }
+      if (state.hp >= state.maxHp) return { success: false, reason: 'HP ekspedisi sudah penuh.' };
+      potionHeal = Math.max(1, Math.floor(state.maxHp * healPct / 100));
+    }
     const metricAction = skillId ? 'skills'
       : action === 'attack' ? 'attacks'
         : action === 'defend' ? 'defends'
-          : action === 'combo' ? 'combos' : 'skills';
+          : action === 'combo' ? 'combos' : 'items';
     state.metrics.actions++;
     state.metrics[metricAction]++;
 
@@ -387,7 +404,7 @@ function createLongDungeonService(db, options = {}) {
     const isDefensiveSkill = ['guard', 'shield', 'provoke', 'weaken'].includes(skillEffect.type);
     const critRate = Math.min(0.5, Math.max(0, actor.crit_rate || 0));
     const critical = random() < critRate;
-    const dealt = outgoingDamage({
+    const dealt = potionId ? 0 : outgoingDamage({
       power,
       action: skillId ? 'skill' : action,
       random,
@@ -397,6 +414,16 @@ function createLongDungeonService(db, options = {}) {
       defensiveSkill: isDefensiveSkill,
     });
     combat.enemyHp = Math.max(0, combat.enemyHp - dealt);
+    if (potionId) {
+      const consumed = db.prepare(`
+        UPDATE rpg_inventory SET quantity=quantity-1
+        WHERE telegram_user_id=? AND item_id=? AND quantity>0
+      `).run(String(actor.telegram_user_id), potionId);
+      if (consumed.changes !== 1) return { success: false, reason: 'Ramuan sudah tidak tersedia.' };
+      db.prepare('DELETE FROM rpg_inventory WHERE telegram_user_id=? AND item_id=? AND quantity<=0')
+        .run(String(actor.telegram_user_id), potionId);
+      state.hp = Math.min(state.maxHp, state.hp + potionHeal);
+    }
     if (action === 'skill') combat.skillCooldown = 2;
     if (skillId) {
       combat.skillCooldowns[String(actor.telegram_user_id)] = {
@@ -411,7 +438,7 @@ function createLongDungeonService(db, options = {}) {
     const incoming = incomingDamage({
       enemyDamage: room.enemy.damage,
       mode: session.mode,
-      action,
+      action: potionId ? 'potion' : action,
       defensiveSkill: isDefensiveSkill,
       defeated,
       deferIncoming: options.deferIncoming,
@@ -438,6 +465,9 @@ function createLongDungeonService(db, options = {}) {
     }
     const actionLabel = skillDefinition?.name || action;
     state.log = `Turn ${combat.turn}: ${actionLabel}${critical ? ' CRIT' : ''} memberi ${dealt} damage · menerima ${incoming} damage`;
+    if (potion) {
+      state.log = `Turn ${combat.turn}: minum ${potion.display_name} (+${potionHeal} HP) · menerima ${incoming} damage`;
+    }
     combat.turn++;
 
     if (state.hp <= 0) {

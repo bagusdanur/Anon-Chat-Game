@@ -1,6 +1,6 @@
 const { Markup } = require('telegraf');
 const { db } = require('../db');
-const { getOrCreateUser, xpToNextLevel, calcStats } = require('./db_rpg');
+const { getOrCreateUser, getInventory, xpToNextLevel, calcStats } = require('./db_rpg');
 const { createFeatureFlagService } = require('./services/featureFlags');
 const { createSkillService } = require('./services/skills');
 const {
@@ -91,6 +91,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
       ]);
       buttons.push([
         Markup.button.callback('✨ Skill', `ldskills:${session.id}:${session.state_version}`),
+        Markup.button.callback('🧪 Ramuan', `ldpotions:${session.id}:${session.state_version}`),
         ...(session.mode === 'duo'
           ? [Markup.button.callback('🤝 Combo', `ld:${session.id}:${session.state_version}:combo`)]
           : []),
@@ -356,6 +357,41 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
           return [Markup.button.callback(
             `${skill.slot}. ${skill.name}${cd ? ` · CD ${cd}T` : ''}`,
             `ld:${session.id}:${version}:skill_${skill.id}`,
+          )];
+        })),
+      },
+    );
+  });
+
+  bot.action(/^ldpotions:(\d+):(\d+)$/, rateLimitCommand, async ctx => {
+    const session = service.get(Number(ctx.match[1]), ctx.chat.id);
+    const version = Number(ctx.match[2]);
+    if (!session || session.status !== 'active') {
+      return ctx.answerCbQuery('Checkpoint sudah tidak aktif.', { show_alert: true });
+    }
+    if (session.state_version !== version) return ctx.answerCbQuery('Cycle ini sudah berlalu.', { show_alert: true });
+    if (session.state.pendingActions?.[String(ctx.chat.id)]) {
+      return ctx.answerCbQuery('Aksimu sudah terkunci.', { show_alert: true });
+    }
+    const potions = getInventory(ctx.chat.id)
+      .map((item, index) => ({ ...item, number: index + 1 }))
+      .filter(item => {
+        const effect = item.effect_json ? JSON.parse(item.effect_json) : {};
+        return item.category === 'consumable' && item.quantity > 0 && Number(effect.heal_pct) > 0;
+      });
+    if (!potions.length) {
+      return ctx.answerCbQuery('Tidak ada ramuan HP. Beli lewat /shop atau cek /inv.', { show_alert: true });
+    }
+    await ctx.answerCbQuery();
+    return ctx.reply(
+      '<b>🧪 PAKAI RAMUAN — memakai 1 giliran</b>\n\nPilih nomor ramuan dari inventarismu. HP dipulihkan sebelum serangan musuh cycle ini.',
+      {
+        parse_mode: 'HTML',
+        ...Markup.inlineKeyboard(potions.map(item => {
+          const effect = JSON.parse(item.effect_json);
+          return [Markup.button.callback(
+            `[${item.number}] ${item.display_name} · +${effect.heal_pct}% HP · x${item.quantity}`,
+            `ld:${session.id}:${version}:potion_${item.item_id}`,
           )];
         })),
       },

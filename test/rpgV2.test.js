@@ -371,6 +371,26 @@ test('long dungeon combat supports persisted tactical turns', () => {
   db.close();
 });
 
+test('healing potion is a tactical dungeon action and consumes one inventory item', () => {
+  const db = createTestDb();
+  publishDungeons(db, loadDungeons());
+  db.prepare("INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity) VALUES ('1','ramuan_besar',1)").run();
+  const dungeon = createLongDungeonService(db, { random: () => 0.5 });
+  let session = dungeon.startSolo('1', 'goblin_ruins').session;
+  session = dungeon.advance('1', session.id, session.state_version, 'left').session;
+  session = dungeon.advance('1', session.id, session.state_version, 'attack').session;
+  session.state.hp = 10;
+  db.prepare('UPDATE rpg_dungeon_sessions_v2 SET state_json=? WHERE id=?')
+    .run(JSON.stringify(session.state), session.id);
+  const hpBeforePotion = session.state.hp;
+  const result = dungeon.advance('1', session.id, session.state_version, 'potion_ramuan_besar');
+  assert.equal(result.success, true);
+  assert.equal(result.session.state.hp > hpBeforePotion, true);
+  assert.match(result.session.state.log, /minum/);
+  assert.equal(db.prepare("SELECT quantity FROM rpg_inventory WHERE telegram_user_id='1' AND item_id='ramuan_besar'").get(), undefined);
+  db.close();
+});
+
 test('solo long dungeon skill cooldown decreases on subsequent turns', () => {
   const db = createTestDb();
   publishSkills(db, loadSkills());
