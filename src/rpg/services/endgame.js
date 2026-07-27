@@ -12,6 +12,11 @@ const ACHIEVEMENTS = [
   { id: 'tower_10', name: '🗼 Pendaki', description: 'Capai lantai 10 Endless Tower.' },
 ];
 
+function towerEnemyPower(floor) {
+  const safeFloor = Math.max(1, Math.floor(Number(floor) || 1));
+  return Math.floor(12 + safeFloor * 4 + safeFloor * safeFloor * 0.75);
+}
+
 function anonymousAlias(userId, salt = process.env.SEASON_ALIAS_SALT || 'anon-rpg-season') {
   const code = crypto.createHash('sha256').update(`${salt}:${userId}`).digest('hex').slice(0, 6).toUpperCase();
   return `Petualang-${code}`;
@@ -107,7 +112,7 @@ function createEndgameService(db, options = {}) {
         user.def + (bonus.def || 0) +
         (user.magic_atk || 0) + (bonus.magic_atk || 0) +
         (bonus.max_hp || 0) * 0.1 + user.level * 2;
-      const enemyPower = 12 + floor * 4;
+      const enemyPower = towerEnemyPower(floor);
       const win = playerPower * (0.85 + random() * 0.3) >= enemyPower;
       const timestamp = now();
       const goldReward = win ? 5 + floor * 2 : 0;
@@ -192,6 +197,7 @@ module.exports = {
   ACHIEVEMENTS,
   SEASON_DURATION_SECONDS,
   TOWER_COOLDOWN_SECONDS,
+  towerEnemyPower,
   anonymousAlias,
   createEndgameService,
 };

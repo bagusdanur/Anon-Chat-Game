@@ -41,6 +41,7 @@ const {
 const {
   anonymousAlias,
   createEndgameService,
+  towerEnemyPower,
 } = require('../src/rpg/services/endgame');
 const {
   createSocialService,
@@ -567,6 +568,13 @@ test('tower rewards, cooldown, and floor progress are persistent', () => {
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 2);
   assert.equal(endgame.getProgress('1').progress.points, 23);
   db.close();
+});
+
+test('tower difficulty reaches a meaningful endgame challenge without blocking early floors', () => {
+  assert.equal(towerEnemyPower(1), 16);
+  assert.equal(towerEnemyPower(10), 127);
+  assert.equal(towerEnemyPower(18), 327);
+  assert.equal(towerEnemyPower(20) > towerEnemyPower(10) * 2, true);
 });
 
 test('tower can recover after progress reset without colliding with immutable ledger history', () => {
