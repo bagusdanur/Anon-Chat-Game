@@ -28,10 +28,18 @@ Dokumen ini melacak kemajuan implementasi dari rencana jangka panjang bot **Anon
 - [x] **P2.2.1** Rilis Patch 2.2: Arena *Suaka Gerhana Abadi* (`eclipse_sanctuary`), Dungeon 15-Ruangan *Menara Anti-Materi* (`antimatter_spire`), dan Campaign Chapter 6 melawan Archon Valtharor.
 - [x] **P2.3.1** Rilis Patch 2.3 (Saga II Ultimate Grand Finale): Arena Puncakan *Singgahsana Ruang Hampa* (`celestial_void_throne`), Dungeon Aliansi 20-Ruangan *Istana Tahta Kaisar* (`emperor_throne_citadel`), dan Raid Boss *Kaisar Kosmik Xylarion* (HP: 25.000 / Level 60 Cap).
 
+## ✅ ITEM DELIVERY & UNIFIED SHOP
+- [x] Satukan seluruh toko NPC level rendah/tinggi ke `/shop` dan `/buy` bernomor.
+- [x] Reward campaign diberikan atomik dan idempotent; reward Saga II dinormalisasi ke item katalog valid.
+- [x] Material unik region Saga I–II dapat diperoleh dari eksplorasi, gathering, mining, dan dungeon.
+- [x] Kail/Beliung+ benar-benar meningkatkan rarity fishing/mining.
+- [x] Alchemy, gem crafting/drop/shop, dan resep endgame aktif.
+- [x] Dungeon dapat menjatuhkan Equipment V2 langsung dengan quality dan affix acak.
+- [x] Dashboard RPG Operations menampilkan telemetry delivery item tanpa identitas pemain.
+
 ---
 
 ## 🚀 ROADMAP MASA DEPAN: SAGA III (UNDERWORLD OF THE FORGOTTEN REALM / PATCH 3.0+)
 - [ ] **P3.0.1** Inisiasi struktur direktori modular `data/patches/saga_v3/patch_3_0.json`.
 - [ ] **P3.0.2** Rancang arena Bawah Tanah Dalam (*Abyssal Depths & Forgotten Sand*) dengan monster purba inti bumi.
 - [ ] **P3.0.3** Implementasi sistem Eksplorasi Bawah Tanah, relik bumi abadi, dan Raid Boss Raksasa Forgotten Realm (Level 60–75).
-

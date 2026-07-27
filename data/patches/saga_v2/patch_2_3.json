@@ -417,7 +417,7 @@
           "id": "throne_failed",
           "type": "failure",
           "name": "Terlempar oleh Gelombang Supernova Xylarion",
-          "text": "Ledakan energi supernova dan tebakan plasma Xylarion melunturkan perisai Anda! Mundur segera ke pangkalan Aliansi Guild di bumi, konsultasi strategi build karakter di (/guide), borong ransum elixir suci di Pasar Escrow (/market), tempa perlengkapan dengan obsidian suki (/reforge, /socket), serta himpun kekuatan penuh Co-Op Anda (/coop) sebelum mencoba menakar kembali sejarah kosmik!"
+          "text": "Ledakan supernova Xylarion meluluhkan perisai! Periksa strategi di /guide, cari eliksir melalui /market, tempa perlengkapan lewat /gear reforge dan /gear socket, lalu himpun kekuatan Co-Op melalui /coop."
         }
       ]
     }

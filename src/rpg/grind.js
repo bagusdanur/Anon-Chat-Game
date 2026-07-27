@@ -2,7 +2,7 @@
 // Fase 2: /hunt, /fish, /mine + sistem energi — Discord game bot style
 const {
   getOrCreateUser, getCurrentEnergy, spendEnergy, getCurrentHp,
-  addXp, addGold, addItem, updateHp, CLASS_DEFS,
+  addXp, addGold, addItem, getItem, updateHp, CLASS_DEFS,
   incrementQuestProgress, getEquippedItem, getEquippedBonus
 } = require('./db_rpg');
 const { RARITY_EMOJI } = require('./profile');
@@ -216,7 +216,8 @@ function setupGrind(bot, { rateLimitCommand }) {
     spendEnergy(userId, energyCost);
 
     const lootTable = getLootTable('fish', user);
-    const rarity    = rollRarity();
+    const toolBoost = getItem(userId, 'kail_plus') ? 0.2 : 0;
+    const rarity    = rollRarity(toolBoost);
     const itemOpts  = lootTable[rarity];
     const item      = pickRandom(itemOpts && itemOpts.length ? itemOpts : lootTable.common);
 
@@ -269,7 +270,8 @@ function setupGrind(bot, { rateLimitCommand }) {
     // Kirim object user, bukan angka level. Sebelumnya angka membuat semua
     // pemain selalu jatuh ke tabel T3 dan pemain Lv.1 bisa menambang berlian.
     const lootTable = getLootTable('mine', user);
-    const rarity    = rollRarity();
+    const toolBoost = getItem(userId, 'beliung_plus') ? 0.2 : 0;
+    const rarity    = rollRarity(toolBoost);
     const itemOpts  = lootTable[rarity];
     const item      = pickRandom(itemOpts.length ? itemOpts : lootTable.common);
 

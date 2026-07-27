@@ -691,6 +691,39 @@ const MIGRATIONS = [
         WHERE status='pending';
     `,
   },
+  {
+    version: 19,
+    name: 'campaign_reward_claims_and_region_materials',
+    up: `
+      CREATE TABLE IF NOT EXISTS rpg_campaign_reward_claims (
+        user_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        quest_id TEXT NOT NULL REFERENCES rpg_campaign_definitions(quest_id),
+        reward_json TEXT NOT NULL,
+        claimed_at INTEGER NOT NULL,
+        PRIMARY KEY (user_id,quest_id)
+      );
+
+      INSERT OR IGNORE INTO items_catalog
+        (item_id,display_name,category,rarity,sell_price,effect_json)
+      VALUES
+        ('ramuan_kecil','Ramuan Kecil','consumable','uncommon',7,'{"heal_pct":15}'),
+        ('ramuan_besar','Ramuan Besar','consumable','rare',25,'{"heal_pct":50}'),
+        ('besi_rongsok','Besi Rongsok','material','uncommon',12,NULL),
+        ('perak','Perak','material','rare',50,NULL),
+        ('emas_ore','Bijih Emas','material','epic',150,NULL),
+        ('herba_kabut','Herba Kabut','material','common',8,NULL),
+        ('sutra_racun','Sutra Racun','material','uncommon',18,NULL),
+        ('obsidian_murni','Obsidian Murni','material','rare',45,NULL),
+        ('lotus_api','Lotus Api','material','rare',55,NULL),
+        ('serpihan_astral','Serpihan Astral','material','rare',70,NULL),
+        ('kristal_nexus','Kristal Nexus','material','epic',120,NULL),
+        ('air_mata_gerhana','Air Mata Gerhana','material','epic',160,NULL),
+        ('inti_antimateri','Inti Antimateri','material','legendary',0,NULL),
+        ('inti_supernova','Inti Supernova','material','legendary',0,NULL),
+        ('eliksir_astral','Eliksir Astral','consumable','epic',100,'{"heal_pct":65}'),
+        ('ramuan_resist','Ramuan Resistensi','consumable','rare',55,'{"heal_pct":35}');
+    `,
+  },
 ];
 
 function quoteSql(value) {

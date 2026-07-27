@@ -73,10 +73,12 @@ const HELP_PAGES = [
     id: 'economy',
     title: '💰 ECONOMY & PROFESSION',
     text:
-      '/inv, /shop, /buy, /sell, /use — inventory umum\n' +
+      '/inv, /shop, /buy, /sell, /use — inventory dan seluruh toko NPC\n' +
+      '/shop — item umum serta item level tinggi dalam satu daftar bernomor\n' +
+      '/buy [nomor /shop] — beli item yang sudah terbuka sesuai level\n' +
       '/profession — tujuh profession\n' +
       '/gather herb — gathering Herbalism\n' +
-      '/craft — crafting recipe\n' +
+      '/craft — Smithing/Alchemy, equipment, potion, dan gem\n' +
       '/salvage [nomor /inv] — bongkar equipment\n' +
       '/refine [nomor /inv] — refinement material\n' +
       '/market — daftar listing bernomor\n' +

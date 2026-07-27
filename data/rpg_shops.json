@@ -86,6 +86,36 @@
       "id": 4,
       "item_id": "cincin_kekuatan_raksasa",
       "buy_price": 15000
+    },
+    {
+      "id": 5,
+      "item_id": "ramuan_resist",
+      "buy_price": 650,
+      "min_level": 20
+    },
+    {
+      "id": 6,
+      "item_id": "eliksir_astral",
+      "buy_price": 1800,
+      "min_level": 30
+    },
+    {
+      "id": 7,
+      "item_id": "ruby_gem",
+      "buy_price": 3500,
+      "min_level": 25
+    },
+    {
+      "id": 8,
+      "item_id": "sapphire_gem",
+      "buy_price": 3500,
+      "min_level": 25
+    },
+    {
+      "id": 9,
+      "item_id": "emerald_gem",
+      "buy_price": 3500,
+      "min_level": 25
     }
   ]
 }

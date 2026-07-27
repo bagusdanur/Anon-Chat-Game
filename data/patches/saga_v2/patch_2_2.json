@@ -86,7 +86,7 @@
       "chapter": 6,
       "order": 2,
       "title": "Act II - Penaklukan Menara Anti-Materi & Archon Valtharor",
-      "description": "Menara Anti-Materi Prisma menjulang tinggi memancarkan gelombang destruktif yang menghalangi jalan menuju singgahsana Kaisar Kosmik! Di puncaknya bertahta Archon Malaikat Void Valtharor yang perkasa. Tingkatkan kombinasi gem via /socket, atur susunan skill terbaik via /skill, dan kerahkan tim Co-Op Anda menembus dungeon Menara Anti-Materi (/dungeon)!",
+      "description": "Menara Anti-Materi Prisma menghalangi jalan menuju singgasana Kaisar Kosmik! Tingkatkan kombinasi gem melalui /gear socket, atur skill melalui /skill, dan kerahkan tim Co-Op menembus Menara Anti-Materi lewat /dungeon!",
       "requires": "chapter6_eclipse_journey",
       "version": 1,
       "published": true,
@@ -319,7 +319,7 @@
           "id": "spire_failed",
           "type": "failure",
           "name": "Terbakar Gelombang Anti-Materi",
-          "text": "Daya ledak laser dan sabetan pedang sayap Valtharor melampaui pertahanan Anda! Mundur segera ke geladak Bahtera Guild, beli ransum pemulih di (/market), pasang socket gem (/socket), reforge item anda (/reforge), dan rekrut rekan Co-Op terkuat (/coop) sebelum mencoba menebus kemuliaan kembali!"
+          "text": "Serangan Valtharor melampaui pertahananmu! Cari ransum melalui /market, pasang gem lewat /gear socket, perbaiki affix lewat /gear reforge, dan rekrut rekan melalui /coop."
         }
       ]
     }

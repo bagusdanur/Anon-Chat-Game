@@ -62,6 +62,15 @@ function publishDungeons(db, definitions) {
   const now = Math.floor(Date.now() / 1000);
   db.transaction(() => {
     for (const definition of definitions) {
+      const rewardItems = [
+        definition.rewards?.item,
+        ...definition.rooms.map(room => room.reward?.item),
+      ].filter(Boolean);
+      for (const itemId of rewardItems) {
+        if (!db.prepare('SELECT 1 ok FROM items_catalog WHERE item_id=?').get(itemId)) {
+          throw new TypeError(`Dungeon ${definition.id}: unknown reward item ${itemId}`);
+        }
+      }
       upsert.run(
         definition.id, definition.name, definition.min_level,
         JSON.stringify(definition), definition.published ? 1 : 0,
@@ -174,6 +183,40 @@ function createLongDungeonService(db, options = {}) {
         ON CONFLICT(telegram_user_id, item_id)
         DO UPDATE SET quantity = quantity + excluded.quantity
         `).run(recipientId, item.item, item.quantity);
+      }
+      const signatureMaterials = {
+        goblin_ruins: 'herba_kabut',
+        spider_nest: 'sutra_racun',
+        volcano_fortress: 'obsidian_murni',
+        astral_citadel: 'kristal_nexus',
+        antimatter_spire: 'inti_antimateri',
+        emperor_throne_citadel: 'inti_supernova',
+      };
+      const signatureMaterial = signatureMaterials[session.dungeon_id];
+      if (signatureMaterial) {
+        db.prepare(`
+          INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
+          VALUES (?,?,1)
+          ON CONFLICT(telegram_user_id,item_id) DO UPDATE SET quantity=quantity+1
+        `).run(recipientId, signatureMaterial);
+      }
+      const gearPools = {
+        goblin_ruins: ['pedang_karatan', 'tongkat_ranting'],
+        spider_nest: ['jubah_terkutuk', 'cincin_perak'],
+        volcano_fortress: ['pedang_besi', 'tongkat_api', 'amulet_pertahanan'],
+        astral_citadel: ['cincin_keberuntungan', 'kalung_kekuatan'],
+        antimatter_spire: ['pedang_naga', 'tongkat_es', 'armor_naga'],
+        emperor_throne_citadel: ['pedang_naga', 'armor_naga', 'kalung_naga'],
+      };
+      const pool = gearPools[session.dungeon_id] || [];
+      if (pool.length && random() < 0.2) {
+        const itemId = pool[Math.floor(random() * pool.length)];
+        db.prepare(`
+          INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
+          VALUES (?,?,1)
+          ON CONFLICT(telegram_user_id,item_id) DO UPDATE SET quantity=quantity+1
+        `).run(recipientId, itemId);
+        equipment.forge(recipientId, itemId);
       }
       if (reward.xp) {
         const user = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(recipientId);

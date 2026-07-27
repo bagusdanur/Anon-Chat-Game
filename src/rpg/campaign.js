@@ -1,11 +1,11 @@
 const { db } = require('../db');
-const { getOrCreateUser } = require('./db_rpg');
+const { getOrCreateUser, calcStats, xpToNextLevel } = require('./db_rpg');
 const { loadCampaign, publishCampaign, createCampaignService } = require('./services/campaign');
 const { formatObjectiveLabel, getSagaHeader, getSagaFooter } = require('./services/gameplayGuide');
 
 function setupCampaign(bot, { rateLimitCommand }) {
   publishCampaign(db, loadCampaign());
-  const service = createCampaignService(db);
+  const service = createCampaignService(db, { calcStats, xpToNextLevel });
 
   bot.command('campaign', rateLimitCommand, ctx => {
     if (!getOrCreateUser(ctx.chat.id)) {

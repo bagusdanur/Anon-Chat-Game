@@ -668,13 +668,13 @@
     "description": "Markas terapung berhiaskan prisma cahaya kosmik dan gravitasi anomali di angkasa luar. 15 ruangan menantang yang menuntut sinergi Bahtera Guild, ketangkasan party Co-Op, serta build karakter maksimal untuk menghadapi sang pemakan bintang!",
     "min_level": 25,
     "recommended_level": 30,
-    "version": 1,
+    "version": 2,
     "published": true,
     "entry_room": "astral_gates",
     "rewards": {
       "xp": 1800,
       "gold": 1200,
-      "item": "emas",
+      "item": "emas_ore",
       "quantity": 8
     },
     "rooms": [
@@ -747,7 +747,7 @@
         "text": "Batu Gravitasi Anda bergetar sinkron dengan altar kristal terapung di ruang rahsia ini! Anda menyerap kekuatan starlight dan menemukan peninggalan logam mulia luar angkasa!",
         "reward": {
           "gold": 250,
-          "item": "emas",
+          "item": "emas_ore",
           "quantity": 3
         },
         "next": "crystal_bridge"
@@ -790,7 +790,7 @@
         "text": "Kapal sudi bantuan Guild mendarat mulus di geladak observasi! Anggota guild menyalurkan persediaan ramuan ether murni serta kantong koin emas brilian!",
         "reward": {
           "gold": 280,
-          "item": "emas",
+          "item": "emas_ore",
           "quantity": 3
         },
         "next": "core_antechamber"
@@ -833,7 +833,7 @@
         "text": "Melalui teleskop giroskop kuno, Anda mempelajari kelemahan fatal sang Leviathan Kosmik—sisik punggungnya rapuh terhadap energi sihir dan sabetan kritis berkali-kali!",
         "reward": {
           "gold": 320,
-          "item": "emas",
+          "item": "emas_ore",
           "quantity": 4
         },
         "next": "guild_airship_rally"
@@ -874,7 +874,7 @@
         "id": "void_failed",
         "type": "failure",
         "name": "Terhempas badai Radiasi Kosmik",
-        "text": "Tekan gravitas kencang dan badai tembakan energi Kosmik menggemparkan pertahanan Anda! Segera evakuasi diri kembali ke kabin Bahtera Guild, tingkatkan kualitas atribut via tips di (/guide), reforge & socket gem pada gear Anda (/reforge, /socket), serta ajak rekan Aliansi (/coop, /guild) sebelum kembali menggebrak dari pelabuhan udara!"
+        "text": "Tekanan gravitasi dan badai energi Kosmik menghancurkan pertahananmu! Buka /guide, tingkatkan gear melalui /gear reforge dan /gear socket, lalu ajak rekan melalui /coop atau /guild sebelum mencoba kembali."
       }
     ]
   },
@@ -884,13 +884,13 @@
     "description": "Statis laser anti-materi dan perangkap gravitasi prisma menghiasi menara 15 ruangan yang menjulang membelah langit gerhana. Menuntut koordinasi matang Co-Op Party serta sokongan Aliansi Guild untuk meruntuhkan pertahanan sang Archon!",
     "min_level": 35,
     "recommended_level": 40,
-    "version": 1,
+    "version": 2,
     "published": true,
     "entry_room": "spire_entrance",
     "rewards": {
       "xp": 2800,
       "gold": 1800,
-      "item": "emas",
+      "item": "emas_ore",
       "quantity": 10
     },
     "rooms": [
@@ -963,7 +963,7 @@
         "text": "Kode sandi aliansi guild Anda membuka kotak baja darurat! Di dalamnya tersimpan vial serum penahan radiasi dan lempengan emas murni!",
         "reward": {
           "gold": 320,
-          "item": "emas",
+          "item": "emas_ore",
           "quantity": 4
         },
         "next": "plasma_bridge"
@@ -1006,7 +1006,7 @@
         "text": "Melayang mengikuti arus angin kosmik membawa Anda melewati kuburan pesawat asing kuno yang sarat akan emas batang berkilau!",
         "reward": {
           "gold": 380,
-          "item": "emas",
+          "item": "emas_ore",
           "quantity": 5
         },
         "next": "valtharor_antechamber"
@@ -1049,7 +1049,7 @@
         "text": "Sembilan Bahtera Guild melepaskan rentetan meriam starlight, membasmi perisai energi lawan dan menjatuhkan suplai ransum peperangan emas!",
         "reward": {
           "gold": 450,
-          "item": "emas",
+          "item": "emas_ore",
           "quantity": 5
         },
         "next": "archon_throne_door"
@@ -1090,7 +1090,7 @@
         "id": "spire_failed",
         "type": "failure",
         "name": "Terbakar Gelombang Anti-Materi",
-        "text": "Daya ledak laser dan sabetan pedang sayap Valtharor melampaui pertahanan Anda! Mundur segera ke geladak Bahtera Guild, beli ransum pemulih di (/market), pasang socket gem (/socket), reforge item anda (/reforge), dan rekrut rekan Co-Op terkuat (/coop) sebelum mencoba menebus kemuliaan kembali!"
+        "text": "Serangan Valtharor melampaui pertahananmu! Cari ransum melalui /market, pasang gem lewat /gear socket, perbaiki affix lewat /gear reforge, dan rekrut rekan melalui /coop."
       }
     ]
   },
@@ -1100,13 +1100,13 @@
     "description": "Istana 20 ruangan berselimut badai gravitasi super dan laser plasma kosmik di jantung black hole statis! Membutuhkan koordinasi tempur Aliansi Guild tingkat dewa, racikan skill termutakhir, serta kombinasi perisai terbaik untuk meruntuhkan kekuasaan sang Kaisar Kosmik Xylarion!",
     "min_level": 50,
     "recommended_level": 55,
-    "version": 1,
+    "version": 2,
     "published": true,
     "entry_room": "throne_gates",
     "rewards": {
       "xp": 5500,
       "gold": 3800,
-      "item": "emas",
+      "item": "emas_ore",
       "quantity": 25
     },
     "rooms": [
@@ -1148,7 +1148,7 @@
         "text": "Terowongan samping membawa Anda melintasi museum trofi kaisar, menyimpan bertiang-tiang emas batang murni dari planet terluar yang direbut masa lalu!",
         "reward": {
           "gold": 500,
-          "item": "emas",
+          "item": "emas_ore",
           "quantity": 6
         },
         "next": "galaxy_atrium"
@@ -1191,7 +1191,7 @@
         "text": "Sinyal transmisi dari Aliansi Guild Anda di bumi Aldenmoor berhasil menembus lapisan pelindung! Mengalir kiriman ramuan ether suci dan tumpukan koin emas kejayaan!",
         "reward": {
           "gold": 550,
-          "item": "emas",
+          "item": "emas_ore",
           "quantity": 8
         },
         "next": "mirror_corridor"
@@ -1234,7 +1234,7 @@
         "text": "Gelombang sonar anti-ilusi dari armada kapal udara menghancurkan cermin manipulasi, mengungkap peti harta tersembunyi yang sarat batubara starlight emas!",
         "reward": {
           "gold": 600,
-          "item": "emas",
+          "item": "emas_ore",
           "quantity": 8
         },
         "next": "starlight_vault"
@@ -1277,7 +1277,7 @@
         "text": "Anda meletakkan sesembahan kristal di altar kuno! Energi magis kaisar berbalik melumpuhkan sang Naga dan menghadiahi Anda peti permata berharga berderet!",
         "reward": {
           "gold": 700,
-          "item": "emas",
+          "item": "emas_ore",
           "quantity": 10
         },
         "next": "celestial_staircase"
@@ -1320,7 +1320,7 @@
         "text": "Melalui lorong pendingin generator supernova, Anda menemukan cadangan bahan bakar emas murni milik kapal perang pribadi Kaisar!",
         "reward": {
           "gold": 750,
-          "item": "emas",
+          "item": "emas_ore",
           "quantity": 12
         },
         "next": "inner_sanctum"
@@ -1363,7 +1363,7 @@
         "text": "Seluruh armada Bahtera Guild dari ribuan petualang meluncurkan meriam starlight secara serentak dari angkat luar, membobol benteng morian dan menjanjutkan koin emas kolosal!",
         "reward": {
           "gold": 800,
-          "item": "emas",
+          "item": "emas_ore",
           "quantity": 15
         },
         "next": "final_throne_rally"
@@ -1404,7 +1404,7 @@
         "id": "throne_failed",
         "type": "failure",
         "name": "Terlempar oleh Gelombang Supernova Xylarion",
-        "text": "Ledakan energi supernova dan tebakan plasma Xylarion melunturkan perisai Anda! Mundur segera ke pangkalan Aliansi Guild di bumi, konsultasi strategi build karakter di (/guide), borong ransum elixir suci di Pasar Escrow (/market), tempa perlengkapan dengan obsidian suki (/reforge, /socket), serta himpun kekuatan penuh Co-Op Anda (/coop) sebelum mencoba menakar kembali sejarah kosmik!"
+        "text": "Ledakan supernova Xylarion meluluhkan perisai! Periksa strategi di /guide, cari eliksir melalui /market, tempa perlengkapan lewat /gear reforge dan /gear socket, lalu himpun kekuatan Co-Op melalui /coop."
       }
     ]
   }

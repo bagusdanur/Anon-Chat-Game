@@ -52,6 +52,8 @@ test('panduan utama memakai syntax command produksi', () => {
   assert.doesNotMatch(help, /trade offer item \[item_id\]/);
   assert.match(help, /trade offer item \[nomor \/inv\]/);
   assert.match(help, /dungeon raid/);
+  const economy = fs.readFileSync(path.join(root, 'src/rpg/economy.js'), 'utf8');
+  assert.doesNotMatch(economy, /bot\.command\('shop2'|bot\.command\('buy2'/);
 });
 
 test('modul RPG tidak menahan shutdown process dengan cleanup timer', () => {

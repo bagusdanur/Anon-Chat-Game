@@ -52,6 +52,16 @@ async function load() {
         </div></div>
       </div>
       <div class="card" style="margin-top:16px">
+        <div class="card-header"><div class="card-title">Item Delivery</div></div>
+        <div class="card-body"><div class="info-grid">
+          ${cell('Catalog Items', Number(d.items?.catalog || 0))}
+          ${cell('Inventory Units', Number(d.items?.inventoryUnits || 0))}
+          ${cell('Equipment V2', Number(d.items?.equipmentInstances || 0))}
+          ${cell('Gems Delivered', Number(d.items?.gems || 0))}
+          ${cell('Region Materials', Number(d.items?.regionMaterials || 0))}
+        </div></div>
+      </div>
+      <div class="card" style="margin-top:16px">
         <div class="card-header"><div class="card-title">Feature Flags</div></div>
         <div class="card-body" style="display:flex;flex-wrap:wrap;gap:8px">
           ${d.featureFlags.map(flag => `

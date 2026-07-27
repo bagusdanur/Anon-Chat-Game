@@ -17,7 +17,8 @@ function setupProfessions(bot, { rateLimitCommand }) {
     return ctx.reply(
       `<b>🧰 PROFESSIONS</b>\n\n${lines.join('\n')}\n\n` +
       `<i>💡 /hunt → Hunting · /fish → Fishing · /mine → Mining\n` +
-      `/gather herb → Herbalism · /salvage dan /refine → Smithing</i>`,
+      `/gather herb → Herbalism · /salvage dan /refine → Smithing\n` +
+      `/craft [nomor resep consumable] → Alchemy · /upgrade → Enchanting</i>`,
       { parse_mode: 'HTML' },
     );
   });
@@ -33,7 +34,14 @@ function setupProfessions(bot, { rateLimitCommand }) {
     if (energy < 1) return ctx.reply('⚡ Butuh 1 energi untuk mencari tanaman.');
     spendEnergy(ctx.chat.id, 1);
     const roll = Math.random();
-    const itemId = roll < 0.7 ? 'daging_mentah' : roll < 0.95 ? 'ramuan_kecil' : 'ramuan_besar';
+    const pools = user.level >= 45
+      ? ['air_mata_gerhana', 'lotus_api', 'serpihan_astral']
+      : user.level >= 25
+        ? ['serpihan_astral', 'lotus_api', 'herba_kabut']
+        : user.level >= 12
+          ? ['sutra_racun', 'herba_kabut', 'lotus_api']
+          : ['herba_kabut', 'herba_kabut', 'sutra_racun'];
+    const itemId = pools[Math.min(pools.length - 1, Math.floor(roll * pools.length))];
     addItem(ctx.chat.id, itemId);
     const result = professions.grantXp(
       ctx.chat.id, 'herbalism', 8,

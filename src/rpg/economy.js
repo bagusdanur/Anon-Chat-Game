@@ -25,7 +25,11 @@ function getShopConfig() {
   try {
     const configPath = path.join(__dirname, '../../data/rpg_shops.json');
     if (fs.existsSync(configPath)) {
-      return JSON.parse(fs.readFileSync(configPath, 'utf8')).shop_items || [];
+      const content = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      return [
+        ...(content.shop_items || []).map(item => ({ ...item, min_level: item.min_level || 1 })),
+        ...(content.special_shop || []).map(item => ({ ...item, min_level: item.min_level || 20 })),
+      ].map((item, index) => ({ ...item, id: index + 1 }));
     }
   } catch (e) {
     console.error('Failed to load rpg_shops.json:', e);
@@ -56,10 +60,10 @@ const upgradeConfirmCache = new Map();
 // UX-03: Cache untuk pending sell confirmation (item epic/legendary)
 const sellConfirmCache = new Map();
 
-function resolveShopInput(input) {
+function resolveShopInput(input, level = 1) {
   // Bisa angka (ID) atau string (item_id)
   const num = parseInt(input);
-  const shopItems = getShopConfig();
+  const shopItems = getShopConfig().filter(item => level >= item.min_level);
   if (!isNaN(num)) return shopItems.find(s => s.id === num) || null;
   return shopItems.find(s => s.item_id === input.toLowerCase()) || null;
 }
@@ -139,76 +143,13 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     for (const s of shopItems) {
       const catalog = getCatalogItem(s.item_id);
       if (catalog) {
-        msg += `<code>[${s.id}]</code> ${RARITY_EMOJI[catalog.rarity]} <b>${catalog.display_name}</b> — ${s.buy_price}g\n`;
+        msg += `<code>[${s.id}]</code> ${RARITY_EMOJI[catalog.rarity]} <b>${catalog.display_name}</b> — ${s.buy_price.toLocaleString()}g`;
+        msg += user.level < s.min_level ? ` 🔒 Lv.${s.min_level}\n` : '\n';
       }
     }
     msg += `\n<i>Ketik /buy [nomor atau nama] untuk membeli</i>\n`;
     msg += `Contoh: <code>/buy 1</code> atau <code>/buy ramuan_kecil</code>`;
     ctx.reply(msg, { parse_mode: 'HTML' });
-  });
-
-  // ===== /shop2 — Special Shop (Lv20+, gold sink) =====
-function getSpecialShopConfig() {
-  try {
-    const configPath = path.join(__dirname, '../../data/rpg_shops.json');
-    if (fs.existsSync(configPath)) {
-      return JSON.parse(fs.readFileSync(configPath, 'utf8')).special_shop || [];
-    }
-  } catch (e) {
-    console.error('Failed to load rpg_shops.json (special_shop):', e);
-  }
-  return [];
-}
-
-  bot.command('shop2', rateLimitCommand, (ctx) => {
-    const userId = ctx.chat.id;
-    const user = getOrCreateUser(userId);
-    if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
-    if (user.level < 20) return ctx.reply('🔒 Special Shop unlock di <b>Lv 20</b>!', { parse_mode: 'HTML' });
-
-    let msg = `<b>🏪 SPECIAL SHOP</b> — Lv20+ Only\n`;
-    msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-    msg += `Saldo: 💰 <b>${user.gold}g</b> / <code>${GOLD_CAP}g</code>\n\n`;
-    
-    const specialShopItems = getSpecialShopConfig();
-    for (const item of specialShopItems) {
-      const catalog = getCatalogItem(item.item_id);
-      if (catalog) {
-        msg += `<code>[${item.id}]</code> ${RARITY_EMOJI[catalog.rarity]} <b>${catalog.display_name}</b> — ${item.buy_price.toLocaleString()}g\n`;
-      }
-    }
-    msg += `\n<i>Ketik /buy2 [nomor] untuk membeli</i>`;
-    ctx.reply(msg, { parse_mode: 'HTML' });
-  });
-
-  // ===== /buy2 — Beli dari Special Shop =====
-  bot.command('buy2', rateLimitCommand, (ctx) => {
-    const userId = ctx.chat.id;
-    const args = ctx.message.text.split(' ').slice(1);
-    const input = args.join('_').toLowerCase();
-
-    if (!input) return ctx.reply('Penggunaan: <code>/buy2 [nomor]</code>\nCek /shop2 untuk daftar.', { parse_mode: 'HTML' });
-
-    const user = getOrCreateUser(userId);
-    if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
-    if (user.level < 20) return ctx.reply('🔒 Special Shop unlock di <b>Lv 20</b>!', { parse_mode: 'HTML' });
-
-    const num = parseInt(input);
-    const specialShopItems = getSpecialShopConfig();
-    const shopEntry = specialShopItems.find(s => s.id === num);
-    if (!shopEntry) return ctx.reply('❌ Nomor tidak valid. Cek /shop2.', { parse_mode: 'HTML' });
-
-    const catalog = getCatalogItem(shopEntry.item_id);
-    if (spendGold(userId, shopEntry.buy_price)) {
-      if (!addItem(userId, shopEntry.item_id)) {
-        // Inventory penuh — kembalikan gold
-        addGold(userId, shopEntry.buy_price);
-        return ctx.reply('❌ Inventory penuh! Jual atau gunakan item dulu.', { parse_mode: 'HTML' });
-      }
-      ctx.reply(`✅ Berhasil membeli <b>${catalog.display_name}</b> seharga ${shopEntry.buy_price.toLocaleString()}g!`, { parse_mode: 'HTML' });
-    } else {
-      ctx.reply(`❌ Gold tidak cukup! Butuh ${shopEntry.buy_price.toLocaleString()}g. Saldo: ${user.gold}g.`, { parse_mode: 'HTML' });
-    }
   });
 
   // ===== /buy (terima nomor ID atau nama) =====
@@ -222,7 +163,14 @@ function getSpecialShopConfig() {
     const user = getOrCreateUser(userId);
     if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
 
-    const shopEntry = resolveShopInput(input);
+    const requestedNumber = Number(input);
+    const requested = Number.isInteger(requestedNumber)
+      ? getShopConfig().find(item => item.id === requestedNumber)
+      : getShopConfig().find(item => item.item_id === input);
+    if (requested && user.level < requested.min_level) {
+      return ctx.reply(`🔒 Item ini terbuka pada Lv.${requested.min_level}. Level-mu Lv.${user.level}.`);
+    }
+    const shopEntry = resolveShopInput(input, user.level);
     if (!shopEntry) return ctx.reply(`❌ Item "${input}" tidak ada di toko. Cek /shop.`);
 
     const catalog = getCatalogItem(shopEntry.item_id);
@@ -407,7 +355,8 @@ function getSpecialShopConfig() {
     const rarity = catalog ? RARITY_EMOJI[catalog.rarity] || '' : '';
     ctx.reply(`⚒️ <b>Crafting Berhasil!</b>\n\n${rarity} ${recipe.name} sudah masuk inventory!\n💰 Biaya: ${recipe.gold}g`, { parse_mode: 'HTML' });
     incrementQuestProgress(userId, 'craft');
-    professionService.grantXp(userId, 'smithing', 15, `telegram:${ctx.update.update_id}:craft`);
+    const craftProfession = catalog?.category === 'consumable' ? 'alchemy' : 'smithing';
+    professionService.grantXp(userId, craftProfession, 15, `telegram:${ctx.update.update_id}:craft`);
   });
 
   // ===== /use (terima nomor ID dari /inv atau nama) =====

@@ -19,8 +19,8 @@
   },
   "mine_loot": {
     "t1": { "common": ["tembaga","batu_bara"], "uncommon": ["tembaga", "besi_rongsok"], "rare": ["besi_rongsok"], "epic": [], "legendary": [] },
-    "t2": { "common": ["batu_bara"], "uncommon": ["besi"], "rare": ["perak"], "epic": [], "legendary": [] },
-    "t3": { "common": ["besi"], "uncommon": ["perak"], "rare": ["emas_ore"], "epic": ["emas_ore"], "legendary": ["berlian"] }
+    "t2": { "common": ["batu_bara"], "uncommon": ["besi"], "rare": ["perak","obsidian_murni"], "epic": ["ruby_gem","emerald_gem"], "legendary": [] },
+    "t3": { "common": ["besi"], "uncommon": ["perak","serpihan_astral"], "rare": ["emas_ore","kristal_nexus"], "epic": ["ruby_gem","sapphire_gem","emerald_gem","air_mata_gerhana"], "legendary": ["berlian","inti_antimateri","inti_supernova"] }
   },
   "rarity_rolls": [
     { "rarity": "legendary", "threshold": 0.005 },

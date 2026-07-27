@@ -109,7 +109,9 @@ function setupWorld(bot, { rateLimitCommand }) {
       : `\n\n➡️ Cari ${Math.max(0, 3 - result.progress.exploration_points)} poin lagi.`;
     return ctx.reply(
       `<b>${labels[encounter.type] || '🧭 Eksplorasi'}: ${encounter.name}</b>\n` +
-      `Kamu memperoleh <b>+${result.points}</b> poin eksplorasi.${stepUnlocked}`,
+      `Kamu memperoleh <b>+${result.points}</b> poin eksplorasi.` +
+      (result.material ? `\n📦 Material region: <b>${result.material.replace(/_/g, ' ')}</b>` : '') +
+      stepUnlocked,
       { parse_mode: 'HTML' },
     );
   }

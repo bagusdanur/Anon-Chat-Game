@@ -291,6 +291,79 @@
           "qty": 3
         }
       ]
+    },
+    {
+      "id": 18,
+      "result": "ramuan_resist",
+      "name": "🧪 Ramuan Resistensi",
+      "gold": 90,
+      "materials": [
+        { "item": "herba_kabut", "qty": 3 },
+        { "item": "sutra_racun", "qty": 2 }
+      ]
+    },
+    {
+      "id": 19,
+      "result": "eliksir_astral",
+      "name": "🌌 Eliksir Astral",
+      "gold": 300,
+      "materials": [
+        { "item": "serpihan_astral", "qty": 4 },
+        { "item": "kristal_nexus", "qty": 2 },
+        { "item": "lotus_api", "qty": 2 }
+      ]
+    },
+    {
+      "id": 20,
+      "result": "ruby_gem",
+      "name": "🔴 Ruby Gem",
+      "gold": 450,
+      "materials": [
+        { "item": "emas_ore", "qty": 2 },
+        { "item": "lotus_api", "qty": 3 }
+      ]
+    },
+    {
+      "id": 21,
+      "result": "sapphire_gem",
+      "name": "🔵 Sapphire Gem",
+      "gold": 450,
+      "materials": [
+        { "item": "kristal_nexus", "qty": 3 },
+        { "item": "mutiara", "qty": 2 }
+      ]
+    },
+    {
+      "id": 22,
+      "result": "emerald_gem",
+      "name": "🟢 Emerald Gem",
+      "gold": 450,
+      "materials": [
+        { "item": "obsidian_murni", "qty": 3 },
+        { "item": "air_mata_gerhana", "qty": 1 }
+      ]
+    },
+    {
+      "id": 23,
+      "result": "armor_naga",
+      "name": "🐉 Astral Dragon Armor",
+      "gold": 1800,
+      "materials": [
+        { "item": "inti_antimateri", "qty": 1 },
+        { "item": "kristal_nexus", "qty": 5 },
+        { "item": "obsidian_murni", "qty": 5 }
+      ]
+    },
+    {
+      "id": 24,
+      "result": "kalung_naga",
+      "name": "☀️ Kalung Inti Supernova",
+      "gold": 2400,
+      "materials": [
+        { "item": "inti_supernova", "qty": 1 },
+        { "item": "serpihan_astral", "qty": 8 },
+        { "item": "berlian", "qty": 2 }
+      ]
     }
   ]
 }

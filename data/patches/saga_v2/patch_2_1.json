@@ -32,7 +32,7 @@
       "chapter": 5,
       "order": 2,
       "title": "Act II - Penaklukan Leviathan Kosmik di Benteng Kristal",
-      "description": "Di ujung kehampaan Void, berdirilah Benteng Kristal Astral yang menjadi markas utama monster antarplanet! Sang pemakan bintang, Leviathan Kosmik, tlah terbangun oleh pecahan segel Malakor. Kerahkan sinergi Aliansi Guild, pasang perlengkapan terbaik hasil /reforge & /socket, dan taklukkan dungeon Benteng Kristal Astral (/dungeon) untuk menyelamatkan tatanan kosmik!",
+      "description": "Di ujung kehampaan Void, berdirilah Benteng Kristal Astral yang menjadi markas utama monster antarplanet! Sang pemakan bintang, Leviathan Kosmik, tlah terbangun oleh pecahan segel Malakor. Kerahkan sinergi Aliansi Guild, pasang perlengkapan terbaik melalui /gear reforge dan /gear socket, lalu taklukkan Benteng Kristal Astral melalui /dungeon!",
       "requires": "chapter5_astral_nexus",
       "version": 1,
       "published": true,
@@ -265,7 +265,7 @@
           "id": "void_failed",
           "type": "failure",
           "name": "Terhempas badai Radiasi Kosmik",
-          "text": "Tekan gravitas kencang dan badai tembakan energi Kosmik menggemparkan pertahanan Anda! Segera evakuasi diri kembali ke kabin Bahtera Guild, tingkatkan kualitas atribut via tips di (/guide), reforge & socket gem pada gear Anda (/reforge, /socket), serta ajak rekan Aliansi (/coop, /guild) sebelum kembali menggebrak dari pelabuhan udara!"
+          "text": "Tekanan gravitasi dan badai energi Kosmik menghancurkan pertahananmu! Buka /guide, tingkatkan gear melalui /gear reforge dan /gear socket, lalu ajak rekan melalui /coop atau /guild sebelum mencoba kembali."
         }
       ]
     }

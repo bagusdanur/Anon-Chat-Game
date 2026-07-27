@@ -136,6 +136,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 16 },
     { version: 17 },
     { version: 18 },
+    { version: 19 },
   ]);
   db.close();
 });
@@ -346,8 +347,12 @@ test('long dungeon combat supports persisted tactical turns', () => {
 test('long dungeon completion rewards are idempotent and include treasure', () => {
   const db = createTestDb();
   db.prepare("UPDATE rpg_users SET hp=200,max_hp=200,atk=100,def=100 WHERE telegram_user_id='1'").run();
+  db.prepare(`
+    INSERT INTO items_catalog (item_id,display_name,category,rarity,sell_price,effect_json)
+    VALUES ('pedang_karatan','Pedang Karatan','weapon','rare',30,'{"atk_bonus":2}')
+  `).run();
   publishDungeons(db, loadDungeons());
-  const dungeon = createLongDungeonService(db, { random: () => 1 });
+  const dungeon = createLongDungeonService(db, { random: () => 0 });
   let session = dungeon.startSolo('1', 'goblin_ruins').session;
   const choices = [
     'right', 'careful', 'claim', 'crypt', 'fight', 'rest',
@@ -366,10 +371,12 @@ test('long dungeon completion rewards are idempotent and include treasure', () =
   ).all('1');
   assert.deepEqual(inventory, [
     { item_id: 'besi_rongsok', quantity: 3 },
+    { item_id: 'herba_kabut', quantity: 1 },
     { item_id: 'ramuan_kecil', quantity: 1 },
   ]);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_dungeon_reward_claims').get().count, 1);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 1);
+  assert.equal(db.prepare('SELECT count(1) count FROM rpg_equipment_instances').get().count, 1);
   db.close();
 });
 
@@ -394,8 +401,14 @@ test('campaign events are idempotent and unlock the next quest', () => {
   });
   assert.equal(duplicate.processed, false);
   const quests = campaign.list('1');
-  assert.equal(quests.find(quest => quest.quest_id === 'chapter1_mist_clues').status, 'completed');
+  assert.equal(quests.find(quest => quest.quest_id === 'chapter1_mist_clues').status, 'claimed');
   assert.equal(quests.find(quest => quest.quest_id === 'chapter1_goblin_ruins').status, 'active');
+  assert.equal(db.prepare(
+    "SELECT count(1) count FROM rpg_campaign_reward_claims WHERE user_id='1'",
+  ).get().count, 1);
+  assert.equal(db.prepare(
+    "SELECT gold FROM rpg_users WHERE telegram_user_id='1'",
+  ).get().gold, 1025);
   db.close();
 });
 
@@ -525,7 +538,10 @@ test('achievements and item collection derive from persistent game state', () =>
   `).run();
   const achievements = endgame.listAchievements('1');
   assert.equal(achievements.find(item => item.id === 'tower_10').unlocked, true);
-  assert.deepEqual(endgame.collection('1'), { owned: 1, total: 5, percent: 20 });
+  const collection = endgame.collection('1');
+  assert.equal(collection.owned, 1);
+  assert.ok(collection.total >= 5);
+  assert.equal(collection.percent, Math.floor(collection.owned / collection.total * 100));
   db.close();
 });
 
@@ -1056,7 +1072,7 @@ test('RPG operations telemetry reports economy and invariant anomalies without u
   assert.equal(telemetry.anomalies.invalidInventory, 0);
   assert.equal(telemetry.dungeonBalance.totalRuns, 0);
   assert.equal(telemetry.dungeonBalance.actions, 0);
-  assert.equal(telemetry.migrations[0].version, 18);
+  assert.equal(telemetry.migrations[0].version, 19);
   assert.equal(Array.isArray(telemetry.featureFlags), true);
   assert.equal(JSON.stringify(telemetry).includes('telegram_user_id'), false);
   db.close();

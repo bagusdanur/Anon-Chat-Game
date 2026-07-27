@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { createLedgerService } = require('./ledger');
 require('../../../data/patch_loader');
 
 const CAMPAIGN_FILE = path.join(__dirname, '../../../data/rpg_campaign.json');
@@ -39,14 +40,86 @@ function publishCampaign(db, definitions) {
     WHERE excluded.content_version > rpg_campaign_definitions.content_version
   `);
   const now = Math.floor(Date.now() / 1000);
-  db.transaction(() => definitions.forEach(quest => statement.run(
-    quest.id, quest.chapter, quest.order, quest.title, JSON.stringify(quest),
-    quest.published ? 1 : 0, quest.version || 1, now,
-  )))();
+  db.transaction(() => definitions.forEach(quest => {
+    if (quest.rewards?.item && !db.prepare(
+      'SELECT 1 ok FROM items_catalog WHERE item_id=?',
+    ).get(quest.rewards.item)) {
+      throw new TypeError(`Campaign ${quest.id}: unknown reward item ${quest.rewards.item}`);
+    }
+    statement.run(
+      quest.id, quest.chapter, quest.order, quest.title, JSON.stringify(quest),
+      quest.published ? 1 : 0, quest.version || 1, now,
+    );
+  }))();
 }
 
 function createCampaignService(db, options = {}) {
   const now = options.now || (() => Math.floor(Date.now() / 1000));
+  const xpToNextLevel = options.xpToNextLevel || (level => Math.floor(40 * Math.pow(level, 1.2)));
+  const calcStats = options.calcStats || (() => null);
+  const ledger = createLedgerService(db);
+
+  function awardQuest(userId, quest) {
+    const reward = quest.definition.rewards || {};
+    const claim = db.prepare(`
+      INSERT OR IGNORE INTO rpg_campaign_reward_claims
+        (user_id,quest_id,reward_json,claimed_at)
+      VALUES (?,?,?,?)
+    `).run(String(userId), quest.quest_id, JSON.stringify(reward), now());
+    if (claim.changes === 0) return false;
+    if (reward.gold) {
+      const before = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?')
+        .get(String(userId)).gold;
+      db.prepare('UPDATE rpg_users SET gold=MIN(50000,gold+?),updated_at=? WHERE telegram_user_id=?')
+        .run(reward.gold, now(), String(userId));
+      const balance = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?')
+        .get(String(userId)).gold;
+      if (balance > before) {
+        ledger.record({
+          entryKey: `campaign:${quest.quest_id}:${userId}:gold`,
+          userId,
+          amount: balance - before,
+          balanceAfter: balance,
+          reason: 'campaign_reward',
+          referenceType: 'campaign',
+          referenceId: quest.quest_id,
+        });
+      }
+    }
+    if (reward.item) {
+      db.prepare(`
+        INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
+        VALUES (?,?,?)
+        ON CONFLICT(telegram_user_id,item_id)
+        DO UPDATE SET quantity=quantity+excluded.quantity
+      `).run(String(userId), reward.item, reward.quantity || 1);
+    }
+    if (reward.xp) {
+      const user = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id=?').get(String(userId));
+      let level = user.level;
+      let xp = user.xp + reward.xp;
+      while (xp >= xpToNextLevel(level)) {
+        xp -= xpToNextLevel(level);
+        level++;
+      }
+      const stats = calcStats(user.class_name, level);
+      if (stats) {
+        db.prepare(`
+          UPDATE rpg_users SET level=?,xp=?,max_hp=?,atk=?,def=?,magic_atk=?,
+            crit_rate=?,crit_multi=?,updated_at=? WHERE telegram_user_id=?
+        `).run(level, xp, stats.max_hp, stats.atk, stats.def, stats.magic_atk,
+          stats.crit_rate, stats.crit_multi, now(), String(userId));
+      } else {
+        db.prepare('UPDATE rpg_users SET level=?,xp=?,updated_at=? WHERE telegram_user_id=?')
+          .run(level, xp, now(), String(userId));
+      }
+    }
+    db.prepare(`
+      UPDATE rpg_campaign_progress_v2 SET status='claimed'
+      WHERE user_id=? AND quest_id=? AND status='completed'
+    `).run(String(userId), quest.quest_id);
+    return true;
+  }
 
   function ensureAvailable(userId) {
     const quests = db.prepare(`
@@ -71,17 +144,29 @@ function createCampaignService(db, options = {}) {
   return {
     list(userId) {
       ensureAvailable(userId);
-      return db.prepare(`
+      const query = db.prepare(`
         SELECT p.*, d.title, d.chapter, d.sort_order, d.definition_json
         FROM rpg_campaign_progress_v2 p
         JOIN rpg_campaign_definitions d ON d.quest_id = p.quest_id
         WHERE p.user_id = ?
         ORDER BY d.chapter, d.sort_order
-      `).all(String(userId)).map(row => ({
+      `);
+      let quests = query.all(String(userId)).map(row => ({
         ...row,
         progress: JSON.parse(row.objective_json),
         definition: JSON.parse(row.definition_json),
       }));
+      for (const quest of quests.filter(item => item.status === 'completed')) {
+        awardQuest(userId, quest);
+      }
+      if (quests.some(item => item.status === 'completed')) {
+        quests = query.all(String(userId)).map(row => ({
+          ...row,
+          progress: JSON.parse(row.objective_json),
+          definition: JSON.parse(row.definition_json),
+        }));
+      }
+      return quests;
     },
     recordEvent(userId, event) {
       const timestamp = now();
@@ -121,7 +206,10 @@ function createCampaignService(db, options = {}) {
             JSON.stringify(quest.progress), done ? 'completed' : 'active',
             done ? timestamp : null, String(userId), quest.quest_id,
           );
-          if (done) completed.push(quest.quest_id);
+          if (done) {
+            completed.push(quest.quest_id);
+            awardQuest(userId, quest);
+          }
         }
         ensureAvailable(userId);
         return { processed: true, completed };

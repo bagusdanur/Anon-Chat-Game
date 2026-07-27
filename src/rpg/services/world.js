@@ -81,7 +81,26 @@ function createWorldService(db, options = {}) {
         target: content.id,
         amount: 1,
       });
-      return { success: true, encounter, region: content, points, progress: updated };
+      const materialPools = {
+        aldenmoor_outskirts: ['herba_kabut', 'tembaga'],
+        spider_lair_valley: ['sutra_racun', 'herba_kabut'],
+        shadow_volcano: ['obsidian_murni', 'lotus_api'],
+        ethereal_isles: ['serpihan_astral', 'kristal_nexus'],
+        eclipse_sanctuary: ['air_mata_gerhana', 'serpihan_astral'],
+        celestial_void_throne: ['inti_antimateri', 'inti_supernova'],
+      };
+      let material = null;
+      const pool = materialPools[content.id] || [];
+      if (pool.length && random() < 0.55) {
+        material = pool[Math.floor(random() * pool.length)];
+        db.prepare(`
+          INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
+          VALUES (?,?,1)
+          ON CONFLICT(telegram_user_id,item_id)
+          DO UPDATE SET quantity=quantity+1
+        `).run(String(userId), material);
+      }
+      return { success: true, encounter, region: content, points, progress: updated, material };
     },
   };
 }

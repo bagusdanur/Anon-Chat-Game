@@ -49,6 +49,20 @@ function collectRpgTelemetry(db, featureFlags) {
     quests: count('SELECT count(1) count FROM rpg_campaign_definitions WHERE published=1'),
     raids: count('SELECT count(1) count FROM rpg_raid_definitions WHERE published=1'),
   };
+  const items = db.prepare(`
+    SELECT
+      (SELECT count(1) FROM items_catalog) catalog,
+      (SELECT coalesce(sum(quantity),0) FROM rpg_inventory) inventoryUnits,
+      (SELECT count(1) FROM rpg_equipment_instances) equipmentInstances,
+      (SELECT coalesce(sum(quantity),0) FROM rpg_inventory
+        WHERE item_id IN ('ruby_gem','sapphire_gem','emerald_gem')) gems,
+      (SELECT coalesce(sum(quantity),0) FROM rpg_inventory
+        WHERE item_id IN (
+          'herba_kabut','sutra_racun','obsidian_murni','lotus_api',
+          'serpihan_astral','kristal_nexus','air_mata_gerhana',
+          'inti_antimateri','inti_supernova'
+        )) regionMaterials
+  `).get();
   const anomalies = {
     negativeGold: count('SELECT count(1) count FROM rpg_users WHERE gold<0'),
     invalidInventory: count('SELECT count(1) count FROM rpg_inventory WHERE quantity<=0'),
@@ -70,7 +84,7 @@ function collectRpgTelemetry(db, featureFlags) {
       ...economy, totalGold,
       sourceSinkRatio: economy.sinks ? Number((economy.sources / economy.sinks).toFixed(2)) : null,
     },
-    market, sessions, dungeonBalance, content, anomalies, migrations, season,
+    market, sessions, dungeonBalance, items, content, anomalies, migrations, season,
     featureFlags: featureFlags.list(),
   };
 }

@@ -8,6 +8,14 @@ function syncPatches() {
   const allRegions = [];
   const allCampaigns = [];
   const allDungeons = [];
+  const ITEM_ALIASES = { emas: 'emas_ore' };
+  const normalizeRewards = value => {
+    if (!value || typeof value !== 'object') return;
+    if (value.item && ITEM_ALIASES[value.item]) value.item = ITEM_ALIASES[value.item];
+    for (const nested of Object.values(value)) {
+      if (nested && typeof nested === 'object') normalizeRewards(nested);
+    }
+  };
 
   function findJsonFiles(dir) {
     let results = [];
@@ -37,6 +45,17 @@ function syncPatches() {
     .filter(p => p && p.published === true);
 
   patches.sort((a, b) => (parseFloat(a.patch || 0) - parseFloat(b.patch || 0)));
+  for (const patch of patches) {
+    for (const collection of ['regions', 'campaigns', 'dungeons']) {
+      for (const definition of patch[collection] || []) {
+        const before = JSON.stringify(definition);
+        normalizeRewards(definition);
+        if (JSON.stringify(definition) !== before) {
+          definition.version = Number(definition.version || 1) + 1;
+        }
+      }
+    }
+  }
 
   patches.forEach(p => {
     if (Array.isArray(p.regions)) allRegions.push(...p.regions);

@@ -145,7 +145,7 @@
     "title": "Act I - Jelajah Kepulauan Melayang Ethereal",
     "description": "Naga Bayangan Malakor berhasil membuka Gerbang Astral sebelum dikalahkan! Lintasi Kepulauan Melayang Ethereal di angkasa luar, bertarung melawan Golem Kristal Astral, dan kumpulkan 5 Serpihan Bintang Astral via /explore!",
     "requires": "chapter3_volcano_fortress",
-    "version": 1,
+    "version": 2,
     "published": true,
     "objectives": [
       {
@@ -158,7 +158,7 @@
     "rewards": {
       "xp": 1000,
       "gold": 600,
-      "item": "emas",
+      "item": "emas_ore",
       "quantity": 2
     }
   },
@@ -169,7 +169,7 @@
     "title": "Act II - Peluncuran Bahtera Guild & Penaklukan Void",
     "description": "Rakit Bahtera Guild menggunakan Batu Gravitasi dan Batu Kristal! Tantang perburuan monster kosmik di angkasa luar untuk menstabilkan kemudi kapal udara dan mengamankan jalur pelayaran dimensi!",
     "requires": "chapter4_ethereal_isles",
-    "version": 1,
+    "version": 2,
     "published": true,
     "objectives": [
       {
@@ -181,7 +181,7 @@
     "rewards": {
       "xp": 1500,
       "gold": 1000,
-      "item": "emas",
+      "item": "emas_ore",
       "quantity": 5
     }
   },
@@ -192,7 +192,7 @@
     "title": "Act I - Titik Temu Dimensi Astral & Misteri Starlight",
     "description": "Setelah meluncur dengan Bahtera Guild di angkasa luar Kepulauan Melayang Ethereal, armada petualang menemukan fenomena aneh di Titik Temu Dimensi Astral! Badai kosmik mengancam menghancurkan navigasi kapal udara. Jelajahi Kepulauan Ethereal sebanyak 6 kali via /explore, kumpulkan kristal starlight, dan amankan radar angkasa!",
     "requires": "chapter4_airship_ascent",
-    "version": 1,
+    "version": 2,
     "published": true,
     "objectives": [
       {
@@ -205,7 +205,7 @@
     "rewards": {
       "xp": 1500,
       "gold": 900,
-      "item": "emas",
+      "item": "emas_ore",
       "quantity": 4
     }
   },
@@ -214,9 +214,9 @@
     "chapter": 5,
     "order": 2,
     "title": "Act II - Penaklukan Leviathan Kosmik di Benteng Kristal",
-    "description": "Di ujung kehampaan Void, berdirilah Benteng Kristal Astral yang menjadi markas utama monster antarplanet! Sang pemakan bintang, Leviathan Kosmik, tlah terbangun oleh pecahan segel Malakor. Kerahkan sinergi Aliansi Guild, pasang perlengkapan terbaik hasil /reforge & /socket, dan taklukkan dungeon Benteng Kristal Astral (/dungeon) untuk menyelamatkan tatanan kosmik!",
+    "description": "Di ujung kehampaan Void, berdirilah Benteng Kristal Astral yang menjadi markas utama monster antarplanet! Sang pemakan bintang, Leviathan Kosmik, tlah terbangun oleh pecahan segel Malakor. Kerahkan sinergi Aliansi Guild, pasang perlengkapan terbaik melalui /gear reforge dan /gear socket, lalu taklukkan Benteng Kristal Astral melalui /dungeon!",
     "requires": "chapter5_astral_nexus",
-    "version": 1,
+    "version": 2,
     "published": true,
     "objectives": [
       {
@@ -229,7 +229,7 @@
     "rewards": {
       "xp": 2500,
       "gold": 1500,
-      "item": "emas",
+      "item": "emas_ore",
       "quantity": 10
     }
   },
@@ -240,7 +240,7 @@
     "title": "Act I - Menjemput Gerhana Angkasa di Suaka Abadi",
     "description": "Kemenangan melawan Leviathan Kosmik membuka gerbang menuju daerah terlarang Galaksi Utara! Mendaratlah dengan Bahtera Guild Anda di Suaka Gerhana Abadi (/explore) sebanyak 6 kali, kalahkan pengintai Ksatria Gerhana, dan petik hasil bumi angkasanya via profesi kuno (/gather, /mine, /fish) untuk bersiap bertarung di zona anti-materi!",
     "requires": "chapter5_leviathan_raid",
-    "version": 1,
+    "version": 2,
     "published": true,
     "objectives": [
       {
@@ -253,7 +253,7 @@
     "rewards": {
       "xp": 2000,
       "gold": 1200,
-      "item": "emas",
+      "item": "emas_ore",
       "quantity": 6
     }
   },
@@ -262,9 +262,9 @@
     "chapter": 6,
     "order": 2,
     "title": "Act II - Penaklukan Menara Anti-Materi & Archon Valtharor",
-    "description": "Menara Anti-Materi Prisma menjulang tinggi memancarkan gelombang destruktif yang menghalangi jalan menuju singgahsana Kaisar Kosmik! Di puncaknya bertahta Archon Malaikat Void Valtharor yang perkasa. Tingkatkan kombinasi gem via /socket, atur susunan skill terbaik via /skill, dan kerahkan tim Co-Op Anda menembus dungeon Menara Anti-Materi (/dungeon)!",
+    "description": "Menara Anti-Materi Prisma menghalangi jalan menuju singgasana Kaisar Kosmik! Tingkatkan kombinasi gem melalui /gear socket, atur skill melalui /skill, dan kerahkan tim Co-Op menembus Menara Anti-Materi lewat /dungeon!",
     "requires": "chapter6_eclipse_journey",
-    "version": 1,
+    "version": 2,
     "published": true,
     "objectives": [
       {
@@ -277,7 +277,7 @@
     "rewards": {
       "xp": 3000,
       "gold": 2000,
-      "item": "emas",
+      "item": "emas_ore",
       "quantity": 12
     }
   },
@@ -288,7 +288,7 @@
     "title": "Act I - Pengepungan Singguhsana Ruang Hampa di Jantung Galaksi",
     "description": "Dengan runtuhnya Menara Anti-Materi, armada Bahtera Guild kini berhadapan langsung dengan Singguhsana Ruang Hampa Kaisar Kosmik! Jelajahi kawasan berbahaya ini via /explore sebanyak 8 kali, bertempur melawan Penjaga Tahta Elit, dan reforge perlengkapan emas Anda via profesi kuno (/gather, /mine) untuk bersiap bertembur di 20 ruangan paling mematikan dalam sejarah!",
     "requires": "chapter6_antimatter_spire",
-    "version": 1,
+    "version": 2,
     "published": true,
     "objectives": [
       {
@@ -301,7 +301,7 @@
     "rewards": {
       "xp": 3500,
       "gold": 2500,
-      "item": "emas",
+      "item": "emas_ore",
       "quantity": 15
     }
   },
@@ -312,7 +312,7 @@
     "title": "Act II - KLIMAKS SAGA II: Runtuhnya Kaisar Kosmik Xylarion",
     "description": "Kaisar Kosmik Xylarion duduk di atas tahta meteor murni, merencanakan pembinasaan dunia Aldenmoor dengan meriam supernova! Satukan kekuatan maksimal bersama Aliansi Guild, optimalkan susunan skill tertinggi via /skill, dan kerahkan ketangkasan Duo Co-Op untuk mendobrak 20 ruangan Istana Tahta Kaisar (/dungeon) demi menamatkan Saga II dan mengukirkankan namamu di prasasti kekalahan Kaisar!",
     "requires": "chapter7_throne_siege",
-    "version": 1,
+    "version": 2,
     "published": true,
     "objectives": [
       {
@@ -325,7 +325,7 @@
     "rewards": {
       "xp": 6000,
       "gold": 5000,
-      "item": "emas",
+      "item": "emas_ore",
       "quantity": 30
     }
   }

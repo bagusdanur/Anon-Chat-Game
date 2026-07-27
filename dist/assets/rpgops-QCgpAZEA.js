@@ -1,4 +1,4 @@
-import{a as e,c as t,l as n,r,s as i,u as a}from"./index-tHrAHEAI.js";async function o(t){t.innerHTML=`<div class="page-enter">
+import{a as e,c as t,l as n,r,s as i,u as a}from"./index-BYfOSL3v.js";async function o(t){t.innerHTML=`<div class="page-enter">
     <div class="card"><div class="card-header">
       <div class="card-title">${u(`activity`)} RPG Operations</div>
       <button class="btn btn-outline btn-sm" id="ops-refresh">${u(`refresh-cw`)}</button>
@@ -25,6 +25,16 @@ import{a as e,c as t,l as n,r,s as i,u as a}from"./index-tHrAHEAI.js";async func
           ${l(`Combo Rate`,u(a.combos))}
           ${l(`Enemy Cycles`,Number(a.enemyCycles||0))}
           ${l(`Avg. Duration`,`${Math.round(Number(a.averageDurationSeconds||0)/60)}m`)}
+        </div></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="card-header"><div class="card-title">Item Delivery</div></div>
+        <div class="card-body"><div class="info-grid">
+          ${l(`Catalog Items`,Number(n.items?.catalog||0))}
+          ${l(`Inventory Units`,Number(n.items?.inventoryUnits||0))}
+          ${l(`Equipment V2`,Number(n.items?.equipmentInstances||0))}
+          ${l(`Gems Delivered`,Number(n.items?.gems||0))}
+          ${l(`Region Materials`,Number(n.items?.regionMaterials||0))}
         </div></div>
       </div>
       <div class="card" style="margin-top:16px">
