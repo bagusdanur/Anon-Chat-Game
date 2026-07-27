@@ -135,6 +135,11 @@ function createLongDungeonService(db, options = {}) {
     };
   }
 
+  function effectiveDefense(user) {
+    const bonusDef = Math.max(0, Number(equipment.bonuses(user.telegram_user_id).def) || 0);
+    return Math.max(0, Number(user.def) || 0) + bonusDef;
+  }
+
   function getAlias(userId) {
     return db.prepare('SELECT alias FROM rpg_character_aliases WHERE user_id = ?')
       .get(String(userId))?.alias || 'Petualang Anonim';
@@ -412,6 +417,9 @@ function createLongDungeonService(db, options = {}) {
       deferIncoming: options.deferIncoming,
       telegraphed: combat.telegraphNext,
       mitigationOverride: options.mitigationOverride,
+      defense: ally
+        ? Math.floor((effectiveDefense(actor) + effectiveDefense(ally)) / 2)
+        : effectiveDefense(actor),
     });
     if (!defeated && !options.deferIncoming) {
       combat.enemyTurns = (combat.enemyTurns || 0) + 1;

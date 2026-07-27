@@ -42,11 +42,48 @@ function strongestSkill(classId, level) {
     })[0] || null;
 }
 
+// These profiles are intentionally built from bonuses that a player can obtain
+// through the live forge: a class weapon/staff, armor, and accessory.  They do
+// not grant imaginary set effects or impossible affixes, so the simulator is a
+// useful promise of the real game rather than a best-case spreadsheet.
+function gearProfile(classDef, tier) {
+  const primary = classDef.damageType === 'magic' ? 'magic' : 'atk';
+  const profile = { name: '', atk: 0, def: 0, magic: 0, hp: 0, critRate: 0 };
+  if (tier === 'tanpa_gear') return { ...profile, name: 'Tanpa gear' };
+  if (tier === 'gear_wajar') {
+    return {
+      ...profile,
+      name: 'Gear wajar',
+      [primary]: 16, // rare +3 weapon/staff, affix, socket, and accessory affix
+      def: 18, // epic armor +3, warding affix, and emerald socket
+      hp: 18,
+      critRate: 0.03,
+    };
+  }
+  return {
+    ...profile,
+    name: 'Gear matang',
+    [primary]: 32, // legendary +8 weapon/staff plus high-quality relevant affixes/gems
+    def: 32,
+    hp: 42,
+    critRate: 0.08,
+  };
+}
+
 function simulateEncounter({
-  room, classDef, level, recommendedLevel, mode, strategy, samples, seed,
+  room, classDef, level, recommendedLevel, mode, strategy, gearTier, samples, seed,
 }) {
   const random = seededRandom(seed);
-  const stats = classStats(classDef, level);
+  const baseStats = classStats(classDef, level);
+  const gear = gearProfile(classDef, gearTier);
+  const stats = {
+    ...baseStats,
+    atk: baseStats.atk + gear.atk,
+    def: baseStats.def + gear.def,
+    magic: baseStats.magic + gear.magic,
+    hp: baseStats.hp + gear.hp,
+    critRate: Math.min(0.5, baseStats.critRate + gear.critRate),
+  };
   const actorPower = stats.atk + stats.def + stats.magic + Math.floor(level * 1.5);
   const partyPower = combinedPower(actorPower, actorPower, mode === 'duo');
   const maxHp = stats.hp * (mode === 'duo' ? 2 : 1);
@@ -100,6 +137,7 @@ function simulateEncounter({
           deferIncoming: actor < actors - 1,
           telegraphed: telegraphNext,
           mitigationOverride: strategy === 'rotation' && telegraphNext ? 0.25 : undefined,
+          defense: stats.def,
         });
         if (enemyHp > 0 && actor === actors - 1) enemyTurns++;
         hp = Math.max(0, hp - received);
@@ -127,6 +165,7 @@ for (const dungeon of dungeons) {
     const level = levelKind === 'min' ? dungeon.min_level : (dungeon.recommended_level || dungeon.min_level);
     for (const mode of ['solo', 'duo']) {
       for (const strategy of ['attack', 'rotation']) {
+        for (const gearTier of ['tanpa_gear', 'gear_wajar', 'gear_matang']) {
         const results = [];
         for (const [classIndex, classDef] of classes.entries()) {
           for (const [roomIndex, room] of encounters.entries()) {
@@ -139,8 +178,9 @@ for (const dungeon of dungeons) {
                 recommendedLevel: dungeon.recommended_level || dungeon.min_level,
                 mode,
                 strategy,
+                gearTier,
                 samples,
-                seed: level * 100000 + classIndex * 1000 + roomIndex * 10 + mode.length + strategy.length,
+                seed: level * 100000 + classIndex * 1000 + roomIndex * 10 + mode.length + strategy.length + gearTier.length,
               }),
             });
           }
@@ -152,14 +192,34 @@ for (const dungeon of dungeons) {
           level: `${levelKind}:${level}`,
           mode,
           strategy,
+          gear: gearProfile(classes[0], gearTier).name,
           encounterWin: `${(average(results, 'winRate') * 100).toFixed(1)}%`,
           bossWin: `${(average(bossResults, 'winRate') * 100).toFixed(1)}%`,
           turns: average(results, 'turns').toFixed(1),
           hpCost: `${(average(results, 'hpCost') * 100).toFixed(1)}%`,
         });
+        }
       }
     }
   }
 }
 
 console.table(rows);
+
+const endgame = rows.filter(row =>
+  row.dungeon === 'emperor_throne_citadel' && row.level === 'recommended:55' &&
+  row.mode === 'solo' && row.strategy === 'rotation',
+);
+console.log('\nTarget final boss (solo, tactical rotation):');
+console.table(endgame.map(row => ({ gear: row.gear, bossWin: row.bossWin, turns: row.turns, hpCost: row.hpCost })));
+
+const endgameRate = gearName => Number(endgame.find(row => row.gear === gearName)?.bossWin.replace('%', ''));
+const bareRate = endgameRate('Tanpa gear');
+const normalGearRate = endgameRate('Gear wajar');
+const matureGearRate = endgameRate('Gear matang');
+if (!(bareRate <= 25 && normalGearRate >= 45 && matureGearRate >= 70 && matureGearRate > normalGearRate)) {
+  throw new Error(
+    `Balance gear final boss gagal: tanpa=${bareRate}%, wajar=${normalGearRate}%, matang=${matureGearRate}%`,
+  );
+}
+console.log('PASS: gear memengaruhi peluang boss akhir; solo tanpa gear bukan jalur andal.');

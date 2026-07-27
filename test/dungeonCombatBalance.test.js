@@ -10,9 +10,9 @@ const {
 test('shared dungeon balance formulas preserve production tactical values', () => {
   const combat = { type: 'combat', enemy: { power: 20, damage: 10 } };
   const boss = { type: 'boss', enemy: { power: 20, damage: 10 } };
-  assert.equal(enemyMaxHp(combat, 'solo'), 80);
-  assert.equal(enemyMaxHp(boss, 'solo'), 120);
-  assert.equal(enemyMaxHp(boss, 'duo'), 198);
+  assert.equal(enemyMaxHp(combat, 'solo'), 100);
+  assert.equal(enemyMaxHp(boss, 'solo'), 280);
+  assert.equal(enemyMaxHp(boss, 'duo'), 462);
   assert.equal(combinedPower(100, 80, true), 124);
   assert.equal(combinedPower(100, 15, false), 115);
   assert.equal(outgoingDamage({
@@ -33,4 +33,7 @@ test('shared dungeon balance formulas preserve production tactical values', () =
   assert.equal(incomingDamage({
     enemyDamage: 10, mode: 'solo', action: 'defend', telegraphed: true,
   }), 6);
+  assert.equal(incomingDamage({
+    enemyDamage: 100, mode: 'solo', action: 'attack', defense: 100,
+  }), 74);
 });

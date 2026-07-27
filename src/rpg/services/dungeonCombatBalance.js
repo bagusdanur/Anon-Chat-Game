@@ -1,5 +1,9 @@
 function enemyMaxHp(room, mode = 'solo', recommendedLevel = 1) {
-  const base = Math.max(8, Number(room.enemy.power) * (room.type === 'boss' ? 6 : 4));
+  // Tactical encounters must take several deliberate turns.  Bosses previously
+  // died in one skill rotation at their recommended level, which made forged
+  // equipment and co-op coordination largely cosmetic.
+  const roomMultiplier = room.type === 'boss' ? 14 : 5;
+  const base = Math.max(8, Number(room.enemy.power) * roomMultiplier);
   const levelScale = 1 + Math.max(0, Number(recommendedLevel) - 10) * 0.025;
   return Math.floor(base * levelScale * (mode === 'duo' ? 1.65 : 1));
 }
@@ -43,6 +47,7 @@ function incomingDamage({
   deferIncoming = false,
   telegraphed = false,
   mitigationOverride,
+  defense = 0,
 }) {
   if (defeated || deferIncoming) return 0;
   const incomingScale = mode === 'duo' ? 1.2 : 1;
@@ -50,7 +55,14 @@ function incomingDamage({
     action === 'defend' || defensiveSkill ? 0.35 : action === 'combo' ? 0.5 : 1
   );
   const telegraphScale = telegraphed ? 1.75 : 1;
-  return Math.max(1, Math.floor(Number(enemyDamage) * incomingScale * mitigation * telegraphScale));
+  // DEF has diminishing returns: it is meaningful for armor upgrades without
+  // making high-level tanks invulnerable.  The caller supplies the effective
+  // value (base stat + forged equipment bonuses).
+  const defenseValue = Math.max(0, Number(defense) || 0);
+  const defenseScale = 100 / (100 + defenseValue * 0.35);
+  return Math.max(1, Math.floor(
+    Number(enemyDamage) * incomingScale * mitigation * telegraphScale * defenseScale,
+  ));
 }
 
 module.exports = {
