@@ -802,6 +802,18 @@ const MIGRATIONS = [
       UPDATE rpg_inventory SET equipped=0 WHERE equipped=1;
     `,
   },
+  {
+    version: 24,
+    name: 'rpg_runtime_query_indexes',
+    up: `
+      CREATE INDEX IF NOT EXISTS idx_inventory_user_item ON rpg_inventory(telegram_user_id, item_id);
+      CREATE INDEX IF NOT EXISTS idx_dungeon_active_status ON rpg_dungeon_sessions_v2(status, expires_at);
+      CREATE INDEX IF NOT EXISTS idx_campaign_progress_status ON rpg_campaign_progress_v2(user_id, status);
+      CREATE INDEX IF NOT EXISTS idx_ledger_reason_created ON rpg_currency_ledger(reason, created_at);
+      CREATE INDEX IF NOT EXISTS idx_trade_pending_expiry ON rpg_trade_sessions_v2(status, expires_at);
+      CREATE INDEX IF NOT EXISTS idx_market_expiry ON rpg_market_listings(status, expires_at);
+    `,
+  },
 ];
 
 function quoteSql(value) {

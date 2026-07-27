@@ -145,7 +145,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 20 },
     { version: 21 },
     { version: 22 },
-    { version: 23 },
+    { version: 23 }, { version: 24 },
   ]);
   db.close();
 });
@@ -1293,7 +1293,7 @@ test('RPG operations telemetry reports economy and invariant anomalies without u
   assert.equal(telemetry.anomalies.invalidInventory, 0);
   assert.equal(telemetry.dungeonBalance.totalRuns, 0);
   assert.equal(telemetry.dungeonBalance.actions, 0);
-  assert.equal(telemetry.migrations[0].version, 23);
+  assert.equal(telemetry.migrations[0].version, 24);
   assert.equal(Array.isArray(telemetry.featureFlags), true);
   assert.equal(JSON.stringify(telemetry).includes('telegram_user_id'), false);
   db.close();

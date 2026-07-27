@@ -1,4 +1,4 @@
-import{c as e,l as t,u as n}from"./index-BYfOSL3v.js";async function r(t){t.innerHTML=`<div class="page-enter"><div class="skeleton" style="height:300px"></div></div>`;try{let n=await e.get(`/api/settings`);t.innerHTML=`
+import{c as e,l as t,u as n}from"./index-B7Y9w0HT.js";async function r(t){t.innerHTML=`<div class="page-enter"><div class="skeleton" style="height:300px"></div></div>`;try{let n=await e.get(`/api/settings`);t.innerHTML=`
       <div class="page-enter">
         <div class="card">
           <div class="card-header">

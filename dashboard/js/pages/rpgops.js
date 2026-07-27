@@ -17,7 +17,8 @@ export function cleanup() {}
 async function load() {
   const body = document.getElementById('ops-body');
   try {
-    const d = await API.get('/api/rpg-operations');
+    const [d, health] = await Promise.all([API.get('/api/rpg-operations'), API.get('/api/system-health')]);
+    const database = health.database || {};
     const anomalies = Object.values(d.anomalies).reduce((sum, value) => sum + value, 0);
     const dungeon = d.dungeonBalance || {};
     const completionRate = Number(dungeon.totalRuns || 0) > 0
@@ -37,6 +38,19 @@ async function load() {
         ${cell('Pending Trades', d.sessions.trades)}
         ${cell('Parties / Guilds', `${d.sessions.parties} / ${d.sessions.guilds}`)}
         ${cell('Anomalies', anomalies)}
+        ${cell('DB Integrity', database.integrity === 'ok' ? 'OK' : database.integrity || 'N/A')}
+        ${cell('DB Mode', `${database.journalMode || 'N/A'} · busy ${database.busyTimeoutMs || 0}ms`)}
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="card-header"><div class="card-title">Database & Operasional</div></div>
+        <div class="card-body"><div class="info-grid">
+          ${cell('Database Size', bytes(database.databaseBytes))}
+          ${cell('Foreign Keys', database.foreignKeys ? 'ON' : 'OFF')}
+          ${cell('Backup Terakhir', database.latestBackup ? new Date(database.latestBackup.mtime).toLocaleString() : 'Belum ada')}
+          ${cell('Ukuran Backup', database.latestBackup ? bytes(database.latestBackup.size) : 'N/A')}
+          ${cell('Dashboard Uptime', `${Math.round(Number(health.observability?.uptimeSeconds || 0) / 60)}m`)}
+          ${cell('Error Tracking', health.observability?.sentryEnabled ? 'Sentry aktif' : 'Tidak dikonfigurasi')}
+        </div><p class="muted" style="margin-top:12px">Backup dashboard membuat snapshot SQLite konsisten; bukan salinan file database yang sedang ditulis.</p></div>
       </div>
       <div class="card" style="margin-top:16px">
         <div class="card-header"><div class="card-title">Dungeon Balance (Anonymous)</div></div>
@@ -56,7 +70,7 @@ async function load() {
         <div class="card-body"><div class="info-grid">
           ${cell('Catalog Items', Number(d.items?.catalog || 0))}
           ${cell('Inventory Units', Number(d.items?.inventoryUnits || 0))}
-          ${cell('Equipment V2', Number(d.items?.equipmentInstances || 0))}
+          ${cell('Equipment Tempa', Number(d.items?.equipmentInstances || 0))}
           ${cell('Gems Delivered', Number(d.items?.gems || 0))}
           ${cell('Region Materials', Number(d.items?.regionMaterials || 0))}
         </div></div>
@@ -100,6 +114,13 @@ async function load() {
 function cell(label, value) {
   return `<div class="info-cell"><div class="info-cell-label">${label}</div>
     <div class="info-cell-value">${value}</div></div>`;
+}
+
+function bytes(value) {
+  const amount = Number(value || 0);
+  if (amount < 1024) return `${amount} B`;
+  if (amount < 1024 * 1024) return `${(amount / 1024).toFixed(1)} KB`;
+  return `${(amount / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function ic(name) {

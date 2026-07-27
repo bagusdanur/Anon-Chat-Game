@@ -2,7 +2,12 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const pinoHttp = require('pino-http');
+const Sentry = require('@sentry/node');
 const { db } = require('./src/db');
+const { createDatabaseBackup, getDatabaseHealth } = require('./src/rpg/services/databaseMaintenance');
 const { getWords, FILTER_PATH } = require('./src/moderation/wordFilter');
 const { getGameSettings, saveGameSettings } = require('./src/rpg/config');
 const { createFeatureFlagService } = require('./src/rpg/services/featureFlags');
@@ -13,6 +18,9 @@ const app = express();
 const PORT = process.env.DASHBOARD_PORT || 3001;
 const PASSWORD = process.env.DASHBOARD_PASS || 'ryudev2024';
 const featureFlags = createFeatureFlagService(db);
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'data/bot.db');
+const sentryEnabled = Boolean(process.env.SENTRY_DSN);
+if (sentryEnabled) Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.05 });
 
 // Password check helper
 function checkAuth(req) {
@@ -24,17 +32,13 @@ function checkAuth(req) {
 }
 
 // Static files — serve dist if exists, else dashboard
-app.use(express.json());
+app.disable('x-powered-by');
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+app.use(pinoHttp({ autoLogging: { ignore: req => req.url === '/api/health' } }));
+app.use(express.json({ limit: '128kb' }));
+app.use('/api', rateLimit({ windowMs: 60 * 1000, max: 240, standardHeaders: 'draft-8', legacyHeaders: false }));
 const staticDir = fs.existsSync(path.join(__dirname, 'dist')) ? 'dist' : 'dashboard';
 app.use(express.static(path.join(__dirname, staticDir)));
-
-// Basic Security Headers
-app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  next();
-});
 
 // Auth middleware
 function auth(req, res, next) {
@@ -46,6 +50,8 @@ function auth(req, res, next) {
 app.get('/api/check-auth', (req, res) => {
   res.json({ authenticated: checkAuth(req) });
 });
+
+app.get('/api/health', (req, res) => res.json({ ok: true, service: 'anon-dashboard', now: Date.now() }));
 
 // ===== STATS =====
 app.get('/api/stats', auth, (req, res) => {
@@ -353,6 +359,13 @@ app.get('/api/rpg-operations', auth, (req, res) => {
   res.json(collectRpgTelemetry(db, featureFlags));
 });
 
+app.get('/api/system-health', auth, (req, res) => {
+  res.json({
+    database: getDatabaseHealth(db, dbPath),
+    observability: { sentryEnabled, dashboardPid: process.pid, uptimeSeconds: Math.round(process.uptime()) },
+  });
+});
+
 // ===== DYNAMIC RPG CLASSES =====
 app.get('/api/classes', auth, (req, res) => {
   const file = path.join(__dirname, 'data/rpg_classes.json');
@@ -447,14 +460,23 @@ app.post('/api/maintenance', auth, (req, res) => {
 
 // ===== BACKUP DATABASE =====
 app.get('/api/backup', auth, (req, res) => {
-  const dbPath = path.join(__dirname, 'data/bot.db');
-  if (!fs.existsSync(dbPath)) return res.status(404).json({ error: 'Database not found' });
-  res.download(dbPath, `bot-backup-${new Date().toISOString().slice(0,10)}.db`);
+  try {
+    const backup = createDatabaseBackup(db, dbPath, 'dashboard');
+    res.download(backup, path.basename(backup));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Fallback for SPA routing (Express 5 compatible)
 app.get('/{*path}', (req, res) => {
   res.sendFile(path.join(__dirname, staticDir, 'index.html'));
+});
+
+app.use((error, req, res, next) => {
+  if (sentryEnabled) Sentry.captureException(error);
+  req.log?.error({ err: error }, 'Dashboard request failed');
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 app.listen(PORT, () => {

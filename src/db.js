@@ -13,6 +13,12 @@ const db = new Database(dbPath);
 // Aktifkan mode WAL & sinkronisasi optimal untuk performa dan keamanan data tinggi di VPS
 db.pragma('journal_mode = WAL');
 db.pragma('synchronous = NORMAL');
+// SQLite will wait briefly for a writer instead of immediately failing a valid
+// player action with SQLITE_BUSY. Do not blindly retry RPG transactions here:
+// idempotency receipts/ledger keys remain the source of truth for safe retries.
+db.pragma('foreign_keys = ON');
+db.pragma('busy_timeout = 5000');
+db.pragma('temp_store = MEMORY');
 
 // Create tables
 db.exec(`

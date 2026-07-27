@@ -1,4 +1,4 @@
-import{a as e,c as t,l as n,n as r,r as i,s as a,u as o}from"./index-BYfOSL3v.js";async function s(t){t.innerHTML=`<div class="page-enter"><div class="card">
+import{a as e,c as t,l as n,n as r,r as i,s as a,u as o}from"./index-B7Y9w0HT.js";async function s(t){t.innerHTML=`<div class="page-enter"><div class="card">
     <div class="card-header">
       <div class="card-title">${d(`flag`)} Reports</div>
       <button class="btn btn-outline btn-sm" id="rep-refresh">${d(`refresh-cw`)}</button>

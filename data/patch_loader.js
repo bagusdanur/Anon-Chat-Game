@@ -1,5 +1,32 @@
 const fs = require('fs');
 const path = require('path');
+const { z } = require('zod');
+
+const namedDefinition = z.object({ id: z.string().min(1), name: z.string().min(1) }).passthrough();
+const campaignDefinition = z.object({ id: z.string().min(1), title: z.string().min(1) }).passthrough();
+const patchSchema = z.object({
+  patch: z.union([z.string().min(1), z.number()]),
+  title: z.string().min(1),
+  published: z.boolean(),
+  regions: z.array(namedDefinition).default([]),
+  campaigns: z.array(campaignDefinition).default([]),
+  dungeons: z.array(namedDefinition).default([]),
+}).passthrough();
+
+function validatePatch(rawPatch, filePath) {
+  const result = patchSchema.safeParse(rawPatch);
+  if (!result.success) {
+    const details = result.error.issues.map(issue => `${issue.path.join('.') || 'root'}: ${issue.message}`).join('; ');
+    throw new Error(`Patch content tidak valid (${path.basename(filePath)}): ${details}`);
+  }
+  const ids = new Set();
+  for (const definition of [...result.data.regions, ...result.data.campaigns, ...result.data.dungeons]) {
+    const key = definition.id;
+    if (ids.has(key)) throw new Error(`Patch content tidak valid (${path.basename(filePath)}): ID duplikat ${key}`);
+    ids.add(key);
+  }
+  return result.data;
+}
 
 function syncPatches() {
   const patchesDir = path.join(__dirname, 'patches');
@@ -34,15 +61,8 @@ function syncPatches() {
 
   const files = findJsonFiles(patchesDir);
   const patches = files
-    .map(filePath => {
-      try {
-        return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-      } catch (err) {
-        console.error(`Error parsing patch file ${filePath}:`, err.message);
-        return null;
-      }
-    })
-    .filter(p => p && p.published === true);
+    .map(filePath => validatePatch(JSON.parse(fs.readFileSync(filePath, 'utf8')), filePath))
+    .filter(p => p.published === true);
 
   patches.sort((a, b) => (parseFloat(a.patch || 0) - parseFloat(b.patch || 0)));
   for (const patch of patches) {
@@ -83,4 +103,4 @@ function syncPatches() {
 // Automatically execute on import
 syncPatches();
 
-module.exports = { syncPatches };
+module.exports = { syncPatches, validatePatch };
