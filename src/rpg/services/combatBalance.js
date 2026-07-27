@@ -76,6 +76,9 @@ function simulateHuntBattle(player, monster, random = Math.random) {
 function huntXpMultiplier(level) {
   if (Number(level) <= 3) return 3;
   if (Number(level) <= 7) return 2.5;
+  if (Number(level) <= 15) return 5;
+  if (Number(level) <= 30) return 3;
+  if (Number(level) <= 60) return 2;
   return 1;
 }
 

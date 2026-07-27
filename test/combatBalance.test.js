@@ -46,7 +46,11 @@ test('hunt catch-up XP memperpendek grind menuju dungeon pertama', () => {
   assert.equal(huntXpMultiplier(3), 3);
   assert.equal(huntXpMultiplier(4), 2.5);
   assert.equal(huntXpMultiplier(7), 2.5);
-  assert.equal(huntXpMultiplier(8), 1);
+  assert.equal(huntXpMultiplier(8), 5);
+  assert.equal(huntXpMultiplier(15), 5);
+  assert.equal(huntXpMultiplier(20), 3);
+  assert.equal(huntXpMultiplier(40), 2);
+  assert.equal(huntXpMultiplier(61), 1);
 });
 
 test('dungeon pertama menyatakan level rekomendasi boss dengan jujur', () => {
