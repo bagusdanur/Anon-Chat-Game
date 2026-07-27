@@ -421,13 +421,11 @@ function addXp(userId, amount) {
 }
 
 // ===== GOLD CAP =====
-const GOLD_CAP = 50000; // Maksimal gold yang bisa dimiliki
 const LEVEL_CAP = 60;
 
 function addGold(userId, amount) {
   const now = Math.floor(Date.now() / 1000);
-  // Cap gold di GOLD_CAP
-  db.prepare(`UPDATE rpg_users SET gold = MIN(${GOLD_CAP}, MAX(0, gold + ?)), updated_at = ? WHERE telegram_user_id = ?`)
+  db.prepare('UPDATE rpg_users SET gold = MAX(0, gold + ?), updated_at = ? WHERE telegram_user_id = ?')
     .run(amount, now, userId.toString());
   logTransaction(null, userId, amount, 'reward');
 }
@@ -840,7 +838,6 @@ module.exports = {
   // Damage calculation
   calcPhysicalDamage, calcMagicDamage, rollCrit,
   // Gold cap
-  GOLD_CAP,
   // Inventory cap
   INVENTORY_CAP,
   // Quest system

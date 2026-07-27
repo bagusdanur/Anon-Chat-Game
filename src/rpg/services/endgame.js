@@ -131,7 +131,7 @@ function createEndgameService(db, options = {}) {
           const balanceBefore = db.prepare(
             'SELECT gold FROM rpg_users WHERE telegram_user_id = ?',
           ).get(String(userId)).gold;
-          db.prepare('UPDATE rpg_users SET gold = MIN(50000, gold + ?), updated_at = ? WHERE telegram_user_id = ?')
+          db.prepare('UPDATE rpg_users SET gold = gold + ?, updated_at = ? WHERE telegram_user_id = ?')
             .run(goldReward, timestamp, String(userId));
           const balance = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id = ?').get(String(userId)).gold;
           creditedGold = balance - balanceBefore;

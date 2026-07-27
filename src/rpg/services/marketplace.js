@@ -147,7 +147,7 @@ function createMarketplaceService(db, options = {}) {
           `).run(buyerId, timestamp, listing.id);
           if (claimed.changes !== 1) throw new Error('Listing already claimed');
           db.prepare(`
-            UPDATE rpg_users SET gold = MIN(50000, gold + ?), updated_at = ?
+            UPDATE rpg_users SET gold = gold + ?, updated_at = ?
             WHERE telegram_user_id = ?
           `).run(proceeds, timestamp, listing.seller_id);
           db.prepare(`

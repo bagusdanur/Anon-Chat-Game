@@ -7,7 +7,7 @@ const {
   getCatalogItem, updateHp,
   getCurrentHp, logTransaction, addXp, addGold, spendGold,
   incrementQuestProgress,
-  equipItem, unequipSlot, getEquipped, getEquippedBonus, GOLD_CAP, INVENTORY_CAP, MAX_ENERGY
+  equipItem, unequipSlot, getEquipped, getEquippedBonus, INVENTORY_CAP, MAX_ENERGY
 } = require('./db_rpg');
 const { RARITY_EMOJI } = require('./profile');
 const { getGameSettings } = require('./config');

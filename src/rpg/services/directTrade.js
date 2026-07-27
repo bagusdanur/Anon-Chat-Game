@@ -116,9 +116,7 @@ function createDirectTradeService(db, options = {}) {
       if (offer.type === 'gold') {
         const baseTax = Math.floor(offer.amount * GOLD_TAX_RATE);
         const intended = offer.amount - baseTax;
-        const recipientBefore = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?')
-          .get(trade.recipient_id).gold;
-        const received = Math.max(0, Math.min(intended, 50000 - recipientBefore));
+        const received = intended;
         const tax = offer.amount - received;
         db.prepare('UPDATE rpg_users SET gold=gold-?,updated_at=? WHERE telegram_user_id=?')
           .run(offer.amount, now(), trade.proposer_id);

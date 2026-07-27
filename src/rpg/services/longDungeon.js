@@ -191,7 +191,7 @@ function createLongDungeonService(db, options = {}) {
         }
       }
       if (reward.gold) {
-      db.prepare('UPDATE rpg_users SET gold = MIN(50000, gold + ?), updated_at = ? WHERE telegram_user_id = ?')
+      db.prepare('UPDATE rpg_users SET gold = gold + ?, updated_at = ? WHERE telegram_user_id = ?')
           .run(reward.gold, timestamp, recipientId);
         const balance = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id = ?').get(recipientId).gold;
       ledger.record({

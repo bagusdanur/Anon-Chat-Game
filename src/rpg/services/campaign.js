@@ -71,7 +71,7 @@ function createCampaignService(db, options = {}) {
     if (reward.gold) {
       const before = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?')
         .get(String(userId)).gold;
-      db.prepare('UPDATE rpg_users SET gold=MIN(50000,gold+?),updated_at=? WHERE telegram_user_id=?')
+      db.prepare('UPDATE rpg_users SET gold=gold+?,updated_at=? WHERE telegram_user_id=?')
         .run(reward.gold, now(), String(userId));
       const balance = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?')
         .get(String(userId)).gold;

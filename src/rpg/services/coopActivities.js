@@ -79,7 +79,7 @@ function createCoopActivityService(db, options = {}) {
     const currentGold = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?')
       .get(String(userId)).gold;
     const reward = {
-      gold: Math.max(0, Math.min(nominalGold, 50000 - currentGold)),
+      gold: nominalGold,
       seasonPoints: 15,
     };
     return db.transaction(() => {
@@ -88,7 +88,7 @@ function createCoopActivityService(db, options = {}) {
           (bounty_id,user_id,reward_json,claimed_at) VALUES (?,?,?,?)
       `).run(state.bounty.id, String(userId), JSON.stringify(reward), now());
       if (receipt.changes === 0) return { success: false, reason: 'Reward sudah diklaim.' };
-      db.prepare('UPDATE rpg_users SET gold=MIN(50000,gold+?),updated_at=? WHERE telegram_user_id=?')
+      db.prepare('UPDATE rpg_users SET gold=gold+?,updated_at=? WHERE telegram_user_id=?')
         .run(reward.gold, now(), String(userId));
       const balance = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?').get(String(userId)).gold;
       if (reward.gold > 0) {

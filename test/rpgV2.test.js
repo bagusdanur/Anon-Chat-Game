@@ -748,8 +748,8 @@ test('weekly party raid requires a duo and rewards can only be claimed once', ()
   db.prepare("UPDATE rpg_users SET gold=49990 WHERE telegram_user_id='1'").run();
   const claim = raids.claim('1', 'party');
   assert.equal(claim.success, true);
-  assert.equal(claim.reward.gold, 10);
-  assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='1'").get().gold, 50000);
+  assert.equal(claim.reward.gold > 10, true);
+  assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='1'").get().gold, 49990 + claim.reward.gold);
   assert.equal(raids.claim('1', 'party').success, false);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_raid_reward_claims').get().count, 1);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 1);
@@ -828,10 +828,10 @@ test('duo bounty combines member actions and rewards each contributor once', () 
   assert.equal(completed.bounty.status, 'completed');
   assert.equal(coop.act('2', 'bounty:2:2').success, false);
   db.prepare("UPDATE rpg_users SET gold=50000 WHERE telegram_user_id='1'").run();
-  const cappedClaim = coop.claim('1');
-  assert.equal(cappedClaim.success, true);
-  assert.equal(cappedClaim.reward.gold, 0);
-  assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='1'").get().gold, 50000);
+  const highBalanceClaim = coop.claim('1');
+  assert.equal(highBalanceClaim.success, true);
+  assert.equal(highBalanceClaim.reward.gold > 0, true);
+  assert.equal(db.prepare("SELECT gold FROM rpg_users WHERE telegram_user_id='1'").get().gold, 50000 + highBalanceClaim.reward.gold);
   assert.equal(coop.claim('2').success, true);
   assert.equal(coop.claim('1').success, false);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_duo_bounty_claims').get().count, 2);
