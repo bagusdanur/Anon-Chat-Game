@@ -56,6 +56,13 @@ test('panduan utama memakai syntax command produksi', () => {
   assert.doesNotMatch(economy, /bot\.command\('shop2'|bot\.command\('buy2'/);
 });
 
+test('hunt meneruskan kemenangan ke campaign dengan receipt idempotent', () => {
+  const grind = fs.readFileSync(path.join(root, 'src/rpg/grind.js'), 'utf8');
+  assert.match(grind, /campaignService\.recordEvent\(userId/);
+  assert.match(grind, /campaign:hunt/);
+  assert.match(grind, /type:\s*'hunt'/);
+});
+
 test('modul RPG tidak menahan shutdown process dengan cleanup timer', () => {
   const result = spawnSync(
     process.execPath,

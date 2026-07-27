@@ -11,11 +11,16 @@ const { db } = require('../db');
 const { createProfessionService } = require('./services/professions');
 const { createEquipmentService } = require('./services/equipment');
 const {
+  loadCampaign, publishCampaign, createCampaignService,
+} = require('./services/campaign');
+const {
   buildHuntMonster, simulateHuntBattle, huntXpMultiplier,
 } = require('./services/combatBalance');
 
 const professionService = createProfessionService(db);
 const equipmentV2 = createEquipmentService(db);
+publishCampaign(db, loadCampaign());
+const campaignService = createCampaignService(db);
 
 const fs = require('fs');
 const path = require('path');
@@ -187,6 +192,12 @@ function setupGrind(bot, { rateLimitCommand }) {
       addGold(userId, goldGain);
       incrementQuestProgress(userId, 'hunt');
       professionService.grantXp(userId, 'hunting', 10, `telegram:${ctx.update.update_id}:hunt`);
+      campaignService.recordEvent(userId, {
+        key: `telegram:${ctx.update.update_id}:campaign:hunt`,
+        type: 'hunt',
+        target: monster,
+        amount: 1,
+      });
       const newHp = Math.max(1, currentHp - result.damageTaken);
       updateHp(userId, newHp);
 
