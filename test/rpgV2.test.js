@@ -694,6 +694,8 @@ test('world boss damage is persistent and duplicate Telegram attacks are rejecte
   const first = raids.attack('1', 'world', 'telegram:1:100:world');
   assert.equal(first.success, true);
   assert.equal(first.damage > 0, true);
+  assert.equal(first.instance.max_hp < 250000, true);
+  assert.equal(first.instance.max_hp >= first.damage * 2, true);
   const duplicate = raids.attack('1', 'world', 'telegram:1:100:world');
   assert.equal(duplicate.success, false);
   assert.equal(raids.getInstance('1', 'world').contribution.attempts, 1);

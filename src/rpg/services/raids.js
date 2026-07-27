@@ -78,16 +78,45 @@ function createRaidService(db, options = {}) {
     return { success: true, key: `party:${party.id}`, partyId: party.id };
   }
 
+  function estimatedDamage(user) {
+    const bonus = equipment.bonuses(user.telegram_user_id);
+    return Math.max(1, Math.floor(
+      (user.atk + (bonus.atk || 0)) * 2 +
+      (user.magic_atk + (bonus.magic_atk || 0)) * 1.8 +
+      (user.def + (bonus.def || 0)) * 0.5 + user.level * 4 + 6,
+    ));
+  }
+
+  function instanceMaxHp(userId, type, raid) {
+    if (type !== 'world') return raid.maxHp;
+    const activeCutoff = now() - (7 * 86400);
+    let active = db.prepare(`
+      SELECT * FROM rpg_users WHERE updated_at>=? AND level>=?
+    `).all(activeCutoff, raid.minLevel);
+    if (!active.length) {
+      const requester = db.prepare(
+        'SELECT * FROM rpg_users WHERE telegram_user_id=?',
+      ).get(String(userId));
+      active = requester ? [requester] : [];
+    }
+    const totalPotential = active.reduce(
+      (sum, user) => sum + estimatedDamage(user) * raid.attemptLimit,
+      0,
+    );
+    return Math.min(raid.maxHp, Math.max(30, Math.floor(totalPotential * 0.75)));
+  }
+
   function getInstance(userId, type) {
     const raid = definition(type);
     const scope = scopeFor(userId, type);
     if (!scope.success) return scope;
     const period = periodFor(now(), raid.duration);
+    const maxHp = instanceMaxHp(userId, type, raid);
     db.prepare(`
       INSERT OR IGNORE INTO rpg_raid_instances
         (raid_id, period_key, scope_key, max_hp, current_hp, starts_at, ends_at, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(raid.id, period.key, scope.key, raid.maxHp, raid.maxHp, period.start, period.end, now());
+    `).run(raid.id, period.key, scope.key, maxHp, maxHp, period.start, period.end, now());
     const instance = db.prepare(`
       SELECT * FROM rpg_raid_instances WHERE raid_id=? AND period_key=? AND scope_key=?
     `).get(raid.id, period.key, scope.key);
@@ -106,11 +135,8 @@ function createRaidService(db, options = {}) {
     if (contribution.attempts >= raid.attemptLimit) return { success: false, reason: 'Batas serangan periode ini sudah habis.' };
     const user = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id=?').get(String(userId));
     if (!user || user.level < raid.minLevel) return { success: false, reason: `Minimal level ${raid.minLevel}.` };
-    const bonus = equipment.bonuses(userId);
     const damage = Math.max(1, Math.floor(
-      (user.atk + (bonus.atk || 0)) * 2 +
-      (user.magic_atk + (bonus.magic_atk || 0)) * 1.8 +
-      (user.def + (bonus.def || 0)) * 0.5 + user.level * 4 + random() * 12,
+      estimatedDamage(user) - 6 + random() * 12,
     ));
     return db.transaction(() => {
       const receipt = db.prepare(`
