@@ -125,6 +125,14 @@ function createLongDungeonService(db, options = {}) {
       Math.floor(user.level * 1.5);
   }
 
+  function effectiveHealth(user) {
+    const bonusMaxHp = Math.max(0, Number(equipment.bonuses(user.telegram_user_id).max_hp) || 0);
+    return {
+      hp: Math.max(1, Number(user.hp) + bonusMaxHp),
+      maxHp: Math.max(1, Number(user.max_hp) + bonusMaxHp),
+    };
+  }
+
   function getAlias(userId) {
     return db.prepare('SELECT alias FROM rpg_character_aliases WHERE user_id = ?')
       .get(String(userId))?.alias || 'Petualang Anonim';
@@ -435,9 +443,11 @@ function createLongDungeonService(db, options = {}) {
     }
     const timestamp = now();
     const definition = JSON.parse(definitionRow.definition_json);
-    const maxHp = owner.max_hp + partner.max_hp;
+    const ownerHealth = effectiveHealth(owner);
+    const partnerHealth = effectiveHealth(partner);
+    const maxHp = ownerHealth.maxHp + partnerHealth.maxHp;
     const state = {
-      hp: maxHp, maxHp, companion: 'Partner Party', collected: {},
+      hp: ownerHealth.hp + partnerHealth.hp, maxHp, companion: 'Partner Party', collected: {},
       visited: [definition.entry_room], log: 'Undangan diterima. Ekspedisi duo dimulai.',
       turnOrder: [String(owner.user_id), String(partner.user_id)],
       turnAliases: [getAlias(owner.user_id), getAlias(partner.user_id)],
@@ -492,9 +502,10 @@ function createLongDungeonService(db, options = {}) {
         return { success: false, reason: `Butuh level ${definitionRow.min_level}.` };
       }
       const timestamp = now();
+      const health = effectiveHealth(user);
       const state = {
-        hp: user.hp,
-        maxHp: user.max_hp,
+        hp: health.hp,
+        maxHp: health.maxHp,
         companion: user.class_name === 'ksatria' ? 'Arcanist Mira' : 'Guardian Rowan',
         collected: {},
         visited: [JSON.parse(definitionRow.definition_json).entry_room],

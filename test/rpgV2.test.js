@@ -828,6 +828,33 @@ test('equipping binds instances and socketed gems contribute persistent bonuses'
   db.close();
 });
 
+test('long dungeon applies equipped V2 max HP affixes to solo session health', () => {
+  const db = createTestDb();
+  publishDungeons(db, loadDungeons());
+  db.prepare(`
+    INSERT INTO items_catalog (item_id,display_name,category,rarity,sell_price)
+    VALUES ('vital_armor','Vital Armor','armor','epic',50)
+  `).run();
+  db.prepare(`
+    INSERT INTO rpg_equipment_instances
+      (id,owner_id,item_id,rarity,quality,item_power,equipped_slot,created_at,updated_at)
+    VALUES (999,'1','vital_armor','epic',75,50,'armor',1,1)
+  `).run();
+  db.prepare(`
+    INSERT INTO rpg_equipment_affixes
+      (instance_id,affix_id,stat_key,stat_value,tier)
+    VALUES (999,'vitality','max_hp',25,3)
+  `).run();
+
+  const dungeon = createLongDungeonService(db);
+  const started = dungeon.startSolo('1', 'goblin_ruins');
+
+  assert.equal(started.success, true);
+  assert.equal(started.session.state.hp, 75);
+  assert.equal(started.session.state.maxHp, 75);
+  db.close();
+});
+
 test('equipment upgrades and reforges are atomic audited gold sinks', () => {
   const db = createTestDb();
   db.prepare(`
