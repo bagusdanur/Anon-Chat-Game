@@ -15,6 +15,15 @@ const DUNGEONS_FILE = path.join(__dirname, '../../../data/rpg_dungeons.json');
 const SESSION_TTL_SECONDS = 24 * 60 * 60;
 const INVITE_TTL_SECONDS = 10 * 60;
 const LEVEL_CAP = 60;
+const POTION_USES_PER_COMBAT = 1;
+const POTION_COOLDOWN_CYCLES = 1;
+
+function tacticalPotionPercent(basePercent) {
+  // Potion di luar dungeon tetap memakai nilai penuh. Di combat panjang,
+  // efisiensi diturunkan agar Ramuan Besar/epic membantu recovery tanpa
+  // meniadakan strategi Defend, Skill, dan kualitas gear.
+  return Math.max(15, Math.min(50, Math.floor(Number(basePercent || 0) * 0.6)));
+}
 
 function validateDungeon(definition) {
   if (!definition || typeof definition.id !== 'string' || !definition.id) {
@@ -240,6 +249,15 @@ function createLongDungeonService(db, options = {}) {
           ON CONFLICT(telegram_user_id,item_id) DO UPDATE SET quantity=quantity+1
         `).run(recipientId, signatureMaterial);
       }
+      // Bonus co-op berupa material, bukan damage. Setiap pemain tetap menerima
+      // reward sendiri dan peluangnya dibatasi agar tidak membanjiri market.
+      if (session.mode === 'duo' && signatureMaterial && random() < 0.45) {
+        db.prepare(`
+          INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
+          VALUES (?,?,1)
+          ON CONFLICT(telegram_user_id,item_id) DO UPDATE SET quantity=quantity+1
+        `).run(recipientId, signatureMaterial);
+      }
       if (random() < 0.08) {
         db.prepare(`
           INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
@@ -344,6 +362,8 @@ function createLongDungeonService(db, options = {}) {
         combo: 0,
         enemyTurns: 0,
         telegraphNext: false,
+        potionUses: {},
+        potionReadyAtCycle: {},
       };
     }
     const combat = state.combat;
@@ -378,6 +398,18 @@ function createLongDungeonService(db, options = {}) {
     let potion = null;
     let potionHeal = 0;
     if (potionId) {
+      combat.potionUses = combat.potionUses || {};
+      combat.potionReadyAtCycle = combat.potionReadyAtCycle || {};
+      const actorId = String(actor.telegram_user_id);
+      const uses = Number(combat.potionUses[actorId] || 0);
+      if (uses >= POTION_USES_PER_COMBAT) {
+        return { success: false, reason: `Batas ${POTION_USES_PER_COMBAT} ramuan untuk room ini sudah tercapai.` };
+      }
+      const readyAt = Number(combat.potionReadyAtCycle[actorId] || 0);
+      const currentCycle = Number(combat.enemyTurns || 0);
+      if (currentCycle < readyAt) {
+        return { success: false, reason: 'Ramuan masih cooldown. Selesaikan 1 cycle musuh dengan aksi lain dahulu.' };
+      }
       potion = db.prepare(`
         SELECT i.item_id,i.quantity,c.display_name,c.effect_json
         FROM rpg_inventory i JOIN items_catalog c ON c.item_id=i.item_id
@@ -389,7 +421,7 @@ function createLongDungeonService(db, options = {}) {
         return { success: false, reason: 'Ramuan heal itu tidak tersedia di inventory.' };
       }
       if (state.hp >= state.maxHp) return { success: false, reason: 'HP ekspedisi sudah penuh.' };
-      potionHeal = Math.max(1, Math.floor(state.maxHp * healPct / 100));
+      potionHeal = Math.max(1, Math.floor(state.maxHp * tacticalPotionPercent(healPct) / 100));
     }
     const metricAction = skillId ? 'skills'
       : action === 'attack' ? 'attacks'
@@ -425,6 +457,10 @@ function createLongDungeonService(db, options = {}) {
       db.prepare('DELETE FROM rpg_inventory WHERE telegram_user_id=? AND item_id=? AND quantity<=0')
         .run(String(actor.telegram_user_id), potionId);
       state.hp = Math.min(state.maxHp, state.hp + potionHeal);
+      const actorId = String(actor.telegram_user_id);
+      combat.potionUses[actorId] = Number(combat.potionUses[actorId] || 0) + 1;
+      // +2 berarti satu enemy cycle penuh harus lewat sebelum ramuan berikutnya.
+      combat.potionReadyAtCycle[actorId] = Number(combat.enemyTurns || 0) + POTION_COOLDOWN_CYCLES + 1;
     }
     if (action === 'skill') combat.skillCooldown = 2;
     if (skillId) {
@@ -853,4 +889,5 @@ module.exports = {
   loadDungeons,
   publishDungeons,
   createLongDungeonService,
+  tacticalPotionPercent,
 };

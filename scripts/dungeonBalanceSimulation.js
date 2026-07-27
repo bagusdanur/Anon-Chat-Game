@@ -72,6 +72,7 @@ function gearProfile(classDef, tier) {
 
 function simulateEncounter({
   room, classDef, level, recommendedLevel, mode, strategy, gearTier, samples, seed,
+  potionPolicy = 'none',
 }) {
   const random = seededRandom(seed);
   const baseStats = classStats(classDef, level);
@@ -93,6 +94,7 @@ function simulateEncounter({
   let wins = 0;
   let totalTurns = 0;
   let totalDamage = 0;
+  let totalPotions = 0;
 
   for (let sample = 0; sample < samples; sample++) {
     let hp = maxHp;
@@ -101,6 +103,9 @@ function simulateEncounter({
     let cooldown = 0;
     let combo = 0;
     let enemyTurns = 0;
+    const potionStock = Array.from({ length: mode === 'duo' ? 2 : 1 }, () =>
+      potionPolicy === 'normal' ? 1 : potionPolicy === 'spam' ? 99 : 0);
+    const potionCooldown = Array.from({ length: potionStock.length }, () => 0);
     while (hp > 0 && enemyHp > 0 && turn < 100) {
       const actors = mode === 'duo' ? 2 : 1;
       const telegraphNext = (enemyTurns + 1) % 3 === 0;
@@ -117,10 +122,19 @@ function simulateEncounter({
           action = 'combo';
           combo = 0;
         }
+        const threshold = potionPolicy === 'spam' ? 0.8 : 0.4;
+        if (potionStock[actor] > 0 && potionCooldown[actor] === 0 && hp <= maxHp * threshold) {
+          action = 'potion';
+          potionStock[actor]--;
+          potionCooldown[actor] = 2;
+          const healRate = potionPolicy === 'normal' ? 0.30 : 0.50;
+          hp = Math.min(maxHp, hp + Math.floor(maxHp * healRate));
+          totalPotions++;
+        }
         const critical = skill?.effect?.guaranteed_crit && action === 'skill'
           ? true
           : random() < Math.min(0.5, stats.critRate);
-        const dealt = outgoingDamage({
+        const dealt = action === 'potion' ? 0 : outgoingDamage({
           power: partyPower,
           action,
           random,
@@ -144,6 +158,7 @@ function simulateEncounter({
         totalDamage += received;
         if (mode === 'duo' && action !== 'combo') combo = Math.min(3, combo + 1);
         if (cooldown > 0 && action !== 'skill') cooldown--;
+        if (action !== 'potion' && potionCooldown[actor] > 0) potionCooldown[actor]--;
         turn++;
       }
     }
@@ -154,6 +169,7 @@ function simulateEncounter({
     winRate: wins / samples,
     turns: totalTurns / samples,
     hpCost: totalDamage / samples / maxHp,
+    potions: totalPotions / samples,
   };
 }
 
@@ -223,3 +239,37 @@ if (!(bareRate <= 25 && normalGearRate >= 45 && matureGearRate >= 70 && matureGe
   );
 }
 console.log('PASS: gear memengaruhi peluang boss akhir; solo tanpa gear bukan jalur andal.');
+
+const finalBoss = dungeons.find(dungeon => dungeon.id === 'emperor_throne_citadel')
+  .rooms.find(room => room.type === 'boss');
+const potionRows = [];
+for (const classDef of classes) {
+  for (const policy of ['none', 'normal', 'spam']) {
+    const result = simulateEncounter({
+      room: finalBoss,
+      classDef,
+      level: 55,
+      recommendedLevel: 55,
+      mode: 'solo',
+      strategy: 'rotation',
+      gearTier: 'gear_wajar',
+      potionPolicy: policy,
+      samples,
+      seed: 900000 + classes.indexOf(classDef) * 100 + policy.length,
+    });
+    potionRows.push({
+      class: classDef.name,
+      policy: policy === 'none' ? 'tanpa potion' : policy === 'normal' ? '1 ramuan/room + cooldown' : 'spam tanpa batas (uji risiko)',
+      bossWin: `${(result.winRate * 100).toFixed(1)}%`,
+      avgPotion: result.potions.toFixed(1),
+      turns: result.turns.toFixed(1),
+    });
+  }
+}
+console.log('\nUji potion boss akhir (gear wajar, strategi benar):');
+console.table(potionRows);
+const normalPotionRows = potionRows.filter(row => row.policy === '1 ramuan/room + cooldown');
+if (normalPotionRows.some(row => Number(row.avgPotion) > 1)) {
+  throw new Error('Batas potion per room tidak tercermin dalam simulasi.');
+}
+console.log('PASS: potion membantu pemulihan tanpa menjadi tombol kemenangan tak terbatas.');

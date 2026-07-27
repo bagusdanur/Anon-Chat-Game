@@ -4,7 +4,7 @@ const { getOrCreateUser, getInventory, xpToNextLevel, calcStats } = require('./d
 const { createFeatureFlagService } = require('./services/featureFlags');
 const { createSkillService } = require('./services/skills');
 const {
-  loadDungeons, publishDungeons, createLongDungeonService,
+  loadDungeons, publishDungeons, createLongDungeonService, tacticalPotionPercent,
 } = require('./services/longDungeon');
 const { loadCampaign, publishCampaign, createCampaignService } = require('./services/campaign');
 const { getGuideFlow } = require('./guide');
@@ -85,13 +85,14 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
         )]);
       }
     } else if (['combat', 'boss'].includes(room.type)) {
+      const potionUses = Number(session.state.combat?.potionUses?.[String(viewerId)] || 0);
       buttons.push([
         Markup.button.callback('⚔️ Attack', `ld:${session.id}:${session.state_version}:attack`),
         Markup.button.callback('🛡 Defend', `ld:${session.id}:${session.state_version}:defend`),
       ]);
       buttons.push([
         Markup.button.callback('✨ Skill', `ldskills:${session.id}:${session.state_version}`),
-        Markup.button.callback('🧪 Ramuan', `ldpotions:${session.id}:${session.state_version}`),
+        Markup.button.callback(`🧪 Ramuan ${Math.max(0, 1 - potionUses)}/1`, `ldpotions:${session.id}:${session.state_version}`),
         ...(session.mode === 'duo'
           ? [Markup.button.callback('🤝 Combo', `ld:${session.id}:${session.state_version}:combo`)]
           : []),
@@ -384,13 +385,13 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     }
     await ctx.answerCbQuery();
     return ctx.reply(
-      '<b>🧪 PAKAI RAMUAN — memakai 1 giliran</b>\n\nPilih nomor ramuan dari inventarismu. HP dipulihkan sebelum serangan musuh cycle ini.',
+      '<b>🧪 PAKAI RAMUAN — memakai 1 giliran</b>\n\nMaksimal 1 ramuan per room untuk setiap pemain. Setelah minum, lakukan 1 cycle dengan aksi lain dahulu. Efek heal tactical disesuaikan agar boss tetap membutuhkan strategi.',
       {
         parse_mode: 'HTML',
         ...Markup.inlineKeyboard(potions.map(item => {
           const effect = JSON.parse(item.effect_json);
           return [Markup.button.callback(
-            `[${item.number}] ${item.display_name} · +${effect.heal_pct}% HP · x${item.quantity}`,
+            `[${item.number}] ${item.display_name} · +${tacticalPotionPercent(effect.heal_pct)}% HP tactical · x${item.quantity}`,
             `ld:${session.id}:${version}:potion_${item.item_id}`,
           )];
         })),

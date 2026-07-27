@@ -389,7 +389,7 @@ test('long dungeon combat supports persisted tactical turns', () => {
 test('healing potion is a tactical dungeon action and consumes one inventory item', () => {
   const db = createTestDb();
   publishDungeons(db, loadDungeons());
-  db.prepare("INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity) VALUES ('1','ramuan_besar',1)").run();
+  db.prepare("INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity) VALUES ('1','ramuan_besar',3)").run();
   const dungeon = createLongDungeonService(db, { random: () => 0.5 });
   let session = dungeon.startSolo('1', 'goblin_ruins').session;
   session = dungeon.advance('1', session.id, session.state_version, 'left').session;
@@ -402,7 +402,19 @@ test('healing potion is a tactical dungeon action and consumes one inventory ite
   assert.equal(result.success, true);
   assert.equal(result.session.state.hp > hpBeforePotion, true);
   assert.match(result.session.state.log, /minum/);
-  assert.equal(db.prepare("SELECT quantity FROM rpg_inventory WHERE telegram_user_id='1' AND item_id='ramuan_besar'").get(), undefined);
+  assert.equal(result.session.state.combat.potionUses['1'], 1);
+  const cappedImmediately = dungeon.advance('1', session.id, result.session.state_version, 'potion_ramuan_besar');
+  assert.equal(cappedImmediately.success, false);
+  assert.match(cappedImmediately.reason, /Batas 1 ramuan/);
+  result.session.state.hp = 1;
+  result.session.state.combat.potionUses['1'] = 1;
+  result.session.state.combat.potionReadyAtCycle['1'] = 0;
+  db.prepare('UPDATE rpg_dungeon_sessions_v2 SET state_json=? WHERE id=?')
+    .run(JSON.stringify(result.session.state), session.id);
+  const capped = dungeon.advance('1', session.id, result.session.state_version, 'potion_ramuan_besar');
+  assert.equal(capped.success, false);
+  assert.match(capped.reason, /Batas 1 ramuan/);
+  assert.equal(db.prepare("SELECT quantity FROM rpg_inventory WHERE telegram_user_id='1' AND item_id='ramuan_besar'").get().quantity, 2);
   db.close();
 });
 
