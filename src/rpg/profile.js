@@ -119,7 +119,7 @@ function renderProfile(user) {
   // ── Header ──────────────────────────────────
   let msg = ``;
   msg += `<b>🎭 ${alias}</b>\n`;
-  msg += `${cls.name}  <code>Lv.${user.level}</code>  💰 <b>${user.gold}g</b>\n`;
+  msg += `${cls.name}  <code>Lv.${user.level}</code>  💰 <b>${formatNumberId(user.gold, 0)}g</b>\n`;
   if (streak > 0) msg += `🔥 Win Streak: <b>${streak}x</b>\n`;
   msg += `━━━━━━━━━━━━━━━━━━━━\n`;
 
@@ -128,7 +128,7 @@ function renderProfile(user) {
   const xpFilled  = Math.min(10, Math.round((user.xp / nextXp) * 10));
   const enFilled  = Math.min(10, Math.round((energy / MAX_ENERGY) * 10));
 
-  msg += `❤️ <b>HP</b>  ${'█'.repeat(hpFilled)}${'░'.repeat(10 - hpFilled)} <code>${effectiveHp}/${effectiveMaxHp}</code>\n`;
+  msg += `❤️ <b>HP</b>  ${'█'.repeat(hpFilled)}${'░'.repeat(10 - hpFilled)} <code>${formatNumberId(effectiveHp)}/${formatNumberId(effectiveMaxHp)}</code>\n`;
   msg += `✨ <b>XP</b>  ${'█'.repeat(xpFilled)}${'░'.repeat(10 - xpFilled)} <code>${user.xp}/${nextXp}</code>\n`;
   msg += `⚡ <b>EN</b>  ${'█'.repeat(enFilled)}${'░'.repeat(10 - enFilled)} <code>${energy}/${MAX_ENERGY}</code>`;
   if (energy < MAX_ENERGY) msg += `  <i>(+1 ~${nextEMin}m)</i>`;
@@ -211,7 +211,12 @@ function renderProfile(user) {
   msg += `🌍 ${world?.region_name || 'Pinggiran Aldenmoor'} · Chapter ${world?.campaign_chapter || 1}`;
   if (world?.exploration_points) msg += ` · Jelajah ${world.exploration_points}`;
   msg += `\n`;
-  msg += `📜 ${campaign ? `${campaign.title} (${campaign.status})` : 'Campaign siap dilanjutkan'}\n`;
+  const campaignSummary = campaign
+    ? `${campaign.title} (${campaign.status})`
+    : nextStep.command === '/season'
+      ? 'Campaign utama selesai'
+      : 'Campaign siap dilanjutkan';
+  msg += `📜 ${campaignSummary}\n`;
   msg += `🎒 ${inventoryCount} item`;
   if (profession) msg += ` · 🧰 ${profession.profession_id} Lv.${profession.level}`;
   msg += `\n`;

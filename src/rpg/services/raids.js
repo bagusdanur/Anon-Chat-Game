@@ -160,8 +160,11 @@ function createRaidService(db, options = {}) {
     const { raid, instance, contribution } = state;
     if (instance.status !== 'defeated') return { success: false, reason: 'Boss belum dikalahkan.' };
     if (contribution.damage <= 0) return { success: false, reason: 'Kamu belum berkontribusi.' };
+    const nominalGold = raid.baseGold + Math.min(raid.baseGold, Math.floor(contribution.damage / 10));
+    const currentGold = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?')
+      .get(String(userId)).gold;
     const reward = {
-      gold: raid.baseGold + Math.min(raid.baseGold, Math.floor(contribution.damage / 10)),
+      gold: Math.max(0, Math.min(nominalGold, 50000 - currentGold)),
       seasonPoints: raid.seasonPoints,
     };
     return db.transaction(() => {
@@ -170,14 +173,16 @@ function createRaidService(db, options = {}) {
           (instance_id,user_id,reward_json,claimed_at) VALUES (?,?,?,?)
       `).run(instance.id, String(userId), JSON.stringify(reward), now());
       if (inserted.changes === 0) return { success: false, reason: 'Reward sudah diklaim.' };
-      db.prepare('UPDATE rpg_users SET gold=gold+?, updated_at=? WHERE telegram_user_id=?')
+      db.prepare('UPDATE rpg_users SET gold=MIN(50000,gold+?), updated_at=? WHERE telegram_user_id=?')
         .run(reward.gold, now(), String(userId));
       const balance = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?').get(String(userId)).gold;
-      ledger.record({
-        entryKey: `raid_reward:${instance.id}:${userId}`, userId, amount: reward.gold,
-        balanceAfter: balance, reason: `${type}_raid_reward`,
-        referenceType: 'raid', referenceId: instance.id,
-      });
+      if (reward.gold > 0) {
+        ledger.record({
+          entryKey: `raid_reward:${instance.id}:${userId}`, userId, amount: reward.gold,
+          balanceAfter: balance, reason: `${type}_raid_reward`,
+          referenceType: 'raid', referenceId: instance.id,
+        });
+      }
       endgame.addSeasonPoints(userId, reward.seasonPoints, 1, `raid_season:${instance.id}:${userId}`);
       return { success: true, reward };
     })();

@@ -75,21 +75,29 @@ function createCoopActivityService(db, options = {}) {
     if (!state.success) return state;
     if (state.bounty.status !== 'completed') return { success: false, reason: 'Target bounty belum tercapai.' };
     if (state.personal.actions === 0) return { success: false, reason: 'Kamu belum berkontribusi.' };
-    const reward = { gold: 100 + state.personal.contribution, seasonPoints: 15 };
+    const nominalGold = 100 + state.personal.contribution;
+    const currentGold = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?')
+      .get(String(userId)).gold;
+    const reward = {
+      gold: Math.max(0, Math.min(nominalGold, 50000 - currentGold)),
+      seasonPoints: 15,
+    };
     return db.transaction(() => {
       const receipt = db.prepare(`
         INSERT OR IGNORE INTO rpg_duo_bounty_claims
           (bounty_id,user_id,reward_json,claimed_at) VALUES (?,?,?,?)
       `).run(state.bounty.id, String(userId), JSON.stringify(reward), now());
       if (receipt.changes === 0) return { success: false, reason: 'Reward sudah diklaim.' };
-      db.prepare('UPDATE rpg_users SET gold=gold+?,updated_at=? WHERE telegram_user_id=?')
+      db.prepare('UPDATE rpg_users SET gold=MIN(50000,gold+?),updated_at=? WHERE telegram_user_id=?')
         .run(reward.gold, now(), String(userId));
       const balance = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?').get(String(userId)).gold;
-      ledger.record({
-        entryKey: `duo_bounty:${state.bounty.id}:${userId}`, userId, amount: reward.gold,
-        balanceAfter: balance, reason: 'duo_bounty_reward',
-        referenceType: 'duo_bounty', referenceId: state.bounty.id,
-      });
+      if (reward.gold > 0) {
+        ledger.record({
+          entryKey: `duo_bounty:${state.bounty.id}:${userId}`, userId, amount: reward.gold,
+          balanceAfter: balance, reason: 'duo_bounty_reward',
+          referenceType: 'duo_bounty', referenceId: state.bounty.id,
+        });
+      }
       endgame.addSeasonPoints(userId, reward.seasonPoints, 1, `duo_bounty_season:${state.bounty.id}:${userId}`);
       return { success: true, reward };
     })();

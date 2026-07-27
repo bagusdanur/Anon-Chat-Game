@@ -26,6 +26,8 @@ test('UI utama tetap ringkas dan memakai input angka untuk daftar pemain', () =>
 
   assert.match(profile, /LANGKAH BERIKUTNYA/);
   assert.match(profile, /Skill Loadout/);
+  assert.match(profile, /formatNumberId\(effectiveHp\)/);
+  assert.match(profile, /Campaign utama selesai/);
   assert.match(guide, /dungeonNumber/);
   assert.match(dungeon, /index \+ 1/);
   assert.doesNotMatch(guide, /<code>\/reforge<\/code>|<code>\/socket<\/code>/);
