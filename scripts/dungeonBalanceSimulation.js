@@ -259,7 +259,7 @@ for (const classDef of classes) {
     });
     potionRows.push({
       class: classDef.name,
-      policy: policy === 'none' ? 'tanpa potion' : policy === 'normal' ? '1 ramuan/room + cooldown' : 'spam tanpa batas (uji risiko)',
+      policy: policy === 'none' ? 'tanpa potion' : policy === 'normal' ? '1 ramuan/room' : 'spam tanpa batas (uji risiko)',
       bossWin: `${(result.winRate * 100).toFixed(1)}%`,
       avgPotion: result.potions.toFixed(1),
       turns: result.turns.toFixed(1),
@@ -268,7 +268,7 @@ for (const classDef of classes) {
 }
 console.log('\nUji potion boss akhir (gear wajar, strategi benar):');
 console.table(potionRows);
-const normalPotionRows = potionRows.filter(row => row.policy === '1 ramuan/room + cooldown');
+const normalPotionRows = potionRows.filter(row => row.policy === '1 ramuan/room');
 if (normalPotionRows.some(row => Number(row.avgPotion) > 1)) {
   throw new Error('Batas potion per room tidak tercermin dalam simulasi.');
 }

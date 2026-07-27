@@ -385,7 +385,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     }
     await ctx.answerCbQuery();
     return ctx.reply(
-      '<b>🧪 PAKAI RAMUAN — memakai 1 giliran</b>\n\nMaksimal 1 ramuan per room untuk setiap pemain. Setelah minum, lakukan 1 cycle dengan aksi lain dahulu. Efek heal tactical disesuaikan agar boss tetap membutuhkan strategi.',
+      '<b>🧪 PAKAI RAMUAN — memakai 1 giliran</b>\n\nMaksimal 1 ramuan per room untuk setiap pemain. Efek heal tactical disesuaikan agar boss tetap membutuhkan strategi.',
       {
         parse_mode: 'HTML',
         ...Markup.inlineKeyboard(potions.map(item => {
