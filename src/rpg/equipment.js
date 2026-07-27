@@ -102,9 +102,12 @@ function setupEquipment(bot, { rateLimitCommand }) {
       if (!instanceId) return ctx.reply('❌ Nomor gear tidak valid. Ketik /gear.');
       const key = `telegram:${ctx.chat.id}:${ctx.message.message_id}:gear_upgrade`;
       const result = equipment.upgrade(ctx.chat.id, instanceId, key);
+      const materials = result.success
+        ? result.materials.map(item => `${item.quantity} ${item.itemId.replace(/_/g, ' ')}`).join(' + ')
+        : '';
       return ctx.reply(result.success
         ? `⚒️ Upgrade berhasil: +${result.item.upgrade_tier}, IP ${result.item.item_power}. ` +
-          `Biaya ${result.goldCost}g dan ${result.materialCost} Tembaga.`
+          `Biaya ${result.goldCost}g dan ${materials}.`
         : `❌ ${result.reason}`);
     }
 
@@ -117,7 +120,27 @@ function setupEquipment(bot, { rateLimitCommand }) {
       const affixes = result.item.affixes
         .map(affix => formatStat(affix.stat_key, affix.stat_value))
         .join(', ');
-      return ctx.reply(`✨ Reforge berhasil (${result.goldCost}g): ${affixes}`);
+      return ctx.reply(`✨ Reforge berhasil (${result.goldCost}g + ${result.catalystCost} Katalis): ${affixes}`);
+    }
+
+    if (action === 'salvage') {
+      const instanceId = resolveGearNumber(ctx.chat.id, args[1]);
+      if (!instanceId) return ctx.reply('❌ Nomor gear tidak valid. Ketik /gear.');
+      const item = equipment.getInstance(ctx.chat.id, instanceId);
+      if (item.equipped_slot) return ctx.reply('❌ Lepas gear terlebih dahulu sebelum salvage.');
+      return ctx.reply(
+        `⚠️ Bongkar permanen <b>${item.display_name}</b> +${item.upgrade_tier} (${item.item_power} IP)?\n` +
+        `<i>Gear hilang dan berubah menjadi material. Tindakan ini tidak dapat dibatalkan.</i>`,
+        {
+          parse_mode: 'HTML',
+          reply_markup: {
+            inline_keyboard: [[
+              { text: '✅ Ya, salvage', callback_data: `gear_salvage:${item.id}` },
+              { text: '❌ Batal', callback_data: 'gear_salvage_cancel' },
+            ]],
+          },
+        },
+      );
     }
 
     const items = equipment.list(ctx.chat.id);
@@ -146,12 +169,12 @@ function setupEquipment(bot, { rateLimitCommand }) {
         : '🔓 Bisa diperdagangkan';
       const set = item.set_id ? `\n   🧩 Set: ${item.set_id}` : '';
       return `${item.equipped_slot ? '✅ TERPASANG' : '▫️ TERSIMPAN'}  <code>[${index + 1}]</code> <b>${item.display_name}</b>\n` +
-        `   ${CATEGORY_LABELS[item.category] || item.category} · ${item.rarity} · Upgrade +${item.upgrade_tier}\n` +
+        `   ${CATEGORY_LABELS[item.category] || item.category} · ${item.rarity} · Item Lv.${item.item_level} · Upgrade +${item.upgrade_tier}\n` +
         `   💪 <b>${item.item_power} IP</b> · ✨ Kualitas <b>${item.quality}/100</b>\n` +
         `   🎲 ${affixes}\n` +
         `   💎 ${sockets}\n` +
         `   ${status}${set}\n` +
-        `   ➡️ /gear equip ${index + 1} · /gear upgrade ${index + 1} · /gear reforge ${index + 1}`;
+        `   ➡️ /gear equip ${index + 1} · /gear upgrade ${index + 1} · /gear reforge ${index + 1} · /gear salvage ${index + 1}`;
     });
     return ctx.reply(
       `<b>🛡 EQUIPMENT V2</b>\n` +
@@ -163,6 +186,24 @@ function setupEquipment(bot, { rateLimitCommand }) {
       `${totalPages > 1 ? `\nHalaman: /gear page [1-${totalPages}]` : ''}</i>`,
       { parse_mode: 'HTML' },
     );
+  });
+
+  bot.action('gear_salvage_cancel', async ctx => {
+    await ctx.answerCbQuery('Salvage dibatalkan.');
+    return ctx.editMessageReplyMarkup({ inline_keyboard: [] }).catch(() => {});
+  });
+
+  bot.action(/^gear_salvage:(\d+)$/, async ctx => {
+    const instanceId = Number(ctx.match[1]);
+    const key = `telegram:${ctx.chat.id}:${ctx.callbackQuery.id}:gear_salvage`;
+    const result = equipment.salvage(ctx.chat.id, instanceId, key);
+    await ctx.answerCbQuery(result.success ? 'Gear berhasil dibongkar.' : result.reason);
+    if (!result.success) return ctx.reply(`❌ ${result.reason}`);
+    const rewards = Object.entries(result.rewards)
+      .map(([itemId, quantity]) => `${quantity}× ${itemId.replace(/_/g, ' ')}`)
+      .join(' · ');
+    await ctx.editMessageReplyMarkup({ inline_keyboard: [] }).catch(() => {});
+    return ctx.reply(`♻️ Salvage berhasil. Diperoleh: ${rewards}.`);
   });
 }
 

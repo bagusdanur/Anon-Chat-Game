@@ -193,7 +193,14 @@ function createLongDungeonService(db, options = {}) {
         emperor_throne_citadel: 'inti_supernova',
       };
       const signatureMaterial = signatureMaterials[session.dungeon_id];
-      if (signatureMaterial) {
+      const clearCount = Number(db.prepare(`
+        SELECT COUNT(1) total
+        FROM rpg_dungeon_reward_claims c
+        JOIN rpg_dungeon_sessions_v2 s ON s.id=c.session_id
+        WHERE c.user_id=? AND s.dungeon_id=?
+      `).get(recipientId, session.dungeon_id)?.total || 0);
+      const firstClear = clearCount === 1;
+      if (signatureMaterial && (firstClear || random() < 0.35)) {
         db.prepare(`
           INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
           VALUES (?,?,1)
@@ -209,14 +216,36 @@ function createLongDungeonService(db, options = {}) {
         emperor_throne_citadel: ['pedang_naga', 'armor_naga', 'kalung_naga'],
       };
       const pool = gearPools[session.dungeon_id] || [];
-      if (pool.length && random() < 0.2) {
+      const pity = db.prepare(`
+        SELECT misses FROM rpg_dungeon_drop_pity WHERE user_id=? AND dungeon_id=?
+      `).get(recipientId, session.dungeon_id);
+      const misses = Number(pity?.misses || 0);
+      const dropChance = session.mode === 'duo' ? 0.10 : 0.15;
+      const gearDropped = pool.length && (misses >= 4 || random() < dropChance);
+      if (gearDropped) {
         const itemId = pool[Math.floor(random() * pool.length)];
         db.prepare(`
           INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
           VALUES (?,?,1)
           ON CONFLICT(telegram_user_id,item_id) DO UPDATE SET quantity=quantity+1
         `).run(recipientId, itemId);
-        equipment.forge(recipientId, itemId);
+        equipment.forge(recipientId, itemId, {
+          itemLevel: Math.max(1, Number(session.definition.recommended_level || session.definition.min_level || 1)),
+          qualityMin: 60,
+          qualityMax: 90,
+          sourceDungeonId: session.dungeon_id,
+        });
+        db.prepare(`
+          INSERT INTO rpg_dungeon_drop_pity (user_id,dungeon_id,misses,last_drop_at)
+          VALUES (?,?,0,?)
+          ON CONFLICT(user_id,dungeon_id) DO UPDATE SET misses=0,last_drop_at=excluded.last_drop_at
+        `).run(recipientId, session.dungeon_id, timestamp);
+      } else if (pool.length) {
+        db.prepare(`
+          INSERT INTO rpg_dungeon_drop_pity (user_id,dungeon_id,misses)
+          VALUES (?,?,1)
+          ON CONFLICT(user_id,dungeon_id) DO UPDATE SET misses=misses+1
+        `).run(recipientId, session.dungeon_id);
       }
       if (reward.xp) {
         const user = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(recipientId);

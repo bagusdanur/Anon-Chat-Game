@@ -187,7 +187,7 @@ function renderProfile(user) {
       msg += `✅ <code>[${gearNumber}]</code> <b>${item.display_name}</b> +${item.upgrade_tier}\n`;
       msg += `   ${V2_CATEGORY_LABELS[item.category] || item.category} · ` +
         `${V2_RARITY_LABELS[item.rarity] || item.rarity} · ` +
-        `<b>${item.item_power} IP</b> (skor) · Q${item.quality}/100\n`;
+        `Item Lv.${item.item_level} · <b>${item.item_power} IP</b> (skor) · Q${item.quality}/100\n`;
       msg += `   🎲 ${bonuses}\n`;
       msg += `   💎 Socket ${socketInfo} · 🔒 ${binding}`;
       if (item.set_id) msg += ` · 🧩 Set ${item.set_id}`;

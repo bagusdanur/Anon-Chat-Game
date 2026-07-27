@@ -724,6 +724,43 @@ const MIGRATIONS = [
         ('ramuan_resist','Ramuan Resistensi','consumable','rare',55,'{"heal_pct":35}');
     `,
   },
+  {
+    version: 20,
+    name: 'balanced_equipment_sources_pity_and_salvage',
+    up: `
+      ALTER TABLE rpg_equipment_instances ADD COLUMN item_level INTEGER NOT NULL DEFAULT 1;
+      ALTER TABLE rpg_equipment_instances ADD COLUMN source_dungeon_id TEXT;
+      ALTER TABLE rpg_equipment_instances ADD COLUMN reforge_count INTEGER NOT NULL DEFAULT 0;
+
+      UPDATE rpg_equipment_instances
+      SET item_level=MAX(1, COALESCE((
+        SELECT level FROM rpg_users WHERE telegram_user_id=rpg_equipment_instances.owner_id
+      ), 1));
+
+      CREATE TABLE IF NOT EXISTS rpg_dungeon_drop_pity (
+        user_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        dungeon_id TEXT NOT NULL REFERENCES rpg_dungeon_definitions(dungeon_id),
+        misses INTEGER NOT NULL DEFAULT 0 CHECK (misses >= 0),
+        last_drop_at INTEGER,
+        PRIMARY KEY (user_id,dungeon_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS rpg_equipment_salvage_receipts (
+        operation_key TEXT PRIMARY KEY,
+        instance_id INTEGER NOT NULL,
+        owner_id TEXT NOT NULL REFERENCES rpg_users(telegram_user_id),
+        item_snapshot_json TEXT NOT NULL,
+        rewards_json TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+
+      INSERT OR IGNORE INTO items_catalog
+        (item_id,display_name,category,rarity,sell_price,effect_json)
+      VALUES
+        ('reforge_catalyst','Katalis Reforge','material','rare',35,NULL),
+        ('gem_dust','Debu Gem','material','uncommon',12,NULL);
+    `,
+  },
 ];
 
 function quoteSql(value) {

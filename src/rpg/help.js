@@ -66,7 +66,8 @@ const HELP_PAGES = [
       '/gear equip [nomor gear] — pasang dan bind\n' +
       '/gear socket [gear] [slot] [nomor gem /inv]\n' +
       '/gear upgrade [nomor gear] — upgrade hingga +15\n' +
-      '/gear reforge [nomor gear] — roll ulang affix\n\n' +
+      '/gear reforge [nomor gear] — roll ulang affix (butuh katalis)\n' +
+      '/gear salvage [nomor gear] — bongkar gear menjadi material\n\n' +
       'Set tersedia: Dragon Regalia dan Cursed Sovereign. Sistem /equip dan /upgrade lama tetap kompatibel.',
   },
   {

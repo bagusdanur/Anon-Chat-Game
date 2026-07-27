@@ -57,6 +57,7 @@ const {
 const {
   loadEquipmentContent,
   calculateItemPower,
+  upgradeRequirements,
   createEquipmentService,
 } = require('../src/rpg/services/equipment');
 const {
@@ -137,6 +138,7 @@ test('migrations are ordered and idempotent', () => {
     { version: 17 },
     { version: 18 },
     { version: 19 },
+    { version: 20 },
   ]);
   db.close();
 });
@@ -832,7 +834,7 @@ test('equipment upgrades and reforges are atomic audited gold sinks', () => {
   `).run();
   db.prepare(`
     INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
-    VALUES ('1','upgrade_blade',1),('1','tembaga',10)
+    VALUES ('1','upgrade_blade',1),('1','tembaga',10),('1','reforge_catalyst',2)
   `).run();
   const equipment = createEquipmentService(db, { random: () => 0.25, now: () => 2_000_000_000 });
   const instance = equipment.forge('1', 'upgrade_blade').item;
@@ -845,6 +847,36 @@ test('equipment upgrades and reforges are atomic audited gold sinks', () => {
   assert.equal(reforged.item.affixes.length, instance.affixes.length);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_equipment_operations').get().count, 2);
   assert.equal(db.prepare('SELECT count(1) count FROM rpg_currency_ledger').get().count, 2);
+  db.close();
+});
+
+test('equipment tier costs rise and salvage is confirmed through an idempotent receipt', () => {
+  const db = createTestDb();
+  for (let tier = 2; tier <= 15; tier++) {
+    assert.ok(upgradeRequirements(tier).gold > upgradeRequirements(tier - 1).gold);
+    assert.ok(upgradeRequirements(tier).materials.length > 0);
+  }
+  db.prepare(`
+    INSERT INTO items_catalog (item_id,display_name,category,rarity,sell_price)
+    VALUES ('salvage_blade','Salvage Blade','weapon','rare',50)
+  `).run();
+  db.prepare(`
+    INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
+    VALUES ('1','salvage_blade',1)
+  `).run();
+  const equipment = createEquipmentService(db, { random: () => 0.5, now: () => 2_000_000_000 });
+  const instance = equipment.forge('1', 'salvage_blade', { itemLevel: 30 }).item;
+  const salvaged = equipment.salvage('1', instance.id, 'salvage:test:1');
+  assert.equal(salvaged.success, true);
+  assert.equal(salvaged.rewards.perak, 3);
+  assert.equal(salvaged.rewards.reforge_catalyst, 1);
+  assert.equal(equipment.getInstance('1', instance.id), null);
+  const repeated = equipment.salvage('1', instance.id, 'salvage:test:1');
+  assert.equal(repeated.success, true);
+  assert.equal(repeated.duplicate, true);
+  assert.equal(db.prepare(`
+    SELECT quantity FROM rpg_inventory WHERE telegram_user_id='1' AND item_id='perak'
+  `).get().quantity, 3);
   db.close();
 });
 
@@ -1072,7 +1104,7 @@ test('RPG operations telemetry reports economy and invariant anomalies without u
   assert.equal(telemetry.anomalies.invalidInventory, 0);
   assert.equal(telemetry.dungeonBalance.totalRuns, 0);
   assert.equal(telemetry.dungeonBalance.actions, 0);
-  assert.equal(telemetry.migrations[0].version, 19);
+  assert.equal(telemetry.migrations[0].version, 20);
   assert.equal(Array.isArray(telemetry.featureFlags), true);
   assert.equal(JSON.stringify(telemetry).includes('telegram_user_id'), false);
   db.close();
