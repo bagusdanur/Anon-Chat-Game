@@ -209,6 +209,25 @@ test('skill points grow every two levels', () => {
   assert.equal(totalSkillPoints(10), 5);
 });
 
+test('skill publisher retires stale malformed definitions and keeps valid prerequisites', () => {
+  const db = createTestDb();
+  db.prepare(`
+    INSERT INTO rpg_skill_definitions
+      (skill_id,class_id,name,role,max_rank,definition_json,published)
+    VALUES ('broken_skill','ksatria','undefined','damage',1,'{}',1)
+  `).run();
+  const definitions = loadSkills();
+  publishSkills(db, definitions);
+  assert.equal(
+    db.prepare("SELECT published FROM rpg_skill_definitions WHERE skill_id='broken_skill'").get().published,
+    0,
+  );
+  const supernova = definitions.find(skill => skill.id === 'ksatria_supernova_slash');
+  assert.equal(supernova.requires, 'ksatria_heavy_slash');
+  assert.equal(createSkillService(db).getTree('1').skills.some(skill => !skill.name), false);
+  db.close();
+});
+
 test('skill learning enforces level, class, points, and loadout slots', () => {
   const db = createTestDb();
   publishSkills(db, loadSkills());

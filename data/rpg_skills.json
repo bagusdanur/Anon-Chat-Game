@@ -31,6 +31,17 @@
     "effect": { "type": "provoke", "reduction": [0.25, 0.4], "cooldown": 3 }
   },
   {
+    "id": "ksatria_supernova_slash",
+    "class_id": "ksatria",
+    "name": "💥 Tebasan Supernova Kosmik",
+    "role": "damage",
+    "max_rank": 5,
+    "min_level": 20,
+    "requires": "ksatria_heavy_slash",
+    "description": "Serangan pamungkas kosmik dengan damage besar dan cooldown panjang.",
+    "effect": { "type": "physical_damage", "multiplier": [2.7, 3.0, 3.3, 3.6, 4.0], "armor_penetration": 0.25, "cooldown": 5 }
+  },
+  {
     "id": "penyihir_fireball",
     "class_id": "penyihir",
     "name": "🔥 Bola Api",

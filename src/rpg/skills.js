@@ -37,13 +37,13 @@ function setupSkills(bot, { rateLimitCommand }) {
     const tree = service.getTree(userId);
     if (!tree) return 'Karakter tidak ditemukan.';
     const lines = tree.skills.map((skill, index) => {
-      const rank = `${skill.rank}/${skill.max_rank}`;
+      const rank = `${Number(skill.rank) || 0}/${Number(skill.max_rank) || 1}`;
       const equipped = skill.equipped_slot ? ` · Slot ${skill.equipped_slot}` : '';
       const lock = tree.user.level < skill.min_level ? ` 🔒 Lv.${skill.min_level}` : '';
       const requiredSkill = tree.skills.find(item => item.id === skill.requires);
       const requirement = requiredSkill && skill.rank === 0 ? ` · butuh ${requiredSkill.name}` : '';
-      return `<code>[${index + 1}]</code> <b>${skill.name}</b> <code>${rank}</code>${equipped}${lock}\n` +
-        `<i>${skill.description}${requirement}</i>`;
+      return `<code>[${index + 1}]</code> <b>${skill.name || 'Skill Tidak Valid'}</b> <code>${rank}</code>${equipped}${lock}\n` +
+        `<i>${skill.description || 'Deskripsi belum tersedia.'}${requirement}</i>`;
     });
     return `<b>🌟 SKILL TREE — ${tree.user.class_name.toUpperCase()}</b>\n` +
       `Skill point tersedia: <b>${tree.availablePoints}</b>\n\n${lines.join('\n\n')}\n\n` +

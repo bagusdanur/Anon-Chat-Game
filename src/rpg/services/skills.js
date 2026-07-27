@@ -10,8 +10,13 @@ function validateSkill(skill) {
   if (!skill || typeof skill.id !== 'string' || !/^[a-z0-9_]+$/.test(skill.id)) {
     throw new TypeError('Invalid skill id');
   }
-  if (typeof skill.class_id !== 'string' || typeof skill.name !== 'string') {
+  if (typeof skill.class_id !== 'string' || typeof skill.name !== 'string' ||
+      !skill.name.trim() || skill.name === 'undefined') {
     throw new TypeError(`Skill ${skill.id}: class_id and name are required`);
+  }
+  if (typeof skill.description !== 'string' || !skill.description.trim() ||
+      typeof skill.role !== 'string' || !skill.role.trim()) {
+    throw new TypeError(`Skill ${skill.id}: role and description are required`);
   }
   if (!Number.isInteger(skill.max_rank) || skill.max_rank < 1) {
     throw new TypeError(`Skill ${skill.id}: max_rank must be a positive integer`);
@@ -56,12 +61,19 @@ function publishSkills(db, skills) {
       published = 1
   `);
   db.transaction(() => {
+    db.prepare('UPDATE rpg_skill_definitions SET published = 0').run();
     for (const skill of skills) {
       statement.run(
         skill.id, skill.class_id, skill.name, skill.role,
         skill.max_rank, JSON.stringify(skill),
       );
     }
+    db.prepare(`
+      DELETE FROM rpg_user_skills
+      WHERE skill_id IN (
+        SELECT skill_id FROM rpg_skill_definitions WHERE published = 0
+      )
+    `).run();
   })();
 }
 
@@ -84,7 +96,7 @@ function createSkillService(db, options = {}) {
       SELECT us.*, sd.name, sd.role, sd.max_rank, sd.definition_json
       FROM rpg_user_skills us
       JOIN rpg_skill_definitions sd ON sd.skill_id = us.skill_id
-      WHERE us.user_id = ?
+      WHERE us.user_id = ? AND sd.published = 1
       ORDER BY us.equipped_slot IS NULL, us.equipped_slot, us.skill_id
     `).all(String(userId));
   }
@@ -106,11 +118,18 @@ function createSkillService(db, options = {}) {
       const definitions = db.prepare(`
         SELECT * FROM rpg_skill_definitions
         WHERE class_id = ? AND published = 1 ORDER BY skill_id
-      `).all(user.class_name).map(row => ({
-        ...JSON.parse(row.definition_json),
-        rank: learned.get(row.skill_id)?.rank || 0,
-        equipped_slot: learned.get(row.skill_id)?.equipped_slot ?? null,
-      }));
+      `).all(user.class_name).map(row => {
+        try {
+          const definition = validateSkill(JSON.parse(row.definition_json));
+          return {
+            ...definition,
+            rank: learned.get(row.skill_id)?.rank || 0,
+            equipped_slot: learned.get(row.skill_id)?.equipped_slot ?? null,
+          };
+        } catch {
+          return null;
+        }
+      }).filter(Boolean);
       return { user, skills: definitions, availablePoints: availablePoints(userId) };
     },
     learn(userId, skillId) {
