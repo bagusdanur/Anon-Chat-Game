@@ -34,6 +34,7 @@ const { rateLimitMessage, rateLimitCommand, rateLimitSearch } = require('./src/m
 const { containsBadWord } = require('./src/moderation/wordFilter');
 const { getRandomTopic } = require('./src/icebreakers');
 const { setupRpg, clearPartnerRpgState, resolveInvInput } = require('./src/rpg/controller');
+const { startDatabaseMaintenance } = require('./src/rpg/services/databaseMaintenance');
 const { progressBar } = require('./src/format');
 const { CLASS_DEFS, xpToNextLevel, getCurrentHp, getCurrentEnergy, getEquipmentBonus, getInventory, getOrCreateUser, getEquippedBonus, getEquipped, equipItem, unequipSlot, CLASS_EQUIP_SLOTS } = require('./src/rpg/db_rpg');
 const { RARITY_EMOJI } = require('./src/rpg/profile');
@@ -406,6 +407,9 @@ bot.command('report', (ctx) => {
 
 // Set up RPG module
 setupRpg(bot, { getPartnerId, rateLimitCommand });
+// Snapshot backup harian + integrity check. Interval di-unref agar shutdown bot
+// tidak tertahan dan kegagalan maintenance tidak mengganggu gameplay.
+startDatabaseMaintenance(db, process.env.DATABASE_PATH || path.join(__dirname, 'data/bot.db'), logger);
 
 // ===== QUEST SYSTEM =====
 const { incrementQuestProgress, claimQuest, getAllDailyQuests } = require('./src/rpg/db_rpg');

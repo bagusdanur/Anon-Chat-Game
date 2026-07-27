@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const pinoHttp = require('pino-http');
 const Sentry = require('@sentry/node');
+const client = require('prom-client');
 const { db } = require('./src/db');
 const { createDatabaseBackup, getDatabaseHealth } = require('./src/rpg/services/databaseMaintenance');
 const { getWords, FILTER_PATH } = require('./src/moderation/wordFilter');
@@ -21,6 +22,14 @@ const featureFlags = createFeatureFlagService(db);
 const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'data/bot.db');
 const sentryEnabled = Boolean(process.env.SENTRY_DSN);
 if (sentryEnabled) Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.05 });
+const metricsRegistry = new client.Registry();
+client.collectDefaultMetrics({ register: metricsRegistry, prefix: 'anon_dashboard_' });
+const requestDuration = new client.Histogram({
+  name: 'anon_dashboard_http_request_duration_seconds',
+  help: 'Durasi request dashboard per route/status.',
+  labelNames: ['method', 'route', 'status'],
+  registers: [metricsRegistry],
+});
 
 // Password check helper
 function checkAuth(req) {
@@ -36,6 +45,15 @@ app.disable('x-powered-by');
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(pinoHttp({ autoLogging: { ignore: req => req.url === '/api/health' } }));
 app.use(express.json({ limit: '128kb' }));
+app.use((req, res, next) => {
+  const started = process.hrtime.bigint();
+  res.on('finish', () => requestDuration.observe({
+    method: req.method,
+    route: req.route?.path || req.path,
+    status: String(res.statusCode),
+  }, Number(process.hrtime.bigint() - started) / 1e9));
+  next();
+});
 app.use('/api', rateLimit({ windowMs: 60 * 1000, max: 240, standardHeaders: 'draft-8', legacyHeaders: false }));
 const staticDir = fs.existsSync(path.join(__dirname, 'dist')) ? 'dist' : 'dashboard';
 app.use(express.static(path.join(__dirname, staticDir)));
@@ -52,6 +70,12 @@ app.get('/api/check-auth', (req, res) => {
 });
 
 app.get('/api/health', (req, res) => res.json({ ok: true, service: 'anon-dashboard', now: Date.now() }));
+app.get('/metrics', auth, async (req, res, next) => {
+  try {
+    res.set('Content-Type', metricsRegistry.contentType);
+    res.end(await metricsRegistry.metrics());
+  } catch (error) { next(error); }
+});
 
 // ===== STATS =====
 app.get('/api/stats', auth, (req, res) => {
