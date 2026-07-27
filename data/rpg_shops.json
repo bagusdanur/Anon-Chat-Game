@@ -15,6 +15,12 @@
       "item_id": "ramuan_energi",
       "buy_price": 75
     },
+    { "item_id": "tembaga", "buy_price": 30, "section": "Material Umum" },
+    { "item_id": "batu_bara", "buy_price": 25, "section": "Material Umum" },
+    { "item_id": "besi_rongsok", "buy_price": 60, "section": "Material Umum" },
+    { "item_id": "besi", "buy_price": 110, "section": "Material Umum" },
+    { "item_id": "perak", "buy_price": 300, "min_level": 12, "section": "Material Umum" },
+    { "item_id": "herba_kabut", "buy_price": 55, "section": "Material Umum" },
     {
       "id": 4,
       "item_id": "kail_plus",
@@ -123,6 +129,11 @@
       "buy_price": 900,
       "min_level": 15,
       "weekly_limit": 2
-    }
+    },
+    { "item_id": "gem_dust", "buy_price": 180, "min_level": 15, "section": "Langka Mingguan" },
+    { "item_id": "emas_ore", "buy_price": 1000, "min_level": 20, "weekly_limit": 5, "section": "Langka Mingguan" },
+    { "item_id": "obsidian_murni", "buy_price": 2800, "min_level": 25, "weekly_limit": 2, "section": "Langka Mingguan" },
+    { "item_id": "kristal_nexus", "buy_price": 4500, "min_level": 35, "weekly_limit": 1, "section": "Langka Mingguan" },
+    { "item_id": "berlian", "buy_price": 8500, "min_level": 40, "weekly_limit": 1, "section": "Langka Mingguan" }
   ]
 }

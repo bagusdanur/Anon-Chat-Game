@@ -66,6 +66,7 @@ const {
 } = require('../src/rpg/services/directTrade');
 const { collectRpgTelemetry } = require('../src/rpg/services/telemetry');
 const { simulateEconomy } = require('../src/rpg/services/economySimulation');
+const { createItemCatalogService } = require('../src/rpg/services/itemCatalog');
 
 function createTestDb() {
   const db = new Database(':memory:');
@@ -146,6 +147,20 @@ test('migrations are ordered and idempotent', () => {
     { version: 22 },
     { version: 23 },
   ]);
+  db.close();
+});
+
+test('item catalog gives every catalog item a validated acquisition source', () => {
+  const db = createTestDb();
+  db.prepare(`
+    INSERT INTO items_catalog (item_id,display_name,category,rarity,sell_price)
+    VALUES ('berlian','Berlian','material','legendary',300)
+  `).run();
+  const catalog = createItemCatalogService(db);
+  assert.equal(catalog.validate(), true);
+  const diamond = catalog.all('1').find(item => item.item_id === 'berlian');
+  assert.match(diamond.sources.join(' '), /mine/);
+  assert.match(diamond.sources.join(' '), /1\/minggu/);
   db.close();
 });
 

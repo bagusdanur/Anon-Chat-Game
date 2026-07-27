@@ -732,6 +732,7 @@ const botCommands = [
   { command: 'mine',     description: '⛏️ Menambang' },
   { command: 'profession', description: '🧰 Progress profession' },
   { command: 'gather',   description: '🌿 Gathering material' },
+  { command: 'catalog',  description: '📖 Sumber & kegunaan item' },
   // === ECONOMY ===
   { command: 'inv',      description: '🎒 Inventaris' },
   { command: 'shop',     description: '🏪 Toko NPC' },

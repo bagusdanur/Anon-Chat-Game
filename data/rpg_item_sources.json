@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "sources": {
+    "berlian": { "sources": ["⛏ /mine Lv.46+ · tier 3 legendary", "🏪 Shop langka · Lv.40+, 1/minggu"], "note": "Bahan tempaan legendary; mining tetap sumber utama." },
+    "fragmen_naga": { "sources": ["⚔ /hunt · legendary drop", "🏰 Dungeon endgame"], "note": "Tidak dijual NPC." },
+    "sisik_naga": { "sources": ["🐟 /fish tier 3", "🏰 Raid/Dungeon Naga", "🏪 Marketplace"], "note": "Tidak dijual NPC." },
+    "inti_antimateri": { "sources": ["🏰 Menara Anti-Materi", "⛏ /mine tier 3 legendary"], "note": "Relik Saga II; tidak dijual NPC." },
+    "inti_supernova": { "sources": ["🏰 Istana Tahta Kaisar", "⛏ /mine tier 3 legendary"], "note": "Relik Saga II; tidak dijual NPC." },
+    "herba_kabut": { "sources": ["🌿 /gather di Aldenmoor", "🏪 Shop material" ] },
+    "sutra_racun": { "sources": ["🌿 /gather di Lembah Sutra", "🏰 Sarang Ratu Laba-laba" ] },
+    "obsidian_murni": { "sources": ["⛏ /mine tier 2+", "🏰 Benteng Vulkanik", "🏪 Shop langka · limit mingguan" ] },
+    "lotus_api": { "sources": ["🌿 /gather Gunung Berapi", "🏰 Benteng Vulkanik" ] },
+    "serpihan_astral": { "sources": ["⛏ /mine tier 3", "🏰 Benteng Kristal Astral" ] },
+    "kristal_nexus": { "sources": ["⛏ /mine tier 3", "🏰 Benteng Kristal Astral", "🏪 Shop langka · limit mingguan" ] },
+    "air_mata_gerhana": { "sources": ["⛏ /mine tier 3", "🏰 Suaka Gerhana Abadi" ] },
+    "reforge_catalyst": { "sources": ["🏰 Drop dungeon", "🏪 Shop · 2/minggu" ] },
+    "gem_dust": { "sources": ["⚒ Salvage equipment", "🏪 Shop" ] },
+    "ore_upgrade": { "sources": ["🔥 /ore convert material", "⚒ Salvage equipment" ] },
+    "pedang_goblin": { "sources": ["🏰 Reruntuhan Goblin", "⚒ Craft/Marketplace" ] },
+    "jaring_sutra": { "sources": ["🏰 Sarang Ratu Laba-laba", "🏪 Marketplace" ] },
+    "mahkota_terkutuk": { "sources": ["⚒ /craft", "🏪 Marketplace" ] }
+    ,"batere_supernova": { "sources": ["🏰 Hadiah/loot legacy Saga II", "🏪 Marketplace" ], "note": "Relik legacy; tidak dijual NPC." }
+    ,"sisik_naga_perak": { "sources": ["🏰 Benteng Vulkanik / Raid Malakor", "🏪 Marketplace" ], "note": "Relik legacy; tidak dijual NPC." }
+    ,"obsidian": { "sources": ["⛏ /mine Gunung Berapi", "🏪 Marketplace" ] }
+    ,"ramuan_kosmik": { "sources": ["🏰 Hadiah legacy Saga II", "🏪 Marketplace" ], "note": "Consumable legacy; tidak dijual NPC." }
+    ,"emas_rongsok": { "sources": ["🏰 Harta dungeon legacy", "🏪 Marketplace" ] }
+    ,"pedang_supernova": { "sources": ["🏰 Hadiah legacy Kaisar Kosmik", "🏪 Marketplace" ], "note": "Gear legacy; tidak dijual NPC." }
+    ,"zirah_sayap_void": { "sources": ["🏰 Hadiah legacy Archon Void", "🏪 Marketplace" ], "note": "Gear legacy; tidak dijual NPC." }
+    ,"mahkota_galaksi": { "sources": ["🏰 Hadiah legacy Kaisar Kosmik", "🏪 Marketplace" ], "note": "Gear legacy; tidak dijual NPC." }
+  }
+}

@@ -27,8 +27,8 @@ function getShopConfig() {
     if (fs.existsSync(configPath)) {
       const content = JSON.parse(fs.readFileSync(configPath, 'utf8'));
       return [
-        ...(content.shop_items || []).map(item => ({ ...item, min_level: item.min_level || 1 })),
-        ...(content.special_shop || []).map(item => ({ ...item, min_level: item.min_level || 20 })),
+        ...(content.shop_items || []).map(item => ({ ...item, min_level: item.min_level || 1, section: item.section || 'Persediaan & Peralatan' })),
+        ...(content.special_shop || []).map(item => ({ ...item, min_level: item.min_level || 20, section: item.section || 'Endgame & Utility' })),
       ].map((item, index) => ({ ...item, id: index + 1 }));
     }
   } catch (e) {
@@ -248,7 +248,11 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     msg += `💰 Saldo: <b>${user.gold}g</b>\n`;
     msg += `<i>Beli item dengan gold. Ketik /buy &lt;ID/Nama&gt;</i>\n\n`;
 
-    const shopItems = getShopConfig();
+    const requestedPage = Math.max(1, Number(ctx.message.text.trim().split(/\s+/)[1]) || 1);
+    const sections = [...new Set(getShopConfig().map(item => item.section))];
+    const section = sections[requestedPage - 1];
+    if (!section) return ctx.reply(`Halaman shop tidak valid. Gunakan /shop 1-${sections.length}.`);
+    const shopItems = getShopConfig().filter(item => item.section === section);
     for (const s of shopItems) {
       const catalog = getCatalogItem(s.item_id);
       if (catalog) {
@@ -265,6 +269,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     }
     msg += `\n<i>Ketik /buy [nomor atau nama] untuk membeli</i>\n`;
     msg += `Contoh: <code>/buy 1</code> atau <code>/buy ramuan_kecil</code>`;
+    msg += `\n<i>Halaman shop: ${sections.map((name, index) => `${index + 1}.${name}`).join(' · ')}</i>`;
     ctx.reply(msg, { parse_mode: 'HTML' });
   });
 

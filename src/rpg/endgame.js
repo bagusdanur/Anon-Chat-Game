@@ -2,10 +2,13 @@ const { db } = require('../db');
 const { getOrCreateUser } = require('./db_rpg');
 const { createFeatureFlagService } = require('./services/featureFlags');
 const { createEndgameService } = require('./services/endgame');
+const { createItemCatalogService } = require('./services/itemCatalog');
 
 function setupEndgame(bot, { rateLimitCommand }) {
   const flags = createFeatureFlagService(db);
   const endgame = createEndgameService(db);
+  const catalog = createItemCatalogService(db);
+  catalog.validate();
 
   function requireCharacter(ctx) {
     if (!flags.isEnabled('seasons_v2')) {
@@ -76,6 +79,40 @@ function setupEndgame(bot, { rateLimitCommand }) {
       `${item.unlocked ? '✅' : '🔒'} <b>${item.name}</b>\n   <i>${item.description}</i>`,
     );
     return ctx.reply(`<b>🎖 ACHIEVEMENTS</b>\n\n${lines.join('\n\n')}`, { parse_mode: 'HTML' });
+  });
+
+  bot.command('catalog', rateLimitCommand, ctx => {
+    if (!requireCharacter(ctx)) return;
+    const entries = catalog.all(ctx.chat.id);
+    const input = ctx.message.text.trim().split(/\s+/).slice(1).join(' ').toLowerCase();
+    const number = Number(input);
+    if (Number.isInteger(number) && number > 0) {
+      const item = entries[number - 1];
+      if (!item) return ctx.reply('Nomor katalog tidak valid. Ketik /catalog.');
+      return ctx.reply(
+        `<b>📖 [${item.number}] ${item.display_name}</b>\n` +
+        `${catalog.labels[item.category] || item.category} · ${item.rarity}\n` +
+        `${item.owned ? '✅ Sudah ditemukan' : '▫️ Belum ditemukan'}\n\n` +
+        `<b>📍 Cara mendapatkan</b>\n• ${item.sources.join('\n• ')}\n\n` +
+        `<b>🛠 Kegunaan</b>\n• ${(item.uses.length ? item.uses : ['Belum ada resep khusus']).join('\n• ')}`,
+        { parse_mode: 'HTML' },
+      );
+    }
+    const categoryMatch = input.match(/^(consumable|material|weapon|staff|armor|accessory)(?:\s+(\d+))?$/);
+    const category = categoryMatch?.[1] || null;
+    const filtered = category ? entries.filter(item => item.category === category) : entries;
+    const page = Math.max(1, Number(categoryMatch?.[2]) || 1);
+    const pageSize = 12;
+    const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
+    const owned = entries.filter(item => item.owned).length;
+    return ctx.reply(
+      `<b>📖 KATALOG ITEM</b> · ${owned}/${entries.length} ditemukan\n` +
+      `<i>Halaman ${page}/${pages}${category ? ` · ${catalog.labels[category]}` : ''}</i>\n\n` +
+      visible.map(item => `${item.owned ? '✅' : '▫️'} <code>[${item.number}]</code> ${item.display_name} <i>${item.rarity}</i>`).join('\n') +
+      `\n\n<i>/catalog [nomor] untuk sumber & kegunaan\n/catalog material 2 · /catalog consumable · /catalog weapon</i>`,
+      { parse_mode: 'HTML' },
+    );
   });
 
   bot.command('collection', rateLimitCommand, ctx => {

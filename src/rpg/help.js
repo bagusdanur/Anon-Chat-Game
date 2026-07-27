@@ -142,6 +142,7 @@ const HELP_PAGES = [
       '/tower — Endless Tower\n' +
       '/achievement — achievement permanen\n' +
       '/collection — koleksi item\n' +
+      '/catalog [nomor] — sumber dan kegunaan item\n' +
       '/worldboss attack|claim\n' +
       '/raid attack|claim\n' +
       '/bounty hunt|claim — duo bounty harian\n\n' +
