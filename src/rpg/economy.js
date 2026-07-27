@@ -176,7 +176,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
       msg += `<i>Gunakan /ore untuk panduan peleburan material.</i>\n\n`;
     }
 
-    msg += `<i>Gunakan nomor: /use 1 • /sell 2 • /upgrade 3</i>`;
+    msg += `<i>Gunakan nomor: /use 1 • /sell 2\nEquipment: /gear • /gear forge [nomor /inv]</i>`;
     ctx.reply(msg, { parse_mode: 'HTML' });
   });
 
@@ -600,7 +600,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const args = ctx.message.text.split(' ').slice(1);
     const input = args.join('_').toLowerCase();
 
-    if (!input) return ctx.reply('Penggunaan: <code>/upgrade [nomor]</code> atau <code>/upgrade [nama_item]</code>\nCek /inv untuk nomor item.', { parse_mode: 'HTML' });
+    if (!input) return ctx.reply('Penggunaan: <code>/upgrade [nomor gear]</code> atau <code>/upgrade [nama_item]</code>\nCek /gear untuk nomor equipment.', { parse_mode: 'HTML' });
 
     const user = getOrCreateUser(userId);
     if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
