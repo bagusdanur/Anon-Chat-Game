@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { spawnSync } = require('node:child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -51,4 +52,18 @@ test('panduan utama memakai syntax command produksi', () => {
   assert.doesNotMatch(help, /trade offer item \[item_id\]/);
   assert.match(help, /trade offer item \[nomor \/inv\]/);
   assert.match(help, /dungeon raid/);
+});
+
+test('modul RPG tidak menahan shutdown process dengan cleanup timer', () => {
+  const result = spawnSync(
+    process.execPath,
+    ['-e', "require('./src/rpg/guide'); require('./src/rpg/coop'); require('./src/rpg/duel')"],
+    {
+      cwd: root,
+      encoding: 'utf8',
+      timeout: 5000,
+    },
+  );
+  assert.equal(result.error?.code, undefined, `Process import timeout: ${result.error?.message || ''}`);
+  assert.equal(result.status, 0, result.stderr);
 });

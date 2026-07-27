@@ -484,7 +484,7 @@ const DUEL_SESSION_TIMEOUT = 5 * 60 * 1000; // 5 menit
 
 let duelBotRef = null;
 
-setInterval(() => {
+const duelCleanupTimer = setInterval(() => {
   if (!duelBotRef) return;
   const now = Date.now();
   for (const [pairKey, duel] of duelSessions) {
@@ -503,6 +503,7 @@ setInterval(() => {
     if (now - invite.createdAt > DUEL_INVITE_TIMEOUT) duelInvites.delete(pairKey);
   }
 }, 60 * 1000); // Check setiap 1 menit
+duelCleanupTimer.unref();
 
 module.exports = {
   setupDuel,

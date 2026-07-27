@@ -782,7 +782,7 @@ function setupCoop(bot, { getPartnerId, rateLimitCommand }) {
 // ===== PERIODIC CLEANUP =====
 // Auto-abandon raid yang idle > 5 menit (sama dengan validasi callback).
 
-setInterval(() => {
+const raidCleanupTimer = setInterval(() => {
   const now = Date.now();
   for (const [pairKey, raid] of raidSessions) {
     if (now - raid.lastActivity > RAID_SESSION_TIMEOUT) {
@@ -804,6 +804,7 @@ setInterval(() => {
     if (now - invite.createdAt > RAID_INVITE_TIMEOUT) dungeonInvites.delete(pairKey);
   }
 }, 60 * 1000); // Check setiap 1 menit
+raidCleanupTimer.unref();
 
 module.exports = {
   setupCoop,

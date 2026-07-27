@@ -12,7 +12,7 @@ const SEARCH_COOLDOWN = 3 * 1000; // 3 detik — khusus /search & /next (dengan 
 const CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 menit
 const STALE_THRESHOLD = 10 * 60 * 1000; // 10 menit — hapus entries yang sudah lama
 
-setInterval(() => {
+const cleanupTimer = setInterval(() => {
   const now = Date.now();
 
   // Cleanup messageCounts — hapus chatId yang timestamp terakhirnya > 10 menit lalu
@@ -37,6 +37,7 @@ setInterval(() => {
     }
   }
 }, CLEANUP_INTERVAL);
+cleanupTimer.unref();
 
 
 function checkMessageLimit(chatId) {

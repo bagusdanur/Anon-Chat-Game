@@ -85,13 +85,14 @@ const partnerCache = new Map();
 // Hapus cache entries untuk user yang sudah tidak aktif (null = tidak paired)
 const PARTNER_CACHE_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 menit
 
-setInterval(() => {
+const partnerCacheCleanupTimer = setInterval(() => {
   for (const [chatId, partnerId] of partnerCache) {
     if (partnerId === null) {
       partnerCache.delete(chatId);
     }
   }
 }, PARTNER_CACHE_CLEANUP_INTERVAL);
+partnerCacheCleanupTimer.unref();
 
 
 function getUser(chatId) {
