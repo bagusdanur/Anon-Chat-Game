@@ -185,9 +185,14 @@ function createEndgameService(db, options = {}) {
     collection(userId) {
       const total = db.prepare('SELECT count(1) count FROM items_catalog').get().count;
       const owned = db.prepare(`
-        SELECT count(DISTINCT item_id) count FROM rpg_inventory
-        WHERE telegram_user_id = ? AND quantity > 0
-      `).get(String(userId)).count;
+        SELECT count(DISTINCT item_id) count FROM (
+          SELECT item_id FROM rpg_inventory
+          WHERE telegram_user_id = ? AND quantity > 0
+          UNION
+          SELECT item_id FROM rpg_equipment_instances
+          WHERE owner_id = ?
+        )
+      `).get(String(userId), String(userId)).count;
       return { owned, total, percent: total ? Math.floor((owned / total) * 100) : 0 };
     },
   };

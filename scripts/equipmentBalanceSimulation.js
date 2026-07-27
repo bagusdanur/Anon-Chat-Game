@@ -16,8 +16,8 @@ const rows = dungeons.map(dungeon => {
     itemLevel,
     rareIpQ60: calculateItemPower(itemLevel, 60, 'rare'),
     rareIpQ90: calculateItemPower(itemLevel, 90, 'rare'),
-    soloChance: '15%',
-    duoChance: '10%',
+    soloChance: '12%',
+    duoChance: '18%',
     pity: 'drop ke-5',
   };
 });

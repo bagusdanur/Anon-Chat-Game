@@ -154,6 +154,9 @@ function setupEquipment(bot, { rateLimitCommand }) {
       ? Math.min(Math.max(requestedPage, 1), totalPages)
       : 1;
     const offset = (page - 1) * pageSize;
+    const activeByCategory = new Map(items
+      .filter(item => item.equipped_slot)
+      .map(item => [item.category, item]));
     const lines = items.slice(offset, offset + pageSize).map((item, pageIndex) => {
       const index = offset + pageIndex;
       const affixes = item.affixes
@@ -168,12 +171,23 @@ function setupEquipment(bot, { rateLimitCommand }) {
         ? '🔒 Terikat akun'
         : '🔓 Bisa diperdagangkan';
       const set = item.set_id ? `\n   🧩 Set: ${item.set_id}` : '';
+      const active = activeByCategory.get(item.category);
+      const comparison = item.equipped_slot
+        ? '✅ Sedang dipakai untuk build aktif'
+        : !active
+          ? '💡 Slot masih kosong — bisa langsung dipasang'
+          : item.item_power > active.item_power
+            ? `⬆️ Lebih tinggi +${item.item_power - active.item_power} IP dari equipment aktif`
+            : item.item_power < active.item_power
+              ? `⬇️ Lebih rendah ${active.item_power - item.item_power} IP dari equipment aktif`
+              : '➖ IP setara dengan equipment aktif — bandingkan bonus stat';
       return `${item.equipped_slot ? '✅ TERPASANG' : '▫️ TERSIMPAN'}  <code>[${index + 1}]</code> <b>${item.display_name}</b>\n` +
         `   ${CATEGORY_LABELS[item.category] || item.category} · ${item.rarity} · Item Lv.${item.item_level} · Upgrade +${item.upgrade_tier}\n` +
         `   💪 <b>${item.item_power} IP</b> · ✨ Kualitas <b>${item.quality}/100</b>\n` +
         `   🎲 ${affixes}\n` +
         `   💎 ${sockets}\n` +
         `   ${status}${set}\n` +
+        `   ${comparison}\n` +
         `   ➡️ /gear equip ${index + 1} · /gear upgrade ${index + 1} · /gear reforge ${index + 1} · /gear salvage ${index + 1}`;
     });
     return ctx.reply(

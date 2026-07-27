@@ -4,6 +4,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { simulateEconomy } = require('../src/rpg/services/economySimulation');
 
 require('../data/patch_loader');
 
@@ -102,7 +103,14 @@ for (let playerIndex = 0; playerIndex < players; playerIndex++) {
 
 const totalActions = Object.values(actions).reduce((sum, value) => sum + value, 0);
 const combatRatio = actions.combat / totalActions;
-const sourceSinkRatio = goldSources / Math.max(1, goldSinks);
+// Jalur cerita memakai hadiah contoh di atas; kesehatan ekonomi global harus
+// dinilai dengan model source/sink yang sama dengan laporan operasi.
+const economyModel = simulateEconomy({
+  playerCount: Math.max(1000, Math.floor(players / 2)),
+  days: 70,
+  random: seededRandom(0xEC0A0A),
+});
+const sourceSinkRatio = economyModel.sourceSinkRatio;
 
 console.log(`\nSAGA I-II JOURNEY SIMULATION (${players.toLocaleString('id-ID')} PLAYERS)`);
 console.log('='.repeat(78));
@@ -131,17 +139,19 @@ console.log({
     nonCombatRatio: `${((1 - combatRatio) * 100).toFixed(1)}%`,
   },
   economy: {
-    sources: goldSources,
-    sinks: goldSinks,
-    sourceSinkRatio: Number(sourceSinkRatio.toFixed(3)),
+    sources: economyModel.sources,
+    sinks: economyModel.sinks,
+    sourceSinkRatio,
+    goldPerPlayer: economyModel.goldPerPlayer,
+    sinkBreakdown: economyModel.sinkBreakdown,
   },
 });
 
 const failures = [];
 if (combatRatio >= 0.15) failures.push(`combat ratio ${(combatRatio * 100).toFixed(1)}% >= 15%`);
 if (stats[7].attempts === 0) failures.push('no player reached Chapter 7 simulation');
-if (sourceSinkRatio <= 0.25 || sourceSinkRatio >= 2.5) {
-  failures.push(`source/sink ratio ${sourceSinkRatio.toFixed(3)} outside 0.25-2.5`);
+if (sourceSinkRatio < 1.05 || sourceSinkRatio > 1.25) {
+  failures.push(`source/sink ratio ${sourceSinkRatio.toFixed(3)} outside 1.05-1.25`);
 }
 if (failures.length) {
   console.error(`SIMULATION FAILED: ${failures.join('; ')}`);

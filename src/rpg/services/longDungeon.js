@@ -260,7 +260,9 @@ function createLongDungeonService(db, options = {}) {
         SELECT misses FROM rpg_dungeon_drop_pity WHERE user_id=? AND dungeon_id=?
       `).get(recipientId, session.dungeon_id);
       const misses = Number(pity?.misses || 0);
-      const dropChance = session.mode === 'duo' ? 0.10 : 0.15;
+      // Duo wajib terasa lebih menguntungkan daripada solo. Pity tetap berlaku
+      // per pemain, jadi bonus ini tidak menghilangkan batas keamanan ekonomi.
+      const dropChance = session.mode === 'duo' ? 0.18 : 0.12;
       const gearDropped = pool.length && (misses >= 4 || random() < dropChance);
       if (gearDropped) {
         const itemId = pool[Math.floor(random() * pool.length)];

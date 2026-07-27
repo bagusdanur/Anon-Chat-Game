@@ -671,6 +671,18 @@ test('achievements and item collection derive from persistent game state', () =>
   db.close();
 });
 
+test('item collection counts forged equipment even after legacy inventory is consumed', () => {
+  const db = createTestDb();
+  db.prepare(`
+    INSERT INTO rpg_equipment_instances
+      (owner_id,item_id,rarity,quality,item_power,upgrade_tier,item_level,created_at,updated_at)
+    VALUES ('1','pedang_karatan','rare',70,30,0,1,1,1)
+  `).run();
+  const collection = createEndgameService(db).collection('1');
+  assert.equal(collection.owned, 1);
+  db.close();
+});
+
 test('persistent party invite, membership, and owner transfer are atomic', () => {
   const db = createTestDb();
   const social = createSocialService(db, { now: () => 2_000_000_000 });
@@ -1286,5 +1298,5 @@ test('economy simulation preserves non-negative balances across thousands of pla
   assert.equal(result.itemsDestroyed <= result.itemsCreated, true);
   assert.equal(result.totalGold, result.sources - result.sinks);
   assert.equal(result.p90Gold >= result.p50Gold, true);
-  assert.equal(result.sourceSinkRatio < 2.5, true);
+  assert.equal(result.sourceSinkRatio >= 1.05 && result.sourceSinkRatio <= 1.25, true);
 });
