@@ -170,23 +170,27 @@ function handleStop(ctx) {
 }
 
 // ===== COMMANDS =====
-bot.start((ctx) => {
+function showStartMenu(ctx) {
   if (isMaintenance()) {
     return maintenanceReply(ctx);
   }
-  ctx.reply(
-    '👋 *Selamat datang di Anonymous Chat Bot!*\n\n' +
-    'Ngobrol anonim tanpa perlu bongkar identitas asli kamu. 🎭\n\n' +
-    'Pilih opsi di bawah ini untuk memulai:',
+  return ctx.reply(
+    '👋 *Selamat datang di Anonymous Chat × Duo RPG!*\n\n' +
+    'Mulai dari ngobrol anonim. Kalau cocok, buat party rahasia dan lanjutkan petualangan RPG turn-based bersama.\n\n' +
+    'Pilih jalurmu di bawah ini:',
     {
       parse_mode: 'Markdown',
       ...Markup.inlineKeyboard([
-        [Markup.button.callback('🔍 Cari Partner', 'cmd_search')],
-        [Markup.button.callback('⚙️ Pengaturan Profil', 'cmd_setting')],
-        [Markup.button.callback('🔄 Cari Baru', 'cmd_next'), Markup.button.callback('🛑 Berhenti', 'cmd_stop')]
+        [Markup.button.callback('💬 Cari Partner', 'cmd_search'), Markup.button.callback('⚔️ Mulai RPG', 'start_rpg')],
+        [Markup.button.callback('🧭 Panduan RPG', 'start_guide'), Markup.button.callback('❓ Bantuan', 'start_help')],
+        [Markup.button.callback('⚙️ Pengaturan', 'cmd_setting')]
       ])
     }
   );
+}
+
+bot.start((ctx) => {
+  return showStartMenu(ctx);
 });
 
 bot.command('setting' , showSettingMenu);
@@ -271,6 +275,26 @@ bot.action('cmd_next', rateLimitSearch, (ctx) => {
 bot.action('cmd_stop', (ctx) => {
   ctx.answerCbQuery();
   handleStop(ctx);
+});
+
+bot.action('start_rpg', (ctx) => {
+  ctx.answerCbQuery();
+  return ctx.reply(
+    '⚔️ *Mulai Petualangan RPG*\n\n' +
+    '1. Buat atau buka karaktermu: /profile\n' +
+    '2. Ikuti objective pribadi: /guide\n' +
+    '3. Setelah menemukan partner chat, buat party dengan /party create lalu /party invite.\n\n' +
+    '_Progres karaktermu tetap tersimpan, tetapi party dengan partner anonymous akan berakhir saat /next atau /stop._',
+    { parse_mode: 'Markdown' },
+  );
+});
+
+bot.action('start_guide', (ctx) => {
+  ctx.answerCbQuery();
+  return ctx.reply(
+    '🧭 *Panduan RPG*\n\nGunakan /guide untuk melihat objective campaign, langkah paling tepat saat ini, dan dungeon yang perlu ditaklukkan.\n\nUntuk membuat karakter baru, mulai dari /profile.',
+    { parse_mode: 'Markdown' },
+  );
 });
 
 bot.action('cmd_lang_id', (ctx) => {
@@ -515,8 +539,8 @@ bot.command('partnerstats', rateLimitCommand, (ctx) => {
 
 
 
-bot.command('help', (ctx) => {
-  ctx.reply([
+function showHelp(ctx) {
+  return ctx.reply([
     '📖 *Anonymous Chat Bot — Commands*',
     '',
     '🎭 *Anonymous Chat:*',
@@ -548,6 +572,12 @@ bot.command('help', (ctx) => {
     '',
     '_Gunakan /helprpg untuk syntax dan penjelasan lengkap._',
   ].join('\n'), { parse_mode: 'Markdown' });
+}
+
+bot.command('help', showHelp);
+bot.action('start_help', (ctx) => {
+  ctx.answerCbQuery();
+  return showHelp(ctx);
 });
 
 
