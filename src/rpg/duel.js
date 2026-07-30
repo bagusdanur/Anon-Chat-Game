@@ -14,6 +14,9 @@ const { createEquipmentService } = require('./services/equipment');
 const {
   tickSkillCooldowns, getSkillCooldown, findLoadoutSkill, resolveCombatSkill,
 } = require('./services/combatSkills');
+const {
+  arenaHp, pvpCritRate, pvpCritMultiplier, pvpDamage, pvpBurnDamage, canDuel,
+} = require('./services/duelBalance');
 
 const skillService = createSkillService(db);
 const equipmentV2 = createEquipmentService(db);
@@ -31,6 +34,15 @@ function resolveDuelTurn(duel, actions) {
   const { playerA, playerB } = duel;
   tickSkillCooldowns(playerA);
   tickSkillCooldowns(playerB);
+
+  for (const player of [playerA, playerB]) {
+    if (!player.burnTurns || !player.burnDamage || player.hp <= 0) continue;
+    const damage = pvpBurnDamage(player.burnDamage, player.maxHp);
+    player.hp = Math.max(0, player.hp - damage);
+    player.burnTurns--;
+    logs.push(`🔥 ${player.className} terbakar! *-${damage} HP*`);
+    if (player.burnTurns <= 0) player.burnDamage = 0;
+  }
 
   const actionPriority = ([uid, action]) => {
     if (action.type === 'defend') return 0;
@@ -71,8 +83,8 @@ function resolveDuelTurn(duel, actions) {
       } else {
         dmg = calcPhysicalDamage(attacker, defStats, baseDmg);
       }
-      const { isCrit, multiplier } = rollCrit(attacker.critRate || 0.05, attacker.critMulti || 1.5);
-      dmg = Math.floor(dmg * multiplier);
+      const { isCrit, multiplier } = rollCrit(pvpCritRate(attacker.critRate), pvpCritMultiplier(attacker.critMulti));
+      dmg = pvpDamage(Math.floor(dmg * multiplier), defender.maxHp);
       if (attacker.weakenPower) {
         dmg = Math.floor(dmg * (1 - attacker.weakenPower));
         attacker.weakenPower = 0;
@@ -98,11 +110,11 @@ function resolveDuelTurn(duel, actions) {
         skill,
         calcPhysicalDamage,
         calcMagicDamage,
-        rollCrit,
+        rollCrit: (rate, multiplier) => rollCrit(pvpCritRate(rate), pvpCritMultiplier(multiplier)),
       });
       if (defStats.weakenPower) defender.weakenPower = defStats.weakenPower;
       if (result.damage > 0) {
-        let damage = result.damage;
+        let damage = pvpDamage(result.damage, defender.maxHp);
         if (attacker.weakenPower) {
           damage = Math.floor(damage * (1 - attacker.weakenPower));
           attacker.weakenPower = 0;
@@ -110,6 +122,10 @@ function resolveDuelTurn(duel, actions) {
         damage = applyMitigation(defender, damage);
         defender.hp = Math.max(0, defender.hp - damage);
         result.log = result.log.replace(`-${result.damage} HP`, `-${damage} HP`);
+      }
+      if (result.status?.type === 'burn') {
+        defender.burnDamage = Math.max(defender.burnDamage || 0, result.status.power);
+        defender.burnTurns = Math.max(defender.burnTurns || 0, result.status.turns);
       }
       logs.push(`${attacker.icon} ${attacker.className}: ${result.log}`);
 
@@ -135,7 +151,7 @@ function resolveDuelTurn(duel, actions) {
         dmg = Math.floor(dmg * (1 - attacker.weakenPower));
         attacker.weakenPower = 0;
       }
-      dmg = applyMitigation(defender, dmg);
+      dmg = applyMitigation(defender, pvpDamage(dmg, defender.maxHp));
       defender.hp = Math.max(0, defender.hp - dmg);
       attacker.skillCooldown = attacker.classId === 'pencuri' ? 4 : 3;
       logs.push(`${attacker.icon} ${attacker.className}: ${cls.skillName}! *-${dmg} HP* 💥 Skill!`);
@@ -210,6 +226,12 @@ function startDuel(bot, inviterId, inviteeId) {
   const user = getOrCreateUser(inviterId);
   const partner = getOrCreateUser(inviteeId);
   if (!user || !partner) return;
+  const eligibility = canDuel(user, partner);
+  if (!eligibility.success) {
+    bot.telegram.sendMessage(inviterId, `❌ ${eligibility.reason}`).catch(() => {});
+    bot.telegram.sendMessage(inviteeId, `❌ ${eligibility.reason}`).catch(() => {});
+    return;
+  }
 
   const pairKey = getDuelPairKey(inviterId, inviteeId);
   if (duelSessions.has(pairKey)) return;
@@ -225,8 +247,8 @@ function startDuel(bot, inviterId, inviteeId) {
   const equipV2B = equipmentV2.bonuses(inviteeId);
 
   // Duel memakai HP arena terpisah agar PvP tidak merusak HP progres dunia.
-  const hpA = Math.max(1, Math.floor((user.max_hp + (equipV2A.max_hp || 0)) * 0.5));
-  const hpB = Math.max(1, Math.floor((partner.max_hp + (equipV2B.max_hp || 0)) * 0.5));
+  const hpA = arenaHp(user.max_hp, equipV2A.max_hp);
+  const hpB = arenaHp(partner.max_hp, equipV2B.max_hp);
 
   const runId = createDuelRun(inviterId, inviteeId);
 
@@ -241,8 +263,8 @@ function startDuel(bot, inviterId, inviteeId) {
       classId: user.class_name, className: clsA.name, icon: clsA.name.split(' ')[0],
       hp: hpA, maxHp: hpA,
       atk: user.atk + equipA.atkBonus + (equipV2A.atk || 0), def: user.def + equipA.defBonus + (equipV2A.def || 0),
-      magicAtk: (user.magic_atk || 0) + (equipV2A.magic_atk || 0), atkBonus: equipA.atkBonus,
-      critRate: (user.crit_rate || 0.05) + (equipV2A.crit_rate || 0), critMulti: user.crit_multi || 1.5,
+      magicAtk: (user.magic_atk || 0) + equipA.magicAtkBonus + (equipV2A.magic_atk || 0), atkBonus: 0,
+      critRate: pvpCritRate((user.crit_rate || 0.05) + equipA.critRate + (equipV2A.crit_rate || 0)), critMulti: pvpCritMultiplier((user.crit_multi || 1.5) + equipA.critMulti),
       physResist: (user.phys_resist || 0) + (equipV2A.phys_resist || 0),
       magicResist: (user.magic_resist || 0) + (equipV2A.magic_resist || 0),
       skillCooldown: 0, alive: true, defending: false,
@@ -252,8 +274,8 @@ function startDuel(bot, inviterId, inviteeId) {
       classId: partner.class_name, className: clsB.name, icon: clsB.name.split(' ')[0],
       hp: hpB, maxHp: hpB,
       atk: partner.atk + equipB.atkBonus + (equipV2B.atk || 0), def: partner.def + equipB.defBonus + (equipV2B.def || 0),
-      magicAtk: (partner.magic_atk || 0) + (equipV2B.magic_atk || 0), atkBonus: equipB.atkBonus,
-      critRate: (partner.crit_rate || 0.05) + (equipV2B.crit_rate || 0), critMulti: partner.crit_multi || 1.5,
+      magicAtk: (partner.magic_atk || 0) + equipB.magicAtkBonus + (equipV2B.magic_atk || 0), atkBonus: 0,
+      critRate: pvpCritRate((partner.crit_rate || 0.05) + equipB.critRate + (equipV2B.crit_rate || 0)), critMulti: pvpCritMultiplier((partner.crit_multi || 1.5) + equipB.critMulti),
       physResist: (partner.phys_resist || 0) + (equipV2B.phys_resist || 0),
       magicResist: (partner.magic_resist || 0) + (equipV2B.magic_resist || 0),
       skillCooldown: 0, alive: true, defending: false,
@@ -265,7 +287,7 @@ function startDuel(bot, inviterId, inviteeId) {
 
   duelSessions.set(pairKey, duel);
 
-  const startMsg = `⚔️ **DUEL DIMULAI!**\n\n${clsA.name} vs ${clsB.name}\nHP arena: 50% max (tidak mengubah HP dunia)\n\nKedua pemain memilih aksi Turn 1. Turn diproses setelah keduanya siap.\nCooldown 5 menit aktif setelah selesai.`;
+  const startMsg = `⚔️ **DUEL DIMULAI!**\n\n${clsA.name} vs ${clsB.name}\nHP arena: 85% max (tidak mengubah HP dunia)\nDamage PvP dan crit memakai aturan arena khusus.\n\nKedua pemain memilih aksi Turn 1. Turn diproses setelah keduanya siap.\nCooldown 5 menit aktif setelah selesai.`;
   bot.telegram.sendMessage(inviterId, startMsg, { parse_mode: 'Markdown' }).catch(() => {});
   bot.telegram.sendMessage(inviteeId, startMsg, { parse_mode: 'Markdown' }).catch(() => {});
 
@@ -335,6 +357,8 @@ function setupDuel(bot, { getPartnerId, rateLimitCommand }) {
     if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
     const partner = getOrCreateUser(partnerId);
     if (!partner) return ctx.reply('❌ Partnermu belum punya karakter RPG. Minta dia /profile dulu!');
+    const eligibility = canDuel(user, partner);
+    if (!eligibility.success) return ctx.reply(`❌ ${eligibility.reason}`);
 
     const pairKey = getDuelPairKey(userId, partnerId);
     if (duelSessions.has(pairKey)) return ctx.reply('⚔️ Duel sudah berjalan!');

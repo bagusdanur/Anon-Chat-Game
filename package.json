@@ -12,6 +12,7 @@
     "simulate:economy": "node scripts/economySimulation.js",
     "report:economy": "node scripts/economyProductionReport.js",
     "simulate:combat": "node scripts/combatBalanceSimulation.js",
+    "simulate:duel": "node scripts/duelBalanceSimulation.js",
     "simulate:dungeon": "node scripts/dungeonBalanceSimulation.js",
     "simulate:equipment": "node scripts/equipmentBalanceSimulation.js",
     "simulate:progression": "node scripts/progressionSimulation.js",

@@ -44,7 +44,7 @@ const HELP_PAGES = [
     text:
       '<b>Combat tactical</b>\n' +
       'Attack, defend, skill, cooldown, status effect, resist, crit, dan boss mechanic tersedia pada dungeon tactical, duel, dan raid.\n\n' +
-      'Combat co-op memakai cycle klasik: setiap pemain mengunci satu aksi, lalu turn diproses setelah semua anggota siap. Musuh hanya membalas sekali per cycle duo. Serangan berat ditandai peringatan merah; gunakan Defend, dan Defend berdua memberi perlindungan maksimum. Damage duel memakai HP arena terpisah dan tidak mengurangi HP dunia.\n\n' +
+      'Combat co-op memakai cycle klasik: setiap pemain mengunci satu aksi, lalu turn diproses setelah semua anggota siap. Musuh hanya membalas sekali per cycle duo. Serangan berat ditandai peringatan merah; gunakan Defend, dan Defend berdua memberi perlindungan maksimum. Damage duel memakai HP arena terpisah dan tidak mengurangi HP dunia; hit PvP dibatasi agar tidak ada one-hit, dengan selisih level maksimal 10.\n\n' +
       '/skill — skill tree\n' +
       '/build — loadout aktif\n' +
       '/duel — PvP opsional dengan partner\n' +
