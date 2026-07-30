@@ -1010,6 +1010,42 @@ test('long dungeon applies equipped V2 max HP affixes to solo session health', (
   db.close();
 });
 
+test('long dungeon combat stats include affixes, socket gems, and active set bonuses', () => {
+  const db = createTestDb();
+  db.prepare(`
+    INSERT INTO items_catalog (item_id,display_name,category,rarity,sell_price)
+    VALUES ('pedang_naga','Dragon Sword','weapon','legendary',0),
+           ('armor_naga','Dragon Armor','armor','legendary',0),
+           ('kalung_naga','Dragon Necklace','accessory','legendary',0)
+  `).run();
+  db.prepare(`
+    INSERT INTO rpg_equipment_instances
+      (id,owner_id,item_id,rarity,quality,item_power,equipped_slot,set_id,created_at,updated_at)
+    VALUES (1001,'1','pedang_naga','legendary',90,100,'weapon','dragon',1,1),
+           (1002,'1','armor_naga','legendary',90,100,'armor','dragon',1,1),
+           (1003,'1','kalung_naga','legendary',90,100,'accessory','dragon',1,1)
+  `).run();
+  db.prepare(`
+    INSERT INTO rpg_equipment_affixes (instance_id,affix_id,stat_key,stat_value,tier)
+    VALUES (1001,'power','atk',8,5),(1002,'warding','def',8,5)
+  `).run();
+  db.prepare(`
+    INSERT INTO rpg_equipment_sockets (instance_id,socket_index,gem_item_id,stat_key,stat_value)
+    VALUES (1001,1,'ruby_gem','atk',4),(1002,1,'emerald_gem','def',4)
+  `).run();
+
+  const user = db.prepare("SELECT * FROM rpg_users WHERE telegram_user_id='1'").get();
+  const rawPower = user.atk + user.def + user.magic_atk + Math.floor(user.level * 1.5);
+  const dungeon = createLongDungeonService(db);
+  const stats = dungeon.getCombatStats(user);
+
+  assert.equal(stats.power >= rawPower + 20, true);
+  assert.equal(stats.defense >= user.def + 12, true);
+  assert.equal(stats.maxHp >= user.max_hp + 40, true);
+  assert.equal(stats.critRate >= user.crit_rate + 0.08, true);
+  db.close();
+});
+
 test('equipment upgrades and reforges are atomic audited gold sinks', () => {
   const db = createTestDb();
   db.prepare(`
@@ -1174,7 +1210,7 @@ test('duo long dungeon shares checkpoints and grants idempotent rewards to both 
   ];
   for (const choice of routeChoices) {
     const first = dungeon.advance('1', session.id, session.state_version, choice);
-    assert.equal(first.success, true);
+    assert.equal(first.success, true, `${choice}: ${first.reason || 'unknown failure'}`);
     assert.equal(first.pending, true);
     session = first.session;
     const second = dungeon.advance('2', session.id, session.state_version, choice);

@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 const helmet = require('helmet');
@@ -17,7 +18,7 @@ const { getQuestions, JSON_PATH: ICEBREAKERS_JSON_PATH } = require('./src/icebre
 
 const app = express();
 const PORT = process.env.DASHBOARD_PORT || 3001;
-const PASSWORD = process.env.DASHBOARD_PASS || 'ryudev2024';
+const PASSWORD = process.env.DASHBOARD_PASS;
 const featureFlags = createFeatureFlagService(db);
 const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'data/bot.db');
 const sentryEnabled = Boolean(process.env.SENTRY_DSN);
@@ -33,11 +34,15 @@ const requestDuration = new client.Histogram({
 
 // Password check helper
 function checkAuth(req) {
+  if (!PASSWORD) return false;
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Basic ')) return false;
   const credentials = Buffer.from(authHeader.split(' ')[1], 'base64').toString();
-  const [, password] = credentials.split(':');
-  return password === PASSWORD;
+  const separator = credentials.indexOf(':');
+  if (separator < 0) return false;
+  const password = Buffer.from(credentials.slice(separator + 1));
+  const expected = Buffer.from(PASSWORD);
+  return password.length === expected.length && crypto.timingSafeEqual(password, expected);
 }
 
 // Static files — serve dist if exists, else dashboard

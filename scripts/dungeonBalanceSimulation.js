@@ -48,12 +48,13 @@ function strongestSkill(classId, level) {
 // useful promise of the real game rather than a best-case spreadsheet.
 function gearProfile(classDef, tier) {
   const primary = classDef.damageType === 'magic' ? 'magic' : 'atk';
-  const profile = { name: '', atk: 0, def: 0, magic: 0, hp: 0, critRate: 0 };
-  if (tier === 'tanpa_gear') return { ...profile, name: 'Tanpa gear' };
+  const profile = { name: '', detail: '', atk: 0, def: 0, magic: 0, hp: 0, critRate: 0 };
+  if (tier === 'tanpa_gear') return { ...profile, name: 'Tanpa gear', detail: 'Stat karakter dasar' };
   if (tier === 'gear_wajar') {
     return {
       ...profile,
       name: 'Gear wajar',
+      detail: 'Forge rare/epic + affix + 1 socket gem',
       [primary]: 16, // rare +3 weapon/staff, affix, socket, and accessory affix
       def: 18, // epic armor +3, warding affix, and emerald socket
       hp: 18,
@@ -63,6 +64,7 @@ function gearProfile(classDef, tier) {
   return {
     ...profile,
     name: 'Gear matang',
+    detail: 'Legendary + affix + gem + upgrade + bonus set',
     [primary]: 32, // legendary +8 weapon/staff plus high-quality relevant affixes/gems
     def: 32,
     hp: 42,
@@ -227,7 +229,13 @@ const endgame = rows.filter(row =>
   row.mode === 'solo' && row.strategy === 'rotation',
 );
 console.log('\nTarget final boss (solo, tactical rotation):');
-console.table(endgame.map(row => ({ gear: row.gear, bossWin: row.bossWin, turns: row.turns, hpCost: row.hpCost })));
+console.table(endgame.map(row => ({
+  gear: row.gear,
+  build: gearProfile(classes[0], row.gear === 'Tanpa gear' ? 'tanpa_gear' : row.gear === 'Gear wajar' ? 'gear_wajar' : 'gear_matang').detail,
+  bossWin: row.bossWin,
+  turns: row.turns,
+  hpCost: row.hpCost,
+})));
 
 const endgameRate = gearName => Number(endgame.find(row => row.gear === gearName)?.bossWin.replace('%', ''));
 const bareRate = endgameRate('Tanpa gear');

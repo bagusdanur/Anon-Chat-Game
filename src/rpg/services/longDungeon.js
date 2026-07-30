@@ -127,26 +127,33 @@ function createLongDungeonService(db, options = {}) {
     return hydrate(row);
   }
 
-  function calculatePower(user) {
-    if (user._calculatedPower) return user._calculatedPower;
+  function getCombatStats(user) {
     const bonus = equipment.bonuses(user.telegram_user_id);
-    return user.atk + (bonus.atk || 0) +
-      user.def + (bonus.def || 0) +
-      (user.magic_atk || 0) + (bonus.magic_atk || 0) +
-      Math.floor(user.level * 1.5);
-  }
-
-  function effectiveHealth(user) {
-    const bonusMaxHp = Math.max(0, Number(equipment.bonuses(user.telegram_user_id).max_hp) || 0);
+    const maxHpBonus = Math.max(0, Number(bonus.max_hp) || 0);
     return {
-      hp: Math.max(1, Number(user.hp) + bonusMaxHp),
-      maxHp: Math.max(1, Number(user.max_hp) + bonusMaxHp),
+      power: user.atk + (bonus.atk || 0) +
+        user.def + (bonus.def || 0) +
+        (user.magic_atk || 0) + (bonus.magic_atk || 0) +
+        Math.floor(user.level * 1.5),
+      defense: Math.max(0, Number(user.def) || 0) + Math.max(0, Number(bonus.def) || 0),
+      hp: Math.max(1, Number(user.hp) + maxHpBonus),
+      maxHp: Math.max(1, Number(user.max_hp) + maxHpBonus),
+      critRate: Math.min(0.5, Math.max(0, Number(user.crit_rate) || 0) + (Number(bonus.crit_rate) || 0)),
     };
   }
 
+  function calculatePower(user) {
+    if (user._calculatedPower) return user._calculatedPower;
+    return getCombatStats(user).power;
+  }
+
+  function effectiveHealth(user) {
+    const stats = getCombatStats(user);
+    return { hp: stats.hp, maxHp: stats.maxHp };
+  }
+
   function effectiveDefense(user) {
-    const bonusDef = Math.max(0, Number(equipment.bonuses(user.telegram_user_id).def) || 0);
-    return Math.max(0, Number(user.def) || 0) + bonusDef;
+    return getCombatStats(user).defense;
   }
 
   function getAlias(userId) {
@@ -436,7 +443,7 @@ function createLongDungeonService(db, options = {}) {
       : value;
     const skillEffect = skillDefinition?.effect || {};
     const isDefensiveSkill = ['guard', 'shield', 'provoke', 'weaken'].includes(skillEffect.type);
-    const critRate = Math.min(0.5, Math.max(0, actor.crit_rate || 0));
+    const critRate = getCombatStats(actor).critRate;
     const critical = random() < critRate;
     const dealt = potionId ? 0 : outgoingDamage({
       power,
@@ -732,6 +739,7 @@ function createLongDungeonService(db, options = {}) {
       `).get(sessionId, String(userId), String(userId)));
     },
     getActive,
+    getCombatStats,
     getRoom,
     enemyMaxHp,
     advance(userId, sessionId, expectedVersion, optionId) {
