@@ -8,6 +8,7 @@ const {
   combinedPower,
   outgoingDamage,
   incomingDamage,
+  soloClassDamageReduction,
 } = require('./dungeonCombatBalance');
 require('../../../data/patch_loader');
 
@@ -492,6 +493,9 @@ function createLongDungeonService(db, options = {}) {
       defense: ally
         ? Math.floor((effectiveDefense(actor) + effectiveDefense(ally)) / 2)
         : effectiveDefense(actor),
+      classDamageReduction: session.mode === 'solo'
+        ? soloClassDamageReduction(actor.class_name)
+        : 0,
     });
     if (!defeated && !options.deferIncoming) {
       combat.enemyTurns = (combat.enemyTurns || 0) + 1;
@@ -618,6 +622,7 @@ function createLongDungeonService(db, options = {}) {
       const state = {
         hp: health.hp,
         maxHp: health.maxHp,
+        className: user.class_name,
         companion: user.class_name === 'ksatria' ? 'Arcanist Mira' : 'Guardian Rowan',
         collected: {},
         visited: [JSON.parse(definitionRow.definition_json).entry_room],

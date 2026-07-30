@@ -12,6 +12,16 @@ function combinedPower(actorPower, allyPower = 0, hasAlly = false) {
   return Number(actorPower) + Math.floor(Number(allyPower) * (hasAlly ? 0.3 : 1));
 }
 
+// Dungeon panjang menggabungkan banyak serangan musuh dalam satu room. Tanpa
+// perlindungan konteks ini, HP/DEF dasar Penyihir dan Pencuri membuat keduanya
+// jauh tertinggal dari Ksatria, meski damage dan gear mereka setara. Ini hanya
+// dipakai pada dungeon solo; raid, hunt, dan combat lain tidak berubah.
+function soloClassDamageReduction(className) {
+  if (className === 'penyihir') return 0.20;
+  if (className === 'pencuri') return 0.20;
+  return 0;
+}
+
 function actionMultiplier({ action, skillMultiplier, defensiveSkill = false }) {
   if (action === 'combo') return 1.1;
   if (action === 'skill') {
@@ -48,6 +58,7 @@ function incomingDamage({
   telegraphed = false,
   mitigationOverride,
   defense = 0,
+  classDamageReduction = 0,
 }) {
   if (defeated || deferIncoming) return 0;
   const incomingScale = mode === 'duo' ? 1.2 : 1;
@@ -60,14 +71,16 @@ function incomingDamage({
   // value (base stat + forged equipment bonuses).
   const defenseValue = Math.max(0, Number(defense) || 0);
   const defenseScale = 100 / (100 + defenseValue * 0.35);
+  const classScale = 1 - Math.min(0.6, Math.max(0, Number(classDamageReduction) || 0));
   return Math.max(1, Math.floor(
-    Number(enemyDamage) * incomingScale * mitigation * telegraphScale * defenseScale,
+    Number(enemyDamage) * incomingScale * mitigation * telegraphScale * defenseScale * classScale,
   ));
 }
 
 module.exports = {
   enemyMaxHp,
   combinedPower,
+  soloClassDamageReduction,
   actionMultiplier,
   outgoingDamage,
   incomingDamage,

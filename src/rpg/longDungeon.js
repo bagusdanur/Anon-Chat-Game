@@ -26,6 +26,12 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     return '📖 STORY · 🤝 CO-OP';
   }
 
+  function soloPassiveText(className) {
+    if (className === 'penyihir') return '🪄 Ward Arcane aktif: damage musuh -20% di dungeon solo.';
+    if (className === 'pencuri') return '💨 Insting Mengelak aktif: damage musuh -20% di dungeon solo.';
+    return '';
+  }
+
   function renderSession(session, viewerId) {
     const room = service.getRoom(session);
     const combat = session.state.combat?.roomId === room.id
@@ -37,6 +43,8 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
       `${room.text}\n\n` +
       `❤️ HP <b>${session.state.hp}/${session.state.maxHp}</b>\n` +
       `🤝 Companion: <b>${session.state.companion}</b>`;
+    const soloPassive = session.mode === 'solo' ? soloPassiveText(session.state.className) : '';
+    if (soloPassive) text += `\n${soloPassive}`;
     const pendingActions = session.state.pendingActions || {};
     const viewerLocked = Boolean(pendingActions[String(viewerId)]);
     const readyCount = Object.keys(pendingActions).length;
@@ -204,7 +212,16 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     }
     const result = service.startSolo(ctx.chat.id, dungeonId);
     if (!result.success) return ctx.reply(`❌ ${result.reason}`);
-    return showSession(ctx, result.session);
+    const recommendedLevel = result.session.definition.recommended_level || result.session.definition.min_level;
+    return ctx.reply(
+      `<b>🧭 BRIEFING EKSPEDISI</b>\n\n` +
+      `Rekomendasi: <b>Lv.${recommendedLevel}</b> • Kamu: <b>Lv.${user.level}</b>\n` +
+      `⚔️ Pasang gear melalui <code>/gear</code>; affix, socket gem, upgrade, dan set bonus aktif di dungeon.\n` +
+      `${soloPassiveText(user.class_name) ? `${soloPassiveText(user.class_name)}\n` : ''}` +
+      `🛡️ Saat <b>Serangan Besar</b> muncul, pilih <b>Defend</b>. Bawa ramuan dari <code>/shop</code> bila HP-mu tipis.\n\n` +
+      `<i>Checkpoint tersimpan hingga 24 jam.</i>`,
+      { parse_mode: 'HTML' },
+    ).then(() => showSession(ctx, result.session));
   }
 
   function adventureMenu(ctx) {
@@ -445,9 +462,13 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
       return;
     }
     if (result.session.status === 'failed') {
+      const metrics = result.session.state.metrics || {};
+      const tacticalHint = Number(metrics.defends || 0) === 0
+        ? 'Kamu belum memakai Defend. Gunakan saat Serangan Besar terdeteksi.'
+        : 'Cek level rekomendasi, pasang gear/gem melalui /gear, lalu bawa satu ramuan dari /shop.';
       const terminalText =
         `<b>💀 EKSPEDISI GAGAL</b>\n\n${result.room.text}\n\n` +
-        `Gunakan /dungeon untuk mencoba ekspedisi baru.`;
+        `<b>Saran:</b> ${tacticalHint}\n\nGunakan /dungeon untuk mencoba ekspedisi baru.`;
       await ctx.editMessageText(terminalText, { parse_mode: 'HTML' }).catch(() => {});
       if (result.session.mode === 'duo') {
         const otherId = String(result.session.owner_id) === String(ctx.chat.id)

@@ -7,6 +7,7 @@ const {
   combinedPower,
   outgoingDamage,
   incomingDamage,
+  soloClassDamageReduction,
 } = require('../src/rpg/services/dungeonCombatBalance');
 
 const dungeons = JSON.parse(
@@ -154,6 +155,9 @@ function simulateEncounter({
           telegraphed: telegraphNext,
           mitigationOverride: strategy === 'rotation' && telegraphNext ? 0.25 : undefined,
           defense: stats.def,
+          classDamageReduction: mode === 'solo'
+            ? soloClassDamageReduction(classDef.id)
+            : 0,
         });
         if (enemyHp > 0 && actor === actors - 1) enemyTurns++;
         hp = Math.max(0, hp - received);
@@ -280,4 +284,10 @@ const normalPotionRows = potionRows.filter(row => row.policy === '1 ramuan/room'
 if (normalPotionRows.some(row => Number(row.avgPotion) > 1)) {
   throw new Error('Batas potion per room tidak tercermin dalam simulasi.');
 }
+const noPotionRows = potionRows.filter(row => row.policy === 'tanpa potion');
+const noPotionRates = noPotionRows.map(row => Number(row.bossWin.replace('%', '')));
+if (noPotionRates.some(rate => rate < 70) || Math.max(...noPotionRates) - Math.min(...noPotionRates) > 25) {
+  throw new Error(`Balance class solo boss akhir gagal: ${JSON.stringify(noPotionRows)}`);
+}
+console.log('PASS: semua class solo gear wajar punya peluang boss akhir >=70% tanpa potion.');
 console.log('PASS: potion membantu pemulihan tanpa menjadi tombol kemenangan tak terbatas.');

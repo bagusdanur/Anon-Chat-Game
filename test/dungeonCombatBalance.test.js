@@ -5,6 +5,7 @@ const {
   combinedPower,
   outgoingDamage,
   incomingDamage,
+  soloClassDamageReduction,
 } = require('../src/rpg/services/dungeonCombatBalance');
 
 test('shared dungeon balance formulas preserve production tactical values', () => {
@@ -36,4 +37,10 @@ test('shared dungeon balance formulas preserve production tactical values', () =
   assert.equal(incomingDamage({
     enemyDamage: 100, mode: 'solo', action: 'attack', defense: 100,
   }), 74);
+  assert.equal(soloClassDamageReduction('ksatria'), 0);
+  assert.equal(soloClassDamageReduction('penyihir'), 0.2);
+  assert.equal(soloClassDamageReduction('pencuri'), 0.2);
+  assert.equal(incomingDamage({
+    enemyDamage: 100, mode: 'solo', action: 'attack', classDamageReduction: 0.2,
+  }), 80);
 });
