@@ -792,7 +792,9 @@ test('world boss damage is persistent and duplicate Telegram attacks are rejecte
 test('weekly party raid requires a duo and rewards can only be claimed once', () => {
   const db = createTestDb();
   const payload = loadRaids();
-  payload.raids.find(raid => raid.type === 'party').maxHp = 1;
+  const partyRaid = payload.raids.find(raid => raid.type === 'party');
+  partyRaid.maxHp = 1;
+  partyRaid.attemptLimit = 1;
   publishRaids(db, payload, 2_000_000_000);
   const raids = createRaidService(db, { now: () => 2_000_000_000, random: () => 0 });
   assert.equal(raids.getInstance('1', 'party').success, false);
@@ -803,7 +805,10 @@ test('weekly party raid requires a duo and rewards can only be claimed once', ()
   db.prepare("UPDATE rpg_users SET level=3 WHERE telegram_user_id IN ('1','2')").run();
   const attack = raids.attack('1', 'party', 'telegram:1:101:party');
   assert.equal(attack.success, true);
-  assert.equal(attack.instance.status, 'defeated');
+  assert.equal(attack.instance.status, 'active');
+  const secondAttack = raids.attack('2', 'party', 'telegram:2:101:party');
+  assert.equal(secondAttack.success, true);
+  assert.equal(secondAttack.instance.status, 'defeated');
   db.prepare("UPDATE rpg_users SET gold=49990 WHERE telegram_user_id='1'").run();
   const claim = raids.claim('1', 'party');
   assert.equal(claim.success, true);

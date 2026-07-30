@@ -17,6 +17,11 @@ function setupRaids(bot, { rateLimitCommand }) {
     const ranking = rows.length
       ? rows.map((row, index) => `${index + 1}. ${social.getAlias(row.user_id)} — ${row.damage} damage`).join('\n')
       : 'Belum ada kontribusi.';
+    const partyStatus = type === 'party'
+      ? `\nKesiapan party: ${state.partyContributions
+        .map(member => `${social.getAlias(member.userId)} ${member.attempts > 0 ? '✅' : '⏳'}`)
+        .join(' · ')}\n<i>Setiap anggota harus menyerang minimal sekali agar reward dapat diklaim.</i>\n`
+      : '';
     return ctx.reply(
       `<b>${type === 'world' ? '🌍 WORLD BOSS' : '⚔️ WEEKLY PARTY RAID'}</b>\n` +
       `<b>${state.raid.name}</b>\n\n` +
@@ -24,12 +29,13 @@ function setupRaids(bot, { rateLimitCommand }) {
       `Status: <b>${state.instance.status}</b>\n` +
       `Kontribusimu: <b>${state.contribution.damage}</b> damage ` +
       `(${state.contribution.attempts}/${state.raid.attemptLimit} serangan)\n\n` +
+      partyStatus +
       `<b>Top kontribusi</b>\n${ranking}\n\n` +
       `Gunakan <code>/${type === 'world' ? 'worldboss' : 'raid'} attack</code> atau ` +
       `<code>/${type === 'world' ? 'worldboss' : 'raid'} claim</code>.\n\n` +
       `<i>💡 ${type === 'world'
         ? 'World Boss dikerjakan bersama seluruh pemain secara asynchronous.'
-        : 'Weekly Raid membutuhkan party minimal 2 pemain; ajak partner lewat /party.'}</i>`,
+        : 'Weekly Raid membutuhkan dua kontribusi; ajak partner lewat /party.'}</i>`,
       { parse_mode: 'HTML' },
     );
   }

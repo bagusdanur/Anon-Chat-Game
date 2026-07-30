@@ -7,6 +7,7 @@ function simulateEconomy(options = {}) {
     materials: 0,
     level: 1,
     potions: 0,
+    reforgeCount: 0,
   }));
   let sources = playerCount * 250;
   let sinks = 0;
@@ -73,12 +74,14 @@ function simulateEconomy(options = {}) {
       // affix build, bukan biaya wajib untuk menamatkan campaign.
       if (player.materials >= 5 && random() < 0.28 && player.gold > 180) {
         const used = Math.min(3, player.materials);
-        const reforgeCost = Math.min(player.gold, 120 + player.level * 11);
+        const repeatSurcharge = Math.max(0, player.reforgeCount - 2) * 90;
+        const reforgeCost = Math.min(player.gold, 120 + player.level * 11 + repeatSurcharge);
         player.materials -= used;
         player.gold -= reforgeCost;
         itemsDestroyed += used;
         sinks += reforgeCost;
         sinkBreakdown.reforge += reforgeCost;
+        player.reforgeCount++;
       }
       if (random() < 0.42 && player.gold > 40) {
         const tax = Math.min(player.gold, 10 + Math.floor(random() * 31));

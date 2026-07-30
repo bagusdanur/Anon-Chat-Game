@@ -286,7 +286,11 @@ function createEquipmentService(db, options = {}) {
     if (!item) return { success: false, reason: 'Equipment instance tidak ditemukan.' };
     if (!item.affixes.length) return { success: false, reason: 'Equipment ini tidak memiliki affix.' };
     const catalystCost = 1 + Math.floor(Number(item.reforge_count || 0) / 3);
-    const goldCost = 250 + item.item_power * 3 + Number(item.reforge_count || 0) * 200;
+    const reforgeCount = Number(item.reforge_count || 0);
+    // Reforge pertama tetap ramah untuk belajar build. Setelah beberapa kali
+    // mengejar affix sempurna, biaya naik agar reroll endgame menjadi sink gold.
+    const repeatSurcharge = Math.max(0, reforgeCount - 2) * 300;
+    const goldCost = 250 + item.item_power * 3 + reforgeCount * 200 + repeatSurcharge;
     const user = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?').get(String(userId));
     const catalyst = db.prepare(`
       SELECT * FROM rpg_inventory WHERE telegram_user_id=? AND item_id='reforge_catalyst'

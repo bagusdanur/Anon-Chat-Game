@@ -75,7 +75,12 @@ function createRaidService(db, options = {}) {
       WHERE m.user_id=? AND p.status='active'
     `).get(String(userId));
     if (!party || party.member_count < 2) return { success: false, reason: 'Weekly raid memerlukan party minimal 2 pemain.' };
-    return { success: true, key: `party:${party.id}`, partyId: party.id };
+    const members = db.prepare(`
+      SELECT u.* FROM rpg_party_members m
+      JOIN rpg_users u ON u.telegram_user_id=m.user_id
+      WHERE m.party_id=? ORDER BY m.joined_at
+    `).all(party.id);
+    return { success: true, key: `party:${party.id}`, partyId: party.id, members };
   }
 
   function estimatedDamage(user) {
@@ -87,8 +92,17 @@ function createRaidService(db, options = {}) {
     ));
   }
 
-  function instanceMaxHp(userId, type, raid) {
-    if (type !== 'world') return raid.maxHp;
+  function instanceMaxHp(userId, type, raid, scope = {}) {
+    if (type === 'party') {
+      const members = scope.members || [];
+      const totalPotential = members.reduce(
+        (sum, user) => sum + estimatedDamage(user) * raid.attemptLimit,
+        0,
+      );
+      // Dua pemain yang setara perlu memakai sebagian besar attempt mereka,
+      // sedangkan pemain endgame tidak lagi bisa membawa raid party sendirian.
+      return Math.max(raid.maxHp, Math.floor(totalPotential * 0.75));
+    }
     const activeCutoff = now() - (7 * 86400);
     let active = db.prepare(`
       SELECT * FROM rpg_users WHERE updated_at>=? AND level>=?
@@ -111,7 +125,7 @@ function createRaidService(db, options = {}) {
     const scope = scopeFor(userId, type);
     if (!scope.success) return scope;
     const period = periodFor(now(), raid.duration);
-    const maxHp = instanceMaxHp(userId, type, raid);
+    const maxHp = instanceMaxHp(userId, type, raid, scope);
     db.prepare(`
       INSERT OR IGNORE INTO rpg_raid_instances
         (raid_id, period_key, scope_key, max_hp, current_hp, starts_at, ends_at, created_at)
@@ -124,7 +138,16 @@ function createRaidService(db, options = {}) {
       SELECT count(1) attempts, coalesce(sum(damage),0) damage
       FROM rpg_raid_contributions WHERE instance_id=? AND user_id=?
     `).get(instance.id, String(userId));
-    return { success: true, raid, instance, contribution };
+    const partyContributions = type === 'party'
+      ? scope.members.map(member => ({
+        userId: String(member.telegram_user_id),
+        ...db.prepare(`
+          SELECT count(1) attempts, coalesce(sum(damage),0) damage
+          FROM rpg_raid_contributions WHERE instance_id=? AND user_id=?
+        `).get(instance.id, String(member.telegram_user_id)),
+      }))
+      : [];
+    return { success: true, raid, instance, contribution, partyContributions };
   }
 
   function attack(userId, type, eventKey) {
@@ -160,7 +183,13 @@ function createRaidService(db, options = {}) {
     const { raid, instance, contribution } = state;
     if (instance.status !== 'defeated') return { success: false, reason: 'Boss belum dikalahkan.' };
     if (contribution.damage <= 0) return { success: false, reason: 'Kamu belum berkontribusi.' };
-    const nominalGold = raid.baseGold + Math.min(raid.baseGold, Math.floor(contribution.damage / 10));
+    if (type === 'party' && state.partyContributions.some(member => member.attempts < 1)) {
+      return { success: false, reason: 'Setiap anggota party harus menyerang minimal 1 kali sebelum reward diklaim.' };
+    }
+    const nominalGold = raid.baseGold + Math.min(
+      Math.floor(raid.baseGold * 0.5),
+      Math.floor(contribution.damage / 12),
+    );
     const currentGold = db.prepare('SELECT gold FROM rpg_users WHERE telegram_user_id=?')
       .get(String(userId)).gold;
     const reward = {
