@@ -32,24 +32,18 @@ function setupSocial(bot, { getPartnerId, rateLimitCommand }) {
             { parse_mode: 'HTML' },
           );
         }
+        const lines = party.members.map(member =>
+          `${member.role === 'owner' ? '👑' : '•'} <b>${member.alias}</b> · ${member.role}`,
+        );
         const flow = getGuideFlow(ctx.chat.id);
         return ctx.reply(
-          `<b>PARTY #${party.id}</b>\n\n` +
-          `Party siap untuk aktivitas co-op party.\n\n` +
+          `<b>👥 PARTY #${party.id}</b>\n\n` +
+          `${lines.join('\n')}\n\n` +
           `<b>Langkah campaign-mu:</b> ${flow.next.detail}\n` +
           `Jalankan: <code>${flow.next.command}</code>\n\n` +
-          `<i>/coop · /bounty · /raid · /party info · /party leave</i>`,
+          '<i>/coop · /bounty · /raid · /party info · /party leave</i>',
           { parse_mode: 'HTML' },
-        );
-        const lines = party.members.map(member =>
-          `${member.role === 'owner' ? '👑' : '•'} <b>${member.alias}</b>`,
-        );
-        return ctx.reply(
-          `<b>👥 PARTY #${party.id}</b>\n\n${lines.join('\n')}\n\n` +
-          '<i>/coop · /dungeon duo 1 · /bounty · /raid\n/party info · /party leave</i>',
-          { parse_mode: 'HTML' },
-        );
-      });
+        );\n      });
     }
     return rateLimitCommand(ctx, () => {
       if (!getOrCreateUser(ctx.chat.id)) return ctx.reply('Buat karakter terlebih dahulu dengan /profile.');
