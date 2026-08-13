@@ -315,7 +315,7 @@ function createUser(userId, className) {
   return db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(id);
 }
 
-// Lazy regen energi (+1 per 3 menit — lebih cepat untuk sesi anonymous chat)
+// Lazy regen energi (+1 per 3 menit — lebih cepat untuk sesi game Discord)
 function getCurrentEnergy(user) {
   const now = Math.floor(Date.now() / 1000);
   const elapsedMin = Math.floor((now - user.energy_last_update) / 60);
@@ -378,7 +378,7 @@ function getEquipmentBonus(userId) {
 
 // ===== DUNGEON COOLDOWN (ganti sistem tiket) =====
 // Cooldown 30 menit per pemain setelah tiap run dungeon
-const DUNGEON_COOLDOWN_SECS = 10 * 60; // 10 menit — pas untuk durasi sesi anonymous chat
+const DUNGEON_COOLDOWN_SECS = 10 * 60; // 10 menit — pas untuk durasi sesi game Discord
 
 function getDungeonCooldown(user) {
   if (!user.last_dungeon_at) return 0; // belum pernah raid

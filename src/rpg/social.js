@@ -22,9 +22,9 @@ function setupSocial(bot, { getPartnerId, rateLimitCommand }) {
         const party = social.getParty(ctx.chat.id);
         if (!party) {
           return ctx.reply(
-            '<b>👥 PARTY ANONYMOUS</b>\n\n' +
+            '<b>👥 PARTY DISCORD</b>\n\n' +
             'Belum memiliki party.\n\n' +
-            '1. Hubungkan partner dengan /search\n' +
+            '1. Undang partner dengan /party invite\n' +
             '2. /party create\n' +
             '3. /party invite\n' +
             '4. Partner menggunakan /party accept\n\n' +
@@ -35,7 +35,7 @@ function setupSocial(bot, { getPartnerId, rateLimitCommand }) {
         const flow = getGuideFlow(ctx.chat.id);
         return ctx.reply(
           `<b>PARTY #${party.id}</b>\n\n` +
-          `Party siap untuk aktivitas anonymous co-op.\n\n` +
+          `Party siap untuk aktivitas co-op party.\n\n` +
           `<b>Langkah campaign-mu:</b> ${flow.next.detail}\n` +
           `Jalankan: <code>${flow.next.command}</code>\n\n` +
           `<i>/coop · /bounty · /raid · /party info · /party leave</i>`,
@@ -60,7 +60,7 @@ function setupSocial(bot, { getPartnerId, rateLimitCommand }) {
       }
       if (action === 'invite') {
         const partnerId = getPartnerId(ctx.chat.id);
-        if (!partnerId) return ctx.reply('❌ Hubungkan diri dengan partner chat terlebih dahulu.');
+        if (!partnerId) return ctx.reply('❌ Hubungkan diri dengan partner party terlebih dahulu.');
         const result = social.invite(ctx.chat.id, partnerId);
         if (!result.success) return ctx.reply(`❌ ${result.reason}`);
         ctx.reply('✅ Undangan party dikirim ke partner.');

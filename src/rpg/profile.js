@@ -330,7 +330,7 @@ function setupProfile(bot, { rateLimitCommand }) {
         `<b>🎉 ${cls.name} — Karakter Dibuat!</b>\n` +
         `━━━━━━━━━━━━━━━━━━━━\n\n` +
         `Selamat datang, Petualang! ⚔️\n\n` +
-        `<b>Langkah terakhir: buat alias karakter anonim.</b>\n` +
+        `<b>Langkah terakhir: buat alias karakter karakter.</b>\n` +
         `Alias digunakan di party, guild, ranking, dan aktivitas co-op—bukan nama Telegram.\n\n` +
         `<i>Kirim alias 3–16 karakter (huruf, angka, underscore).</i>`,
         { parse_mode: 'HTML' }

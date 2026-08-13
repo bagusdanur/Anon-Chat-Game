@@ -27,9 +27,9 @@ function setupCoopActivities(bot, { rateLimitCommand }) {
     const party = social.getParty(ctx.chat.id);
     const partyStatus = party?.members?.length >= 2
       ? `✅ Party aktif: ${party.members.map(member => member.alias).join(' + ')}`
-      : '⚠️ Belum ada duo. Saat sedang anonymous chat: /party create lalu /party invite';
+      : '⚠️ Belum ada duo. Saat sedang party Discord: /party create lalu /party invite';
     return ctx.reply(
-      `<b>🤝 PUSAT ANONYMOUS CO-OP</b>\n\n${partyStatus}\n\n` +
+      `<b>🤝 PUSAT CO-OP PARTY</b>\n\n${partyStatus}\n\n` +
       `<b>Aktivitas duo:</b>\n` +
       `1. 🏰 Dungeon panjang — banyak monster, aksi party 2/2, Combo\n` +
       `2. 🎯 Bounty harian — kontribusi kedua pemain\n` +
@@ -69,12 +69,12 @@ function setupCoopActivities(bot, { rateLimitCommand }) {
       );
     }
     const guides = {
-      party: '👥 Saat terhubung anonymous chat: /party create → /party invite. Partner menekan /party accept.',
+      party: '👥 Saat terhubung party Discord: /party create → /party invite. Partner menekan /party accept.',
       dungeon: '🏰 Gunakan /dungeon duo 1. Keduanya pilih aksi; cycle berjalan saat 2/2 siap. Kumpulkan 3 energi lalu tekan 🤝 Combo.',
       bounty: '🎯 Kedua pemain gunakan /bounty hunt, lalu masing-masing /bounty claim setelah target selesai.',
       campaign: '📖 Gunakan /coopcampaign. Kedua pemain melakukan /coopcampaign explore agar progress masing-masing naik.',
       raid: '🔥 Gunakan /raid attack sampai boss tumbang, lalu masing-masing /raid claim.',
-      duel: '⚔️ Gunakan /duel saat masih terhubung dengan partner anonymous chat.',
+      duel: '⚔️ Gunakan /duel saat masih terhubung dengan partner party Discord.',
     };
     ctx.answerCbQuery();
     return ctx.reply(guides[ctx.match[1]]);

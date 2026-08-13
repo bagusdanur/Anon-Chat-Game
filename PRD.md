@@ -41,8 +41,8 @@ Berbeda dengan game bot tekstual lawas yang berulang dan membosankan, bot ini di
 
 ---
 
-## 4. 🛡️ Keamanan & Privasi Mutlak (Anonymous Zero-Trace)
-1. **Perlindungan Identitas Pengguna**: Tidak boleh ada fungsi yang mengirimkan ID, username, nomor ponsel, atau nama lengkap pemain ke partner bicaranya saat fitting santuy di mode anonymous ataupun mode Duo Dungeon.
+## 4. 🛡️ Keamanan & Privasi Mutlak (Discord Privacy & Party Safety)
+1. **Perlindungan Identitas Pengguna**: Tidak boleh ada fungsi yang mengirimkan ID, username, nomor ponsel, atau nama lengkap pemain ke partner bicaranya saat fitting santuy di mode Discord ataupun mode Duo Dungeon.
 2. **Relay via CopyMessage**: Eksklusivitas sistem chat acak diamankan melalui metode `copyMessage` (bukan `forwardMessage`).
 3. **Stabilitas VPS Express 5**: Menggunakan syntax `/{*path}` pada rute wildcard web untuk mencegah kebocoran memori dan pembengkakan CPU VPS.
 

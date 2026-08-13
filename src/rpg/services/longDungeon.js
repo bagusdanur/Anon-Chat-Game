@@ -159,7 +159,7 @@ function createLongDungeonService(db, options = {}) {
 
   function getAlias(userId) {
     return db.prepare('SELECT alias FROM rpg_character_aliases WHERE user_id = ?')
-      .get(String(userId))?.alias || 'Petualang Anonim';
+      .get(String(userId))?.alias || 'Petualang';
   }
 
   function enemyMaxHp(session, room) {

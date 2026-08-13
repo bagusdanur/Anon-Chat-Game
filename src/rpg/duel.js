@@ -351,7 +351,7 @@ function setupDuel(bot, { getPartnerId, rateLimitCommand }) {
   bot.command('duel', rateLimitCommand, (ctx) => {
     const userId = ctx.chat.id;
     const partnerId = getPartnerId(userId);
-    if (!partnerId) return ctx.reply('❌ Kamu harus sedang terhubung dengan partner (/search) untuk duel!');
+    if (!partnerId) return ctx.reply('❌ Kamu harus sedang memiliki anggota party untuk duel!');
 
     const user = getOrCreateUser(userId);
     if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');

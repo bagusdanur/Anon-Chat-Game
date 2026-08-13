@@ -818,7 +818,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
       );
 
       const partnerId = getPartnerId(userId);
-      if (!partnerId) return ctx.reply('❌ Kamu harus sedang terhubung dengan partner dulu (/search).');
+      if (!partnerId) return ctx.reply('❌ Kamu harus sedang memiliki anggota party.');
 
       const user = getOrCreateUser(userId);
       if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
@@ -879,7 +879,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
       );
 
     const partnerId = getPartnerId(userId);
-    if (!partnerId) return ctx.reply('❌ Kamu harus sedang terhubung dengan partner dulu (/search).');
+    if (!partnerId) return ctx.reply('❌ Kamu harus sedang memiliki anggota party.');
 
     const user = getOrCreateUser(userId);
     if (!user) return ctx.reply('⚠️ Buat karakter dulu dengan /profile!');
@@ -927,7 +927,7 @@ function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
     const action = args[0]?.toLowerCase() || 'status';
     if (action === 'offer') {
       const partnerId = getPartnerId(userId);
-      if (!partnerId) return ctx.reply('❌ Kamu harus terhubung dengan partner chat.');
+      if (!partnerId) return ctx.reply('❌ Kamu harus terhubung dengan partner party.');
       const type = args[1]?.toLowerCase();
       const numberedItemId = type === 'item' ? resolveInvInput(userId, args[2]) : null;
       if (type === 'item' && !numberedItemId) {

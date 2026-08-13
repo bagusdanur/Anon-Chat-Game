@@ -139,7 +139,7 @@ function setupWorld(bot, { rateLimitCommand }) {
   bot.action('world:coop', async ctx => {
     await ctx.answerCbQuery();
     const party = db.prepare(`SELECT count(1) count FROM rpg_party_members WHERE party_id=(SELECT party_id FROM rpg_party_members WHERE user_id=?)`).get(String(ctx.chat.id));
-    if (party.count < 2) return ctx.reply('Buat party dulu: /party create, hubungkan partner chat, lalu /party invite.');
+    if (party.count < 2) return ctx.reply('Buat party dulu: /party create, hubungkan partner party, lalu /party invite.');
     const flow = getGuideFlow(ctx.chat.id);
     if (flow.next.key !== 'explore') return flowReply(ctx, flow, 'Co-op eksplorasi mengikuti objective campaign yang sama.');
     return ctx.reply('CO-OP WORLD\n\nGunakan /coopcampaign explore. Setiap pemain tetap menghabiskan energi dan mendapat progress campaign miliknya sendiri.');

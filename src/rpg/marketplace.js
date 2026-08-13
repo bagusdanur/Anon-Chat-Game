@@ -75,7 +75,7 @@ function setupMarketplace(bot, { rateLimitCommand }) {
     }
     const lines = listings.map((listing, index) =>
       `<code>[${index + 1}]</code> <b>${listing.display_name}</b> ×${listing.quantity}\n` +
-      `   ${listing.unit_price}g/item · penjual anonim`,
+      `   ${listing.unit_price}g/item · penjual`,
     );
     return ctx.reply(
       `<b>🏪 CONTROLLED MARKETPLACE</b>\n\n${lines.join('\n\n')}\n\n` +

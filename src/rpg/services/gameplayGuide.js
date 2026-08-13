@@ -11,7 +11,7 @@ function determineNextStep(state) {
   if (!state.hasAlias) {
     return {
       key: 'alias', title: 'Lengkapi identitas karakter', command: '/alias NamaKarakter',
-      detail: 'Alias diperlukan sebagai identitas anonim di seluruh dunia RPG.',
+      detail: 'Alias diperlukan sebagai identitas karakter di seluruh dunia RPG.',
       unlock: 'Setelah alias tersimpan, mulai Chapter 1 melalui /world.',
     };
   }
@@ -117,7 +117,7 @@ function getCompletedChecklist(state) {
   if (!state || !state.hasCharacter) {
     return [
       { title: 'Pilih Class & Buat Karakter', done: false },
-      { title: 'Set Alias Anonim (/alias)', done: false },
+      { title: 'Set Alias Karakter (/alias)', done: false },
       { title: 'Jelajah World Aldenmoor', done: false },
       { title: 'Berburu / Naik Level', done: false },
       { title: 'Selesaikan Campaign Chapter 1', done: false },
@@ -126,7 +126,7 @@ function getCompletedChecklist(state) {
 
   return [
     { title: 'Pilih Class & Buat Karakter', done: true },
-    { title: 'Set Alias Anonim (/alias)', done: Boolean(state.hasAlias) },
+    { title: 'Set Alias Karakter (/alias)', done: Boolean(state.hasAlias) },
     { title: 'Jelajah World Aldenmoor (/explore)', done: Boolean(state.hasAlias && (state.explorationPoints > 0 || state.level > 1 || state.chapter > 1)) },
     { title: 'Berburu Monster (/hunt)', done: Boolean(state.level >= 2) },
     { title: 'Selesaikan Campaign Chapter 1', done: Boolean(state.isChapter1Completed || state.chapter > 1) },

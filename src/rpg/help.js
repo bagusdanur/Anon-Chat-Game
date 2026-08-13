@@ -14,7 +14,7 @@ const HELP_PAGES = [
     id: 'start',
     title: '📖 RPG BESAR — MULAI',
     text:
-      'Progress karakter tersimpan permanen dan tidak bergantung pada partner chat.\n\n' +
+      'Progress karakter tersimpan permanen dan tidak bergantung pada partner party.\n\n' +
       '<b>Langkah awal</b>\n' +
       '1. /guide — tracker world/campaign: posisi, objective, tindakan, dan unlock berikutnya\n' +
       '2. /profile — buat atau lihat karakter\n' +
@@ -104,12 +104,12 @@ const HELP_PAGES = [
     id: 'trade',
     title: '🤝 PARTY & TRADE',
     text:
-      '/alias [nama] — alias anonim karakter\n' +
-      '/coop — pusat seluruh aktivitas anonymous co-op\n' +
+      '/alias [nama] — alias karakter karakter\n' +
+      '/coop — pusat seluruh aktivitas co-op party\n' +
       '/party create — buat party\n' +
-      '/party invite — undang partner chat\n' +
+      '/party invite — undang partner party\n' +
       '/party accept, /party info, /party leave\n\n' +
-      'Party mengikuti pasangan anonymous chat. Jika salah satu memakai /next atau /stop, party, undangan, dungeon duo, raid, dan duel bersama partner lama otomatis diakhiri.\n\n' +
+      'Party mengikuti pasangan party Discord. Jika salah satu memakai /next atau /stop, party, undangan, dungeon duo, raid, dan duel bersama partner lama otomatis diakhiri.\n\n' +
       '<b>Direct trade aman</b>\n' +
       '/trade offer gold [jumlah]\n' +
       '/trade offer item [nomor /inv] [jumlah]\n' +
@@ -139,7 +139,7 @@ const HELP_PAGES = [
     title: '🏆 SEASON & ENDGAME',
     text:
       '/season — points dan seasonal token\n' +
-      '/rank — leaderboard alias anonim\n' +
+      '/rank — leaderboard alias karakter\n' +
       '/tower — Endless Tower\n' +
       '/achievement — achievement permanen\n' +
       '/collection — koleksi item\n' +
@@ -169,7 +169,7 @@ function indexMessage() {
   }
   return {
     text:
-      '<b>📖 PANDUAN ANONYMOUS RPG</b>\n\n' +
+      '<b>📖 PANDUAN RPG DISCORD</b>\n\n' +
       'Pilih bagian panduan. Semua menu di bawah sudah mengikuti fitur RPG produksi terbaru.',
     options: { parse_mode: 'HTML', ...Markup.inlineKeyboard(rows) },
   };

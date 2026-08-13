@@ -1,11 +1,11 @@
-# Anonymous Chat Bot (Telegram)
+# Discord RPG Bot (Telegram)
 
-Bot Telegram untuk obrolan acak tanpa mengungkap identitas (mirip Omegle).
+Bot Discord RPG berbasis party, campaign, dungeon, ekonomi, guild, dan co-op.
 Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 
 ## Fitur Utama
 
-- Pencarian partner secara acak (`/search`)
+- Undang anggota party dengan mention Discord
 - Penyimpanan persisten (menggunakan `better-sqlite3`), sehingga data antrian tidak hilang saat restart
 - Fitur limitasi spam pesan & proteksi flooding perintah
 - Moderasi kata dasar
@@ -19,10 +19,10 @@ Dibangun dengan **Node.js, Telegraf, dan SQLite**.
 - Campaign Aldenmoor berbasis objective dengan event idempotent (`/campaign`)
 - Tujuh profession dengan gathering, salvage, dan refinement
 - Controlled marketplace dengan escrow, pajak, expiry, dan audit ledger
-- Preseason, leaderboard anonim, Endless Tower, achievement, dan collection
-- Party persisten dan guild dengan alias karakter anonim
-- `/next` dan `/stop` otomatis memutus party serta sesi co-op dengan partner anonymous lama
-- Pusat anonymous co-op (`/coop`) untuk party, dungeon duo, bounty, campaign, raid, dan duel
+- Preseason, leaderboard alias karakter, Endless Tower, achievement, dan collection
+- Party persisten dan guild dengan alias karakter alias karakter
+- `/next` dan `/stop` otomatis memutus party serta sesi co-op dengan partner Discord lama
+- Pusat Discord co-op (`/coop`) untuk party, dungeon duo, bounty, campaign, raid, dan duel
 - `/dungeon` membuka dungeon panjang baru; raid boss klasik dipindahkan ke `/dungeon raid`
 - Dungeon duo memerlukan persetujuan partner, menyimpan undangan 10 menit, dan mengirim menu cycle ke kedua pemain
 - Setiap cycle duo menunggu aksi kedua pemain (2/2); event, jalur, treasure, dan istirahat wajib disetujui berdua
@@ -105,7 +105,7 @@ pm2 save && pm2 startup
 | Command           | Fungsi                                             |
 |-------------------|----------------------------------------------------|
 | `/start`          | Pesan selamat datang & bantuan                     |
-| `/search`         | Mulai cari partner                                 |
+| `/party`          | Kelola party dan anggota                                 |
 | `/rpg`            | Membuka menu dunia dan campaign RPG                 |
 | `/guide`          | Menampilkan alur progres dan langkah berikutnya     |
 | `/profile`        | Ringkasan alias, progres, sosial, build, dan status |
@@ -123,15 +123,15 @@ pm2 save && pm2 startup
 | `/gather herb`    | Mengumpulkan tanaman dan Herbalism XP                 |
 | `/salvage [nomor]`| Membongkar equipment dari daftar `/inv`               |
 | `/refine [nomor]` | Memurnikan lima material dari daftar `/inv`           |
-| `/market`         | Marketplace anonim untuk material dan consumable      |
+| `/market`         | Marketplace alias karakter untuk material dan consumable      |
 | `/season`         | Melihat seasonal points dan token                     |
-| `/rank`           | Leaderboard season dengan alias anonim                |
+| `/rank`           | Leaderboard season dengan alias alias karakter                |
 | `/tower`          | Menantang lantai berikutnya di Endless Tower          |
 | `/achievement`    | Melihat achievement karakter                          |
 | `/collection`     | Melihat completion koleksi item                       |
 | `/alias [nama]`   | Mengatur alias karakter internal                      |
 | `/party create`   | Membuat party persisten                               |
-| `/party invite`   | Mengundang partner chat ke party                      |
+| `/party invite`   | Undang anggota Discord ke party                      |
 | `/coop`           | Pusat dungeon duo, bounty, campaign, raid, dan duel   |
 | `/guild`          | Guild, anggota bernomor, treasury, upgrade, dan shop  |
 | `/guild quest`    | Melihat atau mengklaim guild quest mingguan           |
