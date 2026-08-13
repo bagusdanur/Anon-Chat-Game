@@ -43,7 +43,8 @@ function setupSocial(bot, { getPartnerId, rateLimitCommand }) {
           `Jalankan: <code>${flow.next.command}</code>\n\n` +
           '<i>/coop · /bounty · /raid · /party info · /party leave</i>',
           { parse_mode: 'HTML' },
-        );\n      });
+        );
+      });
     }
     return rateLimitCommand(ctx, () => {
       if (!getOrCreateUser(ctx.chat.id)) return ctx.reply('Buat karakter terlebih dahulu dengan /profile.');
