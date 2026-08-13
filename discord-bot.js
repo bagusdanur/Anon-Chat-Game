@@ -27,14 +27,14 @@ function buttons(options) {
 }
 function ctxFor(interaction, text='') {
   const key = ensureDiscordIdentity(interaction.user.id, interaction.guildId);
-  let answered = interaction.replied || interaction.deferred;
+  let answered = interaction.replied;
   const pending = [];
   const ctx = {
     chat: { id:key }, from:{id:interaction.user.id}, message:{text, message_id:interaction.id},
     update:{update_id:interaction.id, callback_query:interaction.isButton()?{data:interaction.customId}:undefined},
     callbackQuery: interaction.isButton()?{data:interaction.customId}:undefined,
     telegram:{sendMessage:async()=>null,copyMessage:async()=>null},
-    reply: async (message, options={}) => { const payload={content:cleanText(message),components:buttons(options)}; if(!answered){answered=true; const operation=interaction.reply(payload); pending.push(operation); return operation;} const operation=interaction.followUp(payload); pending.push(operation); return operation; },
+    reply: async (message, options={}) => { const payload={content:cleanText(message),components:buttons(options)}; if(!answered){answered=true; const operation=interaction.deferred ? interaction.editReply(payload) : interaction.reply(payload); pending.push(operation); return operation;} const operation=interaction.followUp(payload); pending.push(operation); return operation; },
     editMessageText: async (message, options={}) => interaction.update({content:cleanText(message),components:buttons(options)}),
     answerCbQuery: async () => undefined,
     flush: async () => { if (pending.length) await Promise.allSettled(pending); },
@@ -58,7 +58,7 @@ function commandJson() {
   });
 }
 client.once('ready',async()=>{try{const rest=new REST({version:'10'}).setToken(process.env.DISCORD_BOT_TOKEN);const route=process.env.DISCORD_GUILD_ID?Routes.applicationGuildCommands(client.user.id,process.env.DISCORD_GUILD_ID):Routes.applicationCommands(client.user.id);await rest.put(route,{body:commandJson()});console.log('[Discord] RPG penuh online sebagai '+client.user.tag);console.log('[Discord] '+handlers.size+' RPG handlers loaded');}catch(e){console.error('[Discord] registration failed:',e.message);}});
-client.on('interactionCreate',async interaction=>{try{if(interaction.isButton()){const h=actions.get(interaction.customId);if(!h)return interaction.reply({content:'Aksi sudah kedaluwarsa.'});const ctx=ctxFor(interaction); await h(ctx); await ctx.flush(); return;}if(!interaction.isChatInputCommand())return;const input=interaction.commandName==='profile'?(interaction.options.getString('class')||''):(interaction.options.getString('input')||'');const h=handlers.get(interaction.commandName);if(!h)return interaction.reply({content:'Command belum tersedia.'});const ctx=ctxFor(interaction,'/'+interaction.commandName+(input?' '+input:'')); await h(ctx,()=>{}); await ctx.flush(); if(!interaction.replied&&!interaction.deferred)await interaction.reply({content:'Selesai.'});}catch(e){console.error('[Discord] interaction failed:',e.message);if(!interaction.replied&&!interaction.deferred)await interaction.reply({content:'Terjadi kesalahan internal.'}).catch(()=>{});else await interaction.followUp({content:'Terjadi kesalahan internal.'}).catch(()=>{});}});
+client.on('interactionCreate',async interaction=>{try{if(interaction.isButton()){const h=actions.get(interaction.customId);if(!h)return interaction.reply({content:'Aksi sudah kedaluwarsa.'});const ctx=ctxFor(interaction); await h(ctx); await ctx.flush(); return;}if(!interaction.isChatInputCommand())return;const input=interaction.commandName==='profile'?(interaction.options.getString('class')||''):(interaction.options.getString('input')||'');const h=handlers.get(interaction.commandName);if(!h)return interaction.reply({content:'Command belum tersedia.'});await interaction.deferReply(); const ctx=ctxFor(interaction,'/'+interaction.commandName+(input?' '+input:'')); await h(ctx,()=>{}); await ctx.flush(); if(!interaction.replied&&!interaction.deferred)await interaction.reply({content:'Selesai.'});}catch(e){console.error('[Discord] interaction failed:',e.message);if(!interaction.replied&&!interaction.deferred)await interaction.reply({content:'Terjadi kesalahan internal.'}).catch(()=>{});else await interaction.followUp({content:'Terjadi kesalahan internal.'}).catch(()=>{});}});
 client.on('error',e=>console.error('[Discord] client error:',e.message));
 if(!process.env.DISCORD_BOT_TOKEN)console.warn('[Discord] DISCORD_BOT_TOKEN belum diatur.');else client.login(process.env.DISCORD_BOT_TOKEN).catch(e=>{console.error('[Discord] login gagal:',e.message);process.exitCode=1;});
 module.exports={client,handlers,actions,COMMANDS};
