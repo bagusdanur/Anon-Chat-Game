@@ -30,7 +30,28 @@ const actions = new Map();
 function cleanText(value) {
   return String(value).replace(/<b>(.*?)<\/b>/gis, '**$1**').replace(/<strong>(.*?)<\/strong>/gis, '**$1**').replace(/<i>(.*?)<\/i>/gis, '*$1*').replace(/<em>(.*?)<\/em>/gis, '*$1*').replace(/<code>(.*?)<\/code>/gis, '`$1`').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
 }
-function buttons(options) {
+function formatDiscordText(value) {
+  let text=cleanText(value).replace(/\r/g,'');
+  text=text.replace(/\n{3,}/g,'\n\n');
+  return text.trim();
+}
+function splitDiscordText(value, limit=1900) {
+  const text=formatDiscordText(value); if(text.length<=limit)return [text];
+  const chunks=[]; let current='';
+  for(const line of text.split('\n')) {
+    if((current+'\n'+line).trim().length>limit && current){ chunks.push(current.trim()); current=''; }
+    if(line.length>limit){ for(let i=0;i<line.length;i+=limit){ if(current){chunks.push(current.trim()); current='';} chunks.push(line.slice(i,i+limit)); } }
+    else current+=(current?'\n':'')+line;
+  }
+  if(current.trim())chunks.push(current.trim()); return chunks;
+}
+function discordPayloads(message, options={}) {
+  const chunks=splitDiscordText(message);
+  return chunks.map((content,index)=>({content,components:index===chunks.length-1?buttons(options):[]}));
+}
+async function sendDiscordUser(user,message,options={}) {
+  let result=null; for(const payload of discordPayloads(message,options)) result=await user.send(payload); return result;
+}function buttons(options) {
   const keyboard = options && options.reply_markup && options.reply_markup.inline_keyboard;
   if (!Array.isArray(keyboard)) return [];
   return keyboard.slice(0,5).map(row => new ActionRowBuilder().addComponents(row.slice(0,5).map(b => new ButtonBuilder()
@@ -44,8 +65,8 @@ function ctxFor(interaction, text='') {
     chat: { id:key }, from:{id:interaction.user.id}, message:{text, message_id:interaction.id},
     update:{update_id:interaction.id, callback_query:interaction.isButton()?{data:interaction.customId}:undefined},
     callbackQuery: interaction.isButton()?{data:interaction.customId}:undefined,
-    telegram:{sendMessage:async(chatId,message,options={})=>{ const raw=String(chatId); const discordId=raw.startsWith('discord:')?raw.slice(8):null; if(!discordId)return null; const user=await client.users.fetch(discordId).catch(()=>null); if(!user)return null; return user.send({content:cleanText(message),components:buttons(options)}).catch(()=>null); },copyMessage:async()=>null},
-    reply: async (message, options={}) => { const payload={content:cleanText(message),components:buttons(options)}; if(!answered){answered=true; const operation=interaction.deferred ? interaction.editReply(payload) : interaction.reply(payload); pending.push(operation); return operation;} const operation=interaction.followUp(payload); pending.push(operation); return operation; },
+    telegram:{sendMessage:async(chatId,message,options={})=>{ const raw=String(chatId); const discordId=raw.startsWith('discord:')?raw.slice(8):null; if(!discordId)return null; const user=await client.users.fetch(discordId).catch(()=>null); if(!user)return null; return sendDiscordUser(user,message,options).catch(()=>null); },copyMessage:async()=>null},
+    reply: async (message, options={}) => { const payloads=discordPayloads(message,options); if(!answered){answered=true; const first=interaction.deferred ? interaction.editReply(payloads[0]) : interaction.reply(payloads[0]); pending.push(first); for(const payload of payloads.slice(1))pending.push(first.then(()=>interaction.followUp(payload))); return first;} let operation=interaction.followUp(payloads[0]); pending.push(operation); for(const payload of payloads.slice(1))pending.push(operation.then(()=>interaction.followUp(payload))); return operation; },
     editMessageText: async (message, options={}) => interaction.update({content:cleanText(message),components:buttons(options)}),
     answerCbQuery: async () => undefined,
     flush: async () => { if (pending.length) await Promise.allSettled(pending); },
@@ -56,7 +77,7 @@ const adapter = {
   command(name,...args){ handlers.set(name,args[args.length-1]); },
   action(name,...args){ actions.set(name,args[args.length-1]); },
   on(){},
-  telegram:{sendMessage:async(chatId,message,options={})=>{ const raw=String(chatId); const discordId=raw.startsWith('discord:')?raw.slice(8):null; if(!discordId)return null; const user=await client.users.fetch(discordId).catch(()=>null); return user?user.send({content:cleanText(message),components:buttons(options)}).catch(()=>null):null; }},
+  telegram:{sendMessage:async(chatId,message,options={})=>{ const raw=String(chatId); const discordId=raw.startsWith('discord:')?raw.slice(8):null; if(!discordId)return null; const user=await client.users.fetch(discordId).catch(()=>null); return user?sendDiscordUser(user,message,options).catch(()=>null):null; }},
 };
 setupRpg(adapter,{getPartnerId:(userId)=>activePartners.get(String(userId)) || null,rateLimitCommand:(ctx,next)=>typeof next==='function'?next():undefined});
 
