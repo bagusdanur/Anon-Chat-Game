@@ -45,7 +45,19 @@ function inventoryPage(userId, page = 1) {
   const safePage = Math.min(totalPages, Math.max(1, page));
   const rows = items.slice((safePage - 1) * DISCORD_PAGE_SIZE, safePage * DISCORD_PAGE_SIZE);
   const text = rows.length ? rows.map((item, index) => `${(safePage - 1) * DISCORD_PAGE_SIZE + index + 1}. ${item.display_name} x${item.quantity}${item.upgrade_tier ? ` (+${item.upgrade_tier})` : ''}`).join('\n') : 'Inventory kosong.';
-  const components = rows.length ? discordPageButtons('discord:inv', safePage, totalPages) : [];
+  const components = [];
+  if (rows.length) {
+    const selector = new StringSelectMenuBuilder()
+      .setCustomId('discord:inv:select')
+      .setPlaceholder('Pilih item untuk aksi')
+      .addOptions(rows.map((item, index) => ({
+        label: `${(safePage - 1) * DISCORD_PAGE_SIZE + index + 1}. ${item.display_name}`.slice(0, 100),
+        description: `${item.category} · ${item.rarity} · x${item.quantity}`.slice(0, 100),
+        value: String((safePage - 1) * DISCORD_PAGE_SIZE + index + 1),
+      })));
+    components.push(new ActionRowBuilder().addComponents(selector));
+    components.push(...discordPageButtons('discord:inv', safePage, totalPages));
+  }
   components.push(...discordUi.navigationRows('inv'));
   return { text: `Inventory\n\n${text}\n\nPage ${safePage}/${totalPages}`, components };
 }
@@ -170,13 +182,28 @@ function splitDiscordText(value, limit=1900) {
   }
   if(current.trim())chunks.push(current.trim()); return chunks;
 }
+function contextualSelectionRows(command, content) {
+  if (!['gear', 'skill'].includes(command)) return [];
+  const matches = [...content.matchAll(/`?\[(\d+)\]`?\s+\*\*([^*\n]+)\*\*/g)].slice(0, 25);
+  if (!matches.length) return [];
+  const select = new StringSelectMenuBuilder()
+    .setCustomId(`discord:${command}:select`)
+    .setPlaceholder(command === 'gear' ? 'Pilih gear' : 'Pilih skill')
+    .addOptions(matches.map(match => ({
+      label: `${match[1]}. ${match[2]}`.slice(0, 100),
+      value: match[1],
+    })));
+  return [new ActionRowBuilder().addComponents(select)];
+}
 function discordPayloads(message, options={}, privateReply=false, command='profile') {
   const chunks=splitDiscordText(message);
   const panelCommands = new Set(['profile', 'inv', 'shop', 'gear', 'skill']);
   return chunks.map((content,index)=>{
     const actionRows = index === chunks.length - 1 ? buttons(options) : [];
+    const contextualRows = index === chunks.length - 1 ? contextualSelectionRows(command, content) : [];
     const navigation = index === chunks.length - 1 && panelCommands.has(command) ? discordUi.navigationRows(command) : [];
-    return { embeds:[new EmbedBuilder().setColor(0x7c3aed).setDescription(content)], components: actionRows.length + navigation.length <= 5 ? [...actionRows, ...navigation] : actionRows, ...(privateReply?{flags:MessageFlags.Ephemeral}: {}) };
+    const combined = [...actionRows, ...contextualRows, ...navigation];
+    return { embeds:[new EmbedBuilder().setColor(0x7c3aed).setDescription(content)], components: combined.slice(0, 5), ...(privateReply?{flags:MessageFlags.Ephemeral}: {}) };
   });
 }async function sendDiscordUser(user,message,options={}) {
   let result=null; for(const payload of discordPayloads(message,options)) result=await user.send(payload); return result;
@@ -241,6 +268,18 @@ adapter.action(/^discord:panel:(inv|shop)$/, (ctx) => {
     components: view.components,
   });
 });
+adapter.action(/^discord:inv:gearforge:(\d+)$/, (ctx) => (
+  dispatchDiscordCommand(ctx.interaction, 'gear', `/gear forge ${ctx.match[1]}`, true)
+));
+adapter.action(/^discord:skill:learn:(\d+)$/, (ctx) => (
+  dispatchDiscordCommand(ctx.interaction, 'skill', `/skill learn ${ctx.match[1]}`, true)
+));
+adapter.action(/^discord:skill:equip:(\d+):([1-3])$/, (ctx) => (
+  dispatchDiscordCommand(ctx.interaction, 'skill', `/skill equip ${ctx.match[1]} ${ctx.match[2]}`, true)
+));
+adapter.action(/^discord:gear:(compare|equip|upgrade|reforge|salvage):(\d+)$/, (ctx) => (
+  dispatchDiscordCommand(ctx.interaction, 'gear', `/gear ${ctx.match[1]} ${ctx.match[2]}`, true)
+));
 
 function commandJson() {
   return COMMANDS.map(([name,description]) => {
@@ -272,6 +311,59 @@ function resolveDiscordAction(data) {
 client.on('interactionCreate', async interaction => {
   if (!interaction.isStringSelectMenu()) return;
   try {
+    if (interaction.customId === 'discord:inv:select') {
+      const number = Number(interaction.values[0]);
+      const userKey = ensureDiscordIdentity(interaction.user.id, interaction.guildId);
+      const item = orderInventory(getInventory(userKey))[number - 1];
+      if (!item) return interaction.reply({ content: 'Item inventory tidak valid.', flags: MessageFlags.Ephemeral });
+      const actionButtons = [];
+      if (item.category === 'consumable') {
+        actionButtons.push(new ButtonBuilder().setCustomId(`discord:inv:action:use:${number}`).setLabel('Use').setStyle(ButtonStyle.Primary));
+      }
+      if (['weapon', 'staff', 'armor', 'accessory'].includes(item.category)) {
+        actionButtons.push(
+          new ButtonBuilder().setCustomId(`discord:inv:action:equip:${number}`).setLabel('Equip').setStyle(ButtonStyle.Success),
+          new ButtonBuilder().setCustomId(`discord:inv:gearforge:${number}`).setLabel('Forge').setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder().setCustomId(`discord:inv:action:salvage:${number}`).setLabel('Salvage').setStyle(ButtonStyle.Danger),
+        );
+      }
+      if (item.category === 'material') {
+        actionButtons.push(new ButtonBuilder().setCustomId(`discord:inv:action:refine:${number}`).setLabel('Refine').setStyle(ButtonStyle.Secondary));
+      }
+      actionButtons.push(new ButtonBuilder().setCustomId(`discord:inv:action:sell:${number}`).setLabel('Sell').setStyle(ButtonStyle.Danger));
+      return interaction.reply({
+        content: `Pilih aksi untuk **${item.display_name}**.`,
+        flags: MessageFlags.Ephemeral,
+        components: [new ActionRowBuilder().addComponents(actionButtons)],
+      });
+    }
+    if (interaction.customId === 'discord:skill:select') {
+      const number = Number(interaction.values[0]);
+      return interaction.reply({
+        content: `Pilih aksi untuk skill ${number}.`,
+        flags: MessageFlags.Ephemeral,
+        components: [new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId(`discord:skill:learn:${number}`).setLabel('Learn').setStyle(ButtonStyle.Success),
+          new ButtonBuilder().setCustomId(`discord:skill:equip:${number}:1`).setLabel('Slot 1').setStyle(ButtonStyle.Primary),
+          new ButtonBuilder().setCustomId(`discord:skill:equip:${number}:2`).setLabel('Slot 2').setStyle(ButtonStyle.Primary),
+          new ButtonBuilder().setCustomId(`discord:skill:equip:${number}:3`).setLabel('Slot 3').setStyle(ButtonStyle.Primary),
+        )],
+      });
+    }
+    if (interaction.customId === 'discord:gear:select') {
+      const number = Number(interaction.values[0]);
+      return interaction.reply({
+        content: `Pilih aksi untuk gear ${number}.`,
+        flags: MessageFlags.Ephemeral,
+        components: [new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId(`discord:gear:compare:${number}`).setLabel('Compare').setStyle(ButtonStyle.Primary),
+          new ButtonBuilder().setCustomId(`discord:gear:equip:${number}`).setLabel('Equip').setStyle(ButtonStyle.Success),
+          new ButtonBuilder().setCustomId(`discord:gear:upgrade:${number}`).setLabel('Upgrade').setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder().setCustomId(`discord:gear:reforge:${number}`).setLabel('Reforge').setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder().setCustomId(`discord:gear:salvage:${number}`).setLabel('Salvage').setStyle(ButtonStyle.Danger),
+        )],
+      });
+    }
     if (interaction.customId.startsWith('discord:callback-select:')) {
       const data = interaction.values[0];
       const resolved = resolveDiscordAction(data);
