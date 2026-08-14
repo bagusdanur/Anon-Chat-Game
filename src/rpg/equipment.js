@@ -129,6 +129,17 @@ function setupEquipment(bot, { rateLimitCommand }) {
         : `❌ ${result.reason}`);
     }
 
+    if (action === 'unequip') {
+      const instanceId = resolveGearNumber(ctx.chat.id, args[1]);
+      if (!instanceId) return ctx.reply('Gunakan: /gear unequip [nomor gear].');
+      const item = equipment.getInstance(ctx.chat.id, instanceId);
+      if (!item?.equipped_slot) return ctx.reply('Gear itu sedang tidak terpasang.');
+      const result = equipment.unequip(ctx.chat.id, item.equipped_slot);
+      return ctx.reply(result.success
+        ? `${result.item.display_name} dilepas dari slot ${item.equipped_slot}.`
+        : `Gagal: ${result.reason}`);
+    }
+
     if (action === 'socket') {
       const instanceId = resolveGearNumber(ctx.chat.id, args[1]);
       const gemItemId = resolveInventoryNumber(ctx.chat.id, args[3]);
@@ -253,8 +264,12 @@ function setupEquipment(bot, { rateLimitCommand }) {
 
   bot.command('unequip', rateLimitCommand, ctx => {
     if (!getOrCreateUser(ctx.chat.id)) return ctx.reply('Buat karakter dahulu dengan /profile.');
-    const slot = ctx.message.text.trim().split(/\s+/)[1]?.toLowerCase();
-    if (!slot) return ctx.reply('Gunakan /unequip [weapon/staff/armor/accessory].');
+    const input = ctx.message.text.trim().split(/\s+/)[1]?.toLowerCase();
+    if (!input) return ctx.reply('Buka /gear, lalu gunakan /unequip [nomor].');
+    const instanceId = resolveGearNumber(ctx.chat.id, input);
+    const numberedItem = instanceId ? equipment.getInstance(ctx.chat.id, instanceId) : null;
+    if (numberedItem && !numberedItem.equipped_slot) return ctx.reply('Gear itu sedang tidak terpasang.');
+    const slot = numberedItem?.equipped_slot || input;
     const result = equipment.unequip(ctx.chat.id, slot);
     return ctx.reply(result.success
       ? `✅ ${result.item.display_name} dilepas dari slot ${slot}.`

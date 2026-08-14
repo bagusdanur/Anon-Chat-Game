@@ -5,6 +5,7 @@ const { ensureDiscordIdentity } = require('./src/rpg/discordIdentity');
 const { db } = require('./src/db');
 const { createSocialService } = require('./src/rpg/services/social');
 const { createLongDungeonService } = require('./src/rpg/services/longDungeon');
+const { createEquipmentService } = require('./src/rpg/services/equipment');
 const { xpToNextLevel, calcStats, getInventory, getOrCreateUser, createUser, getCatalogItem } = require('./src/rpg/db_rpg');
 const { createDirectTradeService } = require('./src/rpg/services/directTrade');
 const { createMarketplaceService } = require('./src/rpg/services/marketplace');
@@ -16,6 +17,7 @@ const directTrade = createDirectTradeService(db);
 const marketplace = createMarketplaceService(db);
 const social = createSocialService(db);
 const dungeonService = createLongDungeonService(db, { xpToNextLevel, calcStats });
+const equipmentService = createEquipmentService(db);
 const activePartners = new Map();
 const DISCORD_PAGE_SIZE = 25;
 const PRIVATE_COMMANDS = new Set(['profile','alias','inv','gear','skill','shop','buy','sell','use','craft','market','trade','equip','unequip','upgrade','refine','salvage','daily']);
@@ -293,7 +295,7 @@ adapter.action(/^discord:skill:learn:(\d+)$/, (ctx) => (
 adapter.action(/^discord:skill:equip:(\d+):([1-3])$/, (ctx) => (
   dispatchDiscordCommand(ctx.interaction, 'skill', `/skill equip ${ctx.match[1]} ${ctx.match[2]}`, true)
 ));
-adapter.action(/^discord:gear:(compare|equip|upgrade|reforge|salvage):(\d+)$/, (ctx) => (
+adapter.action(/^discord:gear:(compare|equip|unequip|upgrade|reforge|salvage):(\d+)$/, (ctx) => (
   dispatchDiscordCommand(ctx.interaction, 'gear', `/gear ${ctx.match[1]} ${ctx.match[2]}`, true)
 ));
 
@@ -393,12 +395,18 @@ client.on('interactionCreate', async interaction => {
     }
     if (interaction.customId === 'discord:gear:select') {
       const number = Number(interaction.values[0]);
+      const userKey = ensureDiscordIdentity(interaction.user.id, interaction.guildId);
+      const item = equipmentService.list(userKey)[number - 1];
+      if (!item) return interaction.reply({ content: 'Gear tidak valid.', flags: MessageFlags.Ephemeral });
       return interaction.reply({
-        content: `Pilih aksi untuk gear ${number}.`,
+        content: `Pilih aksi untuk **${item.display_name}**.`,
         flags: MessageFlags.Ephemeral,
         components: [new ActionRowBuilder().addComponents(
           new ButtonBuilder().setCustomId(`discord:gear:compare:${number}`).setLabel('Compare').setStyle(ButtonStyle.Primary),
-          new ButtonBuilder().setCustomId(`discord:gear:equip:${number}`).setLabel('Equip').setStyle(ButtonStyle.Success),
+          new ButtonBuilder()
+            .setCustomId(`discord:gear:${item.equipped_slot ? 'unequip' : 'equip'}:${number}`)
+            .setLabel(item.equipped_slot ? 'Unequip' : 'Equip')
+            .setStyle(item.equipped_slot ? ButtonStyle.Danger : ButtonStyle.Success),
           new ButtonBuilder().setCustomId(`discord:gear:upgrade:${number}`).setLabel('Upgrade').setStyle(ButtonStyle.Secondary),
           new ButtonBuilder().setCustomId(`discord:gear:reforge:${number}`).setLabel('Reforge').setStyle(ButtonStyle.Secondary),
           new ButtonBuilder().setCustomId(`discord:gear:salvage:${number}`).setLabel('Salvage').setStyle(ButtonStyle.Danger),

@@ -988,6 +988,26 @@ test('equipping binds instances and socketed gems contribute persistent bonuses'
   db.close();
 });
 
+test('forged weapons enforce class compatibility before equip', () => {
+  const db = createTestDb();
+  db.prepare("UPDATE rpg_users SET class_name='penyihir' WHERE telegram_user_id='1'").run();
+  db.prepare(`
+    INSERT INTO items_catalog (item_id,display_name,category,rarity,sell_price)
+    VALUES ('forbidden_blade','Forbidden Blade','weapon','rare',50)
+  `).run();
+  db.prepare(`
+    INSERT INTO rpg_inventory (telegram_user_id,item_id,quantity)
+    VALUES ('1','forbidden_blade',1)
+  `).run();
+  const equipment = createEquipmentService(db, { random: () => 0 });
+  const item = equipment.forge('1', 'forbidden_blade').item;
+  const result = equipment.equip('1', item.id);
+  assert.equal(result.success, false);
+  assert.match(result.reason, /Penyihir tidak bisa memakai Weapon/);
+  assert.equal(equipment.getInstance('1', item.id).equipped_slot, null);
+  db.close();
+});
+
 test('long dungeon applies equipped V2 max HP affixes to solo session health', () => {
   const db = createTestDb();
   publishDungeons(db, loadDungeons());

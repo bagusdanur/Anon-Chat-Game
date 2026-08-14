@@ -4,6 +4,11 @@ const { createLedgerService } = require('./ledger');
 
 const CONTENT_FILE = path.join(__dirname, '../../../data/rpg_affixes.json');
 const EQUIPMENT_SLOTS = ['weapon', 'staff', 'armor', 'accessory'];
+const CLASS_EQUIPMENT_SLOTS = {
+  ksatria: ['weapon', 'armor', 'accessory'],
+  penyihir: ['staff', 'armor', 'accessory'],
+  pencuri: ['weapon', 'armor', 'accessory'],
+};
 const RARITY_RULES = {
   common: { affixes: 0, sockets: 0, multiplier: 1 },
   uncommon: { affixes: 1, sockets: 0, multiplier: 1.1 },
@@ -136,6 +141,15 @@ function createEquipmentService(db, options = {}) {
   function equip(userId, instanceId) {
     const item = getInstance(userId, instanceId);
     if (!item) return { success: false, reason: 'Equipment instance tidak ditemukan.' };
+    const user = db.prepare('SELECT class_name FROM rpg_users WHERE telegram_user_id=?').get(String(userId));
+    const className = String(user?.class_name || '').toLowerCase();
+    const allowedSlots = CLASS_EQUIPMENT_SLOTS[className] || EQUIPMENT_SLOTS;
+    if (!allowedSlots.includes(item.category)) {
+      const reason = item.category === 'staff'
+        ? 'Class ini tidak bisa memakai Staff. Staff hanya untuk Penyihir.'
+        : 'Penyihir tidak bisa memakai Weapon. Gunakan Staff, Armor, atau Aksesori.';
+      return { success: false, reason };
+    }
     db.transaction(() => {
       db.prepare('UPDATE rpg_equipment_instances SET equipped_slot=NULL,updated_at=? WHERE owner_id=? AND equipped_slot=?')
         .run(now(), String(userId), item.category);
