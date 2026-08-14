@@ -362,6 +362,20 @@ test('long dungeon validates content and persists every room checkpoint', () => 
   db.close();
 });
 
+test('solo dungeon can start below recommendation and global numbers expose level requirements', () => {
+  const db = createTestDb();
+  publishDungeons(db, loadDungeons());
+  db.prepare("UPDATE rpg_users SET level=1 WHERE telegram_user_id='1'").run();
+  const dungeon = createLongDungeonService(db, { random: () => 0.5 });
+  assert.equal(dungeon.list('1').length, 1);
+  assert.ok(dungeon.listAll().length > dungeon.list(1).length);
+  const first = dungeon.listAll()[0];
+  assert.equal(first.min_level, 1);
+  assert.equal(first.recommended_level, 7);
+  assert.equal(dungeon.startSolo('1', first.dungeon_id).success, true);
+  db.close();
+});
+
 test('long dungeon combat supports persisted tactical turns', () => {
   const db = createTestDb();
   publishDungeons(db, loadDungeons());

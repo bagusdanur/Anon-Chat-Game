@@ -178,13 +178,6 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
         { parse_mode: 'HTML' },
       );
     }
-    if (mode === 'solo' && user.level < (objective.recommendedLevel || 1)) {
-      return ctx.reply(
-        `<b>INFO ALUR CAMPAIGN</b>\n\n<b>${flow.next.title}</b>\n${flow.next.detail}\n` +
-        `Jalankan: <code>${flow.next.command}</code>`,
-        { parse_mode: 'HTML' },
-      );
-    }
     if (mode === 'duo') {
       const result = service.inviteDuo(ctx.chat.id, dungeonId);
       if (!result.success) return ctx.reply(`❌ ${result.reason}`);
@@ -215,9 +208,12 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     const result = service.startSolo(ctx.chat.id, dungeonId);
     if (!result.success) return ctx.reply(`❌ ${result.reason}`);
     const recommendedLevel = result.session.definition.recommended_level || result.session.definition.min_level;
+    const underRecommended = user.level < recommendedLevel;
     return ctx.reply(
       `<b>🧭 BRIEFING EKSPEDISI</b>\n\n` +
+      `<b>🧍 MODE SOLO — TANPA PARTY</b>\n` +
       `Rekomendasi: <b>Lv.${recommendedLevel}</b> • Kamu: <b>Lv.${user.level}</b>\n` +
+      `${underRecommended ? `⚠️ <b>Levelmu di bawah rekomendasi.</b> Solo tetap dimulai, tetapi musuh akan lebih berat.\n` : ''}` +
       `⚔️ Pasang gear melalui <code>/gear</code>; affix, socket gem, upgrade, dan set bonus aktif di dungeon.\n` +
       `${soloPassiveText(user.class_name) ? `${soloPassiveText(user.class_name)}\n` : ''}` +
       `🛡️ Saat <b>Serangan Besar</b> muncul, pilih <b>Defend</b>. Bawa ramuan dari <code>/shop</code> bila HP-mu tipis.\n\n` +
@@ -254,16 +250,22 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     }
     const targetNumber = flow.state.activeQuest.objective.dungeonNumber;
     const targetName = flow.state.activeQuest.objective.label;
+    const targetDungeon = service.listAll()[targetNumber - 1];
+    const minimumText = targetDungeon
+      ? `Minimum masuk: <b>Lv.${targetDungeon.min_level}</b> · Rekomendasi solo: <b>Lv.${targetDungeon.recommended_level}</b>\n`
+      : '';
     return ctx.reply(
       `<b>DUNGEON OBJECTIVE GUIDE</b>\n\n` +
       `Target cerita: <b>${targetName}</b>\n` +
+      `${minimumText}` +
       `${flow.next.detail}\n\n` +
-      `Pilih mode. Duo selalu menunggu persetujuan partner dan setiap cycle diproses setelah 2/2 aksi siap.`,
+      `<b>🧍 Solo:</b> tidak membutuhkan party. Boleh dimulai di bawah level rekomendasi setelah level minimum terpenuhi.\n` +
+      `<b>🤝 Duo:</b> membutuhkan party berisi tepat dua pemain; cycle diproses setelah aksi 2/2 siap.`,
       {
         parse_mode: 'HTML',
         ...Markup.inlineKeyboard([
-          [Markup.button.callback('Mulai Duo (Disarankan)', `adventure:start:duo:${targetNumber}`)],
-          [Markup.button.callback('Mulai Solo', `adventure:start:solo:${targetNumber}`)],
+          [Markup.button.callback('🧍 Solo — Tanpa Party', `adventure:start:solo:${targetNumber}`)],
+          [Markup.button.callback('🤝 Duo — Butuh Party', `adventure:start:duo:${targetNumber}`)],
           [Markup.button.callback('Buka Guide', 'guide:open')],
         ]),
       },
@@ -297,7 +299,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
     const mode = args[0]?.toLowerCase() === 'duo' ? 'duo' : 'solo';
     const user = getOrCreateUser(ctx.chat.id);
     const dungeonNumber = Number(args[1] || (mode === 'solo' && args[0] !== 'solo' ? args[0] : 1));
-    const dungeonId = service.list(user?.level || 1)[dungeonNumber - 1]?.dungeon_id;
+    const dungeonId = service.listAll()[dungeonNumber - 1]?.dungeon_id;
     if (!dungeonId) return ctx.reply('❌ Nomor dungeon tidak valid. Ketik /dungeon.');
     return startOrResume(ctx, dungeonId, mode);
   });
@@ -305,7 +307,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
   bot.action(/^adventure:start:(solo|duo):(\d+)$/, async ctx => {
     await ctx.answerCbQuery();
     const user = getOrCreateUser(ctx.chat.id);
-    const dungeonId = service.list(user?.level || 1)[Number(ctx.match[2]) - 1]?.dungeon_id;
+    const dungeonId = service.listAll()[Number(ctx.match[2]) - 1]?.dungeon_id;
     if (!dungeonId) return ctx.reply('❌ Dungeon tidak tersedia.');
     return startOrResume(ctx, dungeonId, ctx.match[1]);
   });
@@ -433,7 +435,7 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
       }
       const user = getOrCreateUser(ctx.chat.id);
       const dungeonNumber = Number(args[1] || 1);
-      const dungeonId = service.list(user?.level || 1)[dungeonNumber - 1]?.dungeon_id;
+      const dungeonId = service.listAll()[dungeonNumber - 1]?.dungeon_id;
       if (!dungeonId) return ctx.reply('❌ Nomor dungeon tidak valid. Ketik /dungeon.');
       return startOrResume(ctx, dungeonId, action);
     });

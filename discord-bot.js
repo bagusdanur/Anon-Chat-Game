@@ -709,7 +709,7 @@ adapter.action(/^discord:duo:join:(\d+):(\d+)$/, async (ctx) => {
       flags: MessageFlags.Ephemeral,
     });
   const inviter = getOrCreateUser(inviterKey);
-  const dungeonId = dungeonService.list(inviter?.level || 1)[dungeonNumber - 1]
+  const dungeonId = dungeonService.listAll()[dungeonNumber - 1]
     ?.dungeon_id;
   if (!dungeonId)
     return ctx.interaction.reply({
@@ -1594,9 +1594,7 @@ async function handleDiscordInteraction(interaction) {
       );
       if (!getOrCreateUser(targetKeyForDuo))
         return interaction.editReply("Target belum memiliki karakter RPG.");
-      const dungeon = dungeonService.list(
-        getOrCreateUser(actorKey)?.level || 1,
-      )[dungeonNumber - 1];
+      const dungeon = dungeonService.listAll()[dungeonNumber - 1];
       if (!dungeon)
         return interaction.editReply(
           "Nomor dungeon tidak valid. Buka `/dungeon`.",

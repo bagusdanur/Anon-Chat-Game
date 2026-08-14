@@ -594,6 +594,22 @@ function createLongDungeonService(db, options = {}) {
   }
 
   return {
+    listAll() {
+      return db.prepare(`
+        SELECT dungeon_id, name, min_level, definition_json
+        FROM rpg_dungeon_definitions
+        WHERE published = 1
+        ORDER BY min_level, dungeon_id
+      `).all().map(row => {
+        const definition = JSON.parse(row.definition_json);
+        return {
+          dungeon_id: row.dungeon_id,
+          name: row.name,
+          min_level: row.min_level,
+          recommended_level: definition.recommended_level || row.min_level,
+        };
+      });
+    },
     list(level) {
       return db.prepare(`
         SELECT dungeon_id, name, min_level, definition_json

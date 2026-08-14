@@ -68,3 +68,11 @@ test('Discord interactions use one router and dungeon DMs use updatable panels',
   assert.match(source, /social\.rejectInvite/);
   assert.doesNotMatch(source, /legacyDiscordShopPage|compactDiscordShopPage/);
 });
+
+test('dungeon UI clearly separates solo from party requirements', () => {
+  const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'src', 'rpg', 'longDungeon.js'), 'utf8');
+  assert.match(source, /MODE SOLO — TANPA PARTY/);
+  assert.match(source, /Solo — Tanpa Party/);
+  assert.match(source, /Duo — Butuh Party/);
+  assert.doesNotMatch(source, /mode === 'solo' && user\.level < \(objective\.recommendedLevel/);
+});
