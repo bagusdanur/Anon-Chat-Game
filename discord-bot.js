@@ -63,6 +63,13 @@ function shopPage(userId, page = 1) {
   for (let i = 0; i < controls.length; i += 4) buttonRows.push(new ActionRowBuilder().addComponents(controls.slice(i, i + 4)));
   buttonRows.push(...discordPageButtons('discord:shop', safePage, totalPages));
   return { text: `Shop\nGold: ${user?.gold || 0}g\n\n${description}\n\nPage ${safePage}/${totalPages}`, components: buttonRows };
+}function profilePage(userId) {
+  const user = getOrCreateUser(userId);
+  if (!user) return { text: 'Belum ada karakter. Gunakan /profile dengan pilihan class.', components: [] };
+  const stats = calcStats(user);
+  const inventory = getInventory(userId);
+  const equipped = inventory.filter(item => item.equipped).length;
+  return { text: `Profile\n\nLevel ${user.level} · ${user.class || 'Adventurer'}\nXP ${user.xp || 0}\nHP ${user.hp}/${user.max_hp} · Gold ${user.gold}g\nATK ${stats.atk} · DEF ${stats.def}\nEquipment ${equipped} · Inventory ${inventory.length}`, components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('discord:profile:inv').setLabel('Inventory').setStyle(ButtonStyle.Primary), new ButtonBuilder().setCustomId('discord:profile:shop').setLabel('Shop').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId('discord:profile:skill').setLabel('Skills').setStyle(ButtonStyle.Secondary))] };
 }const COMMANDS = [
   ['rpg','Menu utama RPG'],['guide','Panduan RPG'],['helprpg','Panduan lengkap RPG'],['rpghelp','Alias panduan RPG'],['bantuanrpg','Alias panduan RPG'],['profile','Profil karakter'],['alias','Alias karakter'],
   ['world','Dunia RPG'],['travel','Pindah region'],['campaign','Campaign'],['explore','Eksplorasi'],['skill','Skill tree'],['build','Build'],['gear','Equipment'],
@@ -144,7 +151,7 @@ client.on('interactionCreate',async interaction=>{try{if (interaction.isAutocomp
     const wrongChannel = Boolean(expectedChannel && interaction.channel?.name !== `・${expectedChannel}`);
     const destination = wrongChannel ? await resolveRpgChannel(interaction.guild, expectedChannel) : null;
     await interaction.deferReply((PRIVATE_COMMANDS.has(interaction.commandName) || wrongChannel)?{flags:MessageFlags.Ephemeral}:{});
-    if (interaction.commandName === 'shop') { const view=shopPage(actorKey, Number(input)||1); return interaction.editReply({embeds:[new EmbedBuilder().setColor(0x7c3aed).setDescription(view.text)],components:view.components}); } if (interaction.commandName === 'inv') { const view=inventoryPage(actorKey, Number(input)||1); return interaction.editReply({embeds:[new EmbedBuilder().setColor(0x7c3aed).setDescription(view.text)],components:view.components}); }
+    if (interaction.commandName === 'profile' && !input && getOrCreateUser(actorKey)) { const view=profilePage(actorKey); return interaction.editReply({embeds:[new EmbedBuilder().setColor(0x22c55e).setDescription(view.text)],components:view.components}); } if (interaction.commandName === 'shop') { const view=shopPage(actorKey, Number(input)||1); return interaction.editReply({embeds:[new EmbedBuilder().setColor(0x7c3aed).setDescription(view.text)],components:view.components}); } if (interaction.commandName === 'inv') { const view=inventoryPage(actorKey, Number(input)||1); return interaction.editReply({embeds:[new EmbedBuilder().setColor(0x7c3aed).setDescription(view.text)],components:view.components}); }
     if (wrongChannel) return interaction.editReply({content:`❌ Command ini digunakan di channel yang salah. Gunakan ${channelMention(destination || expectedChannel)}.`});
     if (CHARACTER_REQUIRED.has(interaction.commandName) && !getOrCreateUser(actorKey)) {
       return interaction.editReply({content:'❌ Buat karakter terlebih dahulu dengan `/profile`.'});
