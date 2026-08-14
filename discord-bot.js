@@ -8,7 +8,7 @@ const { createLongDungeonService } = require('./src/rpg/services/longDungeon');
 const { xpToNextLevel, calcStats, getInventory, getOrCreateUser, createUser, getCatalogItem } = require('./src/rpg/db_rpg');
 const { createDirectTradeService } = require('./src/rpg/services/directTrade');
 const { createMarketplaceService } = require('./src/rpg/services/marketplace');
-const { SHOP_ITEMS, limitedShopPurchased, buildInventoryText } = require('./src/rpg/economy');
+const { SHOP_ITEMS, limitedShopPurchased, buildInventoryText, ORE_CONVERSION_RATES } = require('./src/rpg/economy');
 const { renderProfile, RARITY_EMOJI } = require('./src/rpg/profile');
 const discordUi = require('./src/rpg/discordUi');
 const { orderInventory } = require('./src/rpg/inputResolvers');
@@ -183,6 +183,19 @@ function splitDiscordText(value, limit=1900) {
   if(current.trim())chunks.push(current.trim()); return chunks;
 }
 function contextualSelectionRows(command, content) {
+  if (command === 'ore') {
+    const matches = [...content.matchAll(/`?\[(\d+)\]`?\s+(.+?)\s+x(\d+)\s+(?:â†’|→)/g)].slice(0, 25);
+    if (!matches.length) return [];
+    const select = new StringSelectMenuBuilder()
+      .setCustomId('discord:ore:select')
+      .setPlaceholder('Pilih material yang akan dilebur')
+      .addOptions(matches.map(match => ({
+        label: `${match[1]}. ${match[2]}`.replace(/\*\*/g, '').slice(0, 100),
+        description: `Tersedia ${match[3]} buah`.slice(0, 100),
+        value: `${match[1]}:${match[3]}`,
+      })));
+    return [new ActionRowBuilder().addComponents(select)];
+  }
   if (!['gear', 'skill'].includes(command)) return [];
   const matches = [...content.matchAll(/`?\[(\d+)\]`?\s+\*\*([^*\n]+)\*\*/g)].slice(0, 25);
   if (!matches.length) return [];
@@ -271,6 +284,9 @@ adapter.action(/^discord:panel:(inv|shop)$/, (ctx) => {
 adapter.action(/^discord:inv:gearforge:(\d+)$/, (ctx) => (
   dispatchDiscordCommand(ctx.interaction, 'gear', `/gear forge ${ctx.match[1]}`, true)
 ));
+adapter.action(/^discord:inv:ore:(\d+)$/, (ctx) => (
+  dispatchDiscordCommand(ctx.interaction, 'ore', `/ore`, true)
+));
 adapter.action(/^discord:skill:learn:(\d+)$/, (ctx) => (
   dispatchDiscordCommand(ctx.interaction, 'skill', `/skill learn ${ctx.match[1]}`, true)
 ));
@@ -329,6 +345,9 @@ client.on('interactionCreate', async interaction => {
       }
       if (item.category === 'material') {
         actionButtons.push(new ButtonBuilder().setCustomId(`discord:inv:action:refine:${number}`).setLabel('Refine').setStyle(ButtonStyle.Secondary));
+        if (ORE_CONVERSION_RATES[item.item_id]) {
+          actionButtons.push(new ButtonBuilder().setCustomId(`discord:inv:ore:${number}`).setLabel('Lebur Ore').setStyle(ButtonStyle.Primary));
+        }
       }
       actionButtons.push(new ButtonBuilder().setCustomId(`discord:inv:action:sell:${number}`).setLabel('Sell').setStyle(ButtonStyle.Danger));
       return interaction.reply({
@@ -336,6 +355,28 @@ client.on('interactionCreate', async interaction => {
         flags: MessageFlags.Ephemeral,
         components: [new ActionRowBuilder().addComponents(actionButtons)],
       });
+    }
+    if (interaction.customId === 'discord:ore:select') {
+      const [number, available] = interaction.values[0].split(':').map(Number);
+      if (!number || !available) return interaction.reply({ content: 'Material ore tidak valid.', flags: MessageFlags.Ephemeral });
+      const quantities = [...new Set([1, 5, 10, 25, available].filter(quantity => quantity <= available))].sort((a, b) => a - b);
+      const select = new StringSelectMenuBuilder()
+        .setCustomId(`discord:ore:quantity:${number}`)
+        .setPlaceholder(`Pilih jumlah · tersedia ${available}`)
+        .addOptions(quantities.map(quantity => ({
+          label: quantity === available ? `Semua (${quantity})` : `${quantity} buah`,
+          value: String(quantity),
+        })));
+      return interaction.reply({
+        content: `Material nomor **${number}** · tersedia **${available}**.`,
+        flags: MessageFlags.Ephemeral,
+        components: [new ActionRowBuilder().addComponents(select)],
+      });
+    }
+    if (interaction.customId.startsWith('discord:ore:quantity:')) {
+      const number = Number(interaction.customId.split(':').pop());
+      const quantity = Number(interaction.values[0]);
+      return dispatchDiscordCommand(interaction, 'ore', `/ore convert ${number} ${quantity}`, true);
     }
     if (interaction.customId === 'discord:skill:select') {
       const number = Number(interaction.values[0]);
