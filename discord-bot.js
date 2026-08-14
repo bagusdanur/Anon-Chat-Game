@@ -33,6 +33,7 @@ const {
   limitedShopPurchased,
   buildInventoryText,
   ORE_CONVERSION_RATES,
+  getCraftingConfig,
 } = require("./src/rpg/economy");
 const { renderProfile, RARITY_EMOJI } = require("./src/rpg/profile");
 const discordUi = require("./src/rpg/discordUi");
@@ -249,24 +250,39 @@ function discordShopPage(userId, page = 1) {
 }
 function discordAutocompleteChoices(command, userId) {
   const inventory = orderInventory(getInventory(userId));
-  const inventoryChoices = (filter = () => true) => inventory
-    .map((item, index) => ({ item, number: index + 1 }))
-    .filter(({ item }) => filter(item))
-    .map(({ item, number }) => ({
-      name: `${number}. ${item.display_name} x${item.quantity}`.slice(0, 100),
-      value: String(number),
-    }));
+  const inventoryChoices = (filter = () => true) =>
+    inventory
+      .map((item, index) => ({ item, number: index + 1 }))
+      .filter(({ item }) => filter(item))
+      .map(({ item, number }) => ({
+        name: `${number}. ${item.display_name} x${item.quantity}`.slice(0, 100),
+        value: String(number),
+      }));
   if (["inv", "sell"].includes(command)) return inventoryChoices();
-  if (command === "use") return inventoryChoices(item => item.category === "consumable");
+  if (command === "use")
+    return inventoryChoices((item) => item.category === "consumable");
   if (command === "salvage") {
-    return inventoryChoices(item => ["weapon", "staff", "armor", "accessory"].includes(item.category));
+    return inventoryChoices((item) =>
+      ["weapon", "staff", "armor", "accessory"].includes(item.category),
+    );
   }
   if (command === "refine") {
-    return inventoryChoices(item => ["tembaga", "besi", "perak"].includes(item.item_id) && item.quantity >= 5);
+    return inventoryChoices(
+      (item) =>
+        ["tembaga", "besi", "perak"].includes(item.item_id) &&
+        item.quantity >= 5,
+    );
   }
   if (command === "ore") {
-    return inventoryChoices(item => Boolean(ORE_CONVERSION_RATES[item.item_id]))
-      .map(choice => ({ ...choice, value: `convert ${choice.value} 1` }));
+    return inventoryChoices((item) =>
+      Boolean(ORE_CONVERSION_RATES[item.item_id]),
+    ).map((choice) => ({ ...choice, value: `convert ${choice.value} 1` }));
+  }
+  if (command === "craft") {
+    return getCraftingConfig().map((recipe) => ({
+      name: `${recipe.id}. ${recipe.name} · ${recipe.gold}g`.slice(0, 100),
+      value: String(recipe.id),
+    }));
   }
   const gear = equipmentService.list(userId);
   if (["equip", "unequip", "upgrade"].includes(command)) {
@@ -274,7 +290,10 @@ function discordAutocompleteChoices(command, userId) {
       .map((item, index) => ({ item, number: index + 1 }))
       .filter(({ item }) => command !== "unequip" || item.equipped_slot)
       .map(({ item, number }) => ({
-        name: `${number}. ${item.display_name} +${item.upgrade_tier} · ${item.item_power} IP${item.equipped_slot ? " · Terpasang" : ""}`.slice(0, 100),
+        name: `${number}. ${item.display_name} +${item.upgrade_tier} · ${item.item_power} IP${item.equipped_slot ? " · Terpasang" : ""}`.slice(
+          0,
+          100,
+        ),
         value: String(number),
       }));
   }
@@ -283,9 +302,21 @@ function discordAutocompleteChoices(command, userId) {
       const number = index + 1;
       const primaryAction = item.equipped_slot ? "unequip" : "equip";
       return [
-        { name: `${primaryAction === "equip" ? "Pasang" : "Lepas"} ${number}. ${item.display_name}`.slice(0, 100), value: `${primaryAction} ${number}` },
-        { name: `Bandingkan ${number}. ${item.display_name}`.slice(0, 100), value: `compare ${number}` },
-        { name: `Upgrade ${number}. ${item.display_name}`.slice(0, 100), value: `upgrade ${number}` },
+        {
+          name: `${primaryAction === "equip" ? "Pasang" : "Lepas"} ${number}. ${item.display_name}`.slice(
+            0,
+            100,
+          ),
+          value: `${primaryAction} ${number}`,
+        },
+        {
+          name: `Bandingkan ${number}. ${item.display_name}`.slice(0, 100),
+          value: `compare ${number}`,
+        },
+        {
+          name: `Upgrade ${number}. ${item.display_name}`.slice(0, 100),
+          value: `upgrade ${number}`,
+        },
       ];
     });
   }
@@ -390,6 +421,28 @@ function splitDiscordText(value, limit = 1900) {
   return chunks;
 }
 function contextualSelectionRows(command, content) {
+  if (command === "craft") {
+    const recipes = getCraftingConfig();
+    const rows = [];
+    for (let offset = 0; offset < recipes.length; offset += 25) {
+      const select = new StringSelectMenuBuilder()
+        .setCustomId(`discord:craft:select:${offset / 25}`)
+        .setPlaceholder(offset === 0 ? "Pilih resep crafting" : "Resep lainnya")
+        .addOptions(
+          recipes.slice(offset, offset + 25).map((recipe) => ({
+            label: `${recipe.id}. ${recipe.name}`.slice(0, 100),
+            description:
+              `${recipe.gold}g · ${recipe.materials.map((mat) => `${mat.qty}x ${mat.item.replace(/_/g, " ")}`).join(" + ")}`.slice(
+                0,
+                100,
+              ),
+            value: String(recipe.id),
+          })),
+        );
+      rows.push(new ActionRowBuilder().addComponents(select));
+    }
+    return rows;
+  }
   if (command === "ore") {
     const matches = [
       ...content.matchAll(/`?\[(\d+)\]`?\s+(.+?)\s+x(\d+)\s+(?:â†’|→)/g),
@@ -718,6 +771,17 @@ adapter.action(/^discord:inv:gearforge:(\d+)$/, (ctx) =>
 adapter.action(/^discord:inv:ore:(\d+)$/, (ctx) =>
   dispatchDiscordCommand(ctx.interaction, "ore", `/ore`, true),
 );
+adapter.action(/^discord:craft:confirm:(\d+)$/, (ctx) =>
+  dispatchDiscordCommand(
+    ctx.interaction,
+    "craft",
+    `/craft ${ctx.match[1]}`,
+    true,
+  ),
+);
+adapter.action("discord:craft:cancel", (ctx) =>
+  ctx.interaction.update({ content: "Crafting dibatalkan.", components: [] }),
+);
 adapter.action(/^discord:skill:learn:(\d+)$/, (ctx) =>
   dispatchDiscordCommand(
     ctx.interaction,
@@ -923,6 +987,48 @@ function resolveDiscordAction(data) {
 async function handleSelectInteraction(interaction) {
   if (!interaction.isStringSelectMenu()) return;
   try {
+    if (interaction.customId.startsWith("discord:craft:select:")) {
+      const recipeId = Number(interaction.values[0]);
+      const recipe = getCraftingConfig().find((entry) => entry.id === recipeId);
+      if (!recipe) {
+        return interaction.reply({
+          content: "Resep crafting tidak valid.",
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+      const userKey = ensureDiscordIdentity(
+        interaction.user.id,
+        interaction.guildId,
+      );
+      const user = getOrCreateUser(userKey);
+      const owned = new Map(
+        getInventory(userKey).map((item) => [item.item_id, item.quantity]),
+      );
+      const materials = recipe.materials.map((mat) => {
+        const have = owned.get(mat.item) || 0;
+        return `${have >= mat.qty ? "✅" : "❌"} ${mat.qty}x ${mat.item.replace(/_/g, " ")} (punya ${have})`;
+      });
+      const ready =
+        user?.gold >= recipe.gold &&
+        recipe.materials.every((mat) => (owned.get(mat.item) || 0) >= mat.qty);
+      return interaction.reply({
+        content: `**${recipe.name}**\nBiaya: **${recipe.gold}g** · Saldo: **${user?.gold || 0}g**\n${materials.join("\n")}\n\n${ready ? "Semua bahan siap." : "Bahan atau gold belum cukup."}`,
+        flags: MessageFlags.Ephemeral,
+        components: [
+          new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+              .setCustomId(`discord:craft:confirm:${recipe.id}`)
+              .setLabel("Craft")
+              .setStyle(ButtonStyle.Success)
+              .setDisabled(!ready),
+            new ButtonBuilder()
+              .setCustomId("discord:craft:cancel")
+              .setLabel("Batal")
+              .setStyle(ButtonStyle.Danger),
+          ),
+        ],
+      });
+    }
     if (interaction.customId === "discord:inv:select") {
       const number = Number(interaction.values[0]);
       const userKey = ensureDiscordIdentity(
@@ -1341,7 +1447,8 @@ async function handleDiscordInteraction(interaction) {
         interaction.customId.startsWith("discord_party_decline:"))
     ) {
       await interaction.deferUpdate();
-      const [, intendedUser, inviterDiscordId] = interaction.customId.split(":");
+      const [, intendedUser, inviterDiscordId] =
+        interaction.customId.split(":");
       if (intendedUser && intendedUser !== String(interaction.user.id))
         return interaction.editReply({
           content: "❌ Undangan ini bukan untuk akunmu.",
@@ -1800,11 +1907,15 @@ async function handleDiscordInteraction(interaction) {
         components: [
           new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-              .setCustomId(`discord_party_accept:${target.id}:${interaction.user.id}`)
+              .setCustomId(
+                `discord_party_accept:${target.id}:${interaction.user.id}`,
+              )
               .setLabel("Terima Party")
               .setStyle(ButtonStyle.Success),
             new ButtonBuilder()
-              .setCustomId(`discord_party_decline:${target.id}:${interaction.user.id}`)
+              .setCustomId(
+                `discord_party_decline:${target.id}:${interaction.user.id}`,
+              )
               .setLabel("Tolak")
               .setStyle(ButtonStyle.Danger),
           ),

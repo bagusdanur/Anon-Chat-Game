@@ -1036,6 +1036,7 @@ module.exports = {
   limitedShopPurchased,
   upgradeOreBreakdown,
   ORE_CONVERSION_RATES,
+  getCraftingConfig,
 };
 
 
