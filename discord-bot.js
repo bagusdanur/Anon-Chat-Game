@@ -68,14 +68,14 @@ function ctxFor(interaction, text='') {
     callbackQuery: interaction.isButton()?{data:interaction.customId}:undefined,
     telegram:{sendMessage:async(chatId,message,options={})=>{ const raw=String(chatId); const discordId=raw.startsWith('discord:')?raw.slice(8):null; if(!discordId)return null; const user=await client.users.fetch(discordId).catch(()=>null); if(!user)return null; return sendDiscordUser(user,message,options).catch(()=>null); },copyMessage:async()=>null},
     reply: async (message, options={}) => { const payloads=discordPayloads(message,options,PRIVATE_COMMANDS.has(interaction.commandName)); if(!answered){answered=true; const first=interaction.deferred ? interaction.editReply(payloads[0]) : interaction.reply(payloads[0]); pending.push(first); for(const payload of payloads.slice(1))pending.push(first.then(()=>interaction.followUp(payload))); return first;} let operation=interaction.followUp(payloads[0]); pending.push(operation); for(const payload of payloads.slice(1))pending.push(operation.then(()=>interaction.followUp(payload))); return operation; },
-    editMessageText: async (message, options={}) => interaction.update({content:cleanText(message),components:buttons(options)}),
+    editMessageText: async (message, options={}) => { answered=true; const payloads=discordPayloads(message,options,PRIVATE_COMMANDS.has(interaction.commandName)); const updated=await interaction.update(payloads[0]); for(const payload of payloads.slice(1))await interaction.followUp(payload); return updated; },
     answerCbQuery: async () => undefined,
     flush: async () => { if (pending.length) await Promise.allSettled(pending); },
   };
   return ctx;
 }
 const adapter = {
-  command(name,...args){ handlers.set(name,args[args.length-1]); },
+  command(name,...args){ const handler=args[args.length-1]; for(const commandName of (Array.isArray(name)?name:[name])) handlers.set(commandName,handler); },
   action(name,...args){ actions.set(name,args[args.length-1]); },
   on(){},
   telegram:{sendMessage:async(chatId,message,options={})=>{ const raw=String(chatId); const discordId=raw.startsWith('discord:')?raw.slice(8):null; if(!discordId)return null; const user=await client.users.fetch(discordId).catch(()=>null); return user?sendDiscordUser(user,message,options).catch(()=>null):null; }},
