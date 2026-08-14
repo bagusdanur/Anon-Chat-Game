@@ -129,7 +129,9 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
 
   async function sendSessionTo(chatId, session, prefix = '') {
     const rendered = renderSession(session, chatId);
-    return bot.telegram.sendMessage(
+    const sendPanel = bot.telegram.upsertDungeonPanel || bot.telegram.sendMessage;
+    return sendPanel.call(
+      bot.telegram,
       chatId,
       `${prefix ? `${prefix}\n\n` : ''}${rendered.text}`,
       rendered.options,
@@ -457,7 +459,8 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
       if (result.session.mode === 'duo') {
         const otherId = String(result.session.owner_id) === String(ctx.chat.id)
           ? result.session.partner_id : result.session.owner_id;
-        await bot.telegram.sendMessage(otherId, terminalText, { parse_mode: 'HTML' }).catch(() => {});
+        const sendPanel = bot.telegram.upsertDungeonPanel || bot.telegram.sendMessage;
+        await sendPanel.call(bot.telegram, otherId, terminalText, { parse_mode: 'HTML' }).catch(() => {});
       }
       return;
     }
@@ -473,7 +476,8 @@ function setupLongDungeon(bot, { rateLimitCommand }) {
       if (result.session.mode === 'duo') {
         const otherId = String(result.session.owner_id) === String(ctx.chat.id)
           ? result.session.partner_id : result.session.owner_id;
-        await bot.telegram.sendMessage(otherId, terminalText, { parse_mode: 'HTML' }).catch(() => {});
+        const sendPanel = bot.telegram.upsertDungeonPanel || bot.telegram.sendMessage;
+        await sendPanel.call(bot.telegram, otherId, terminalText, { parse_mode: 'HTML' }).catch(() => {});
       }
       return;
     }

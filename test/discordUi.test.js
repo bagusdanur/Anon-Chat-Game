@@ -35,7 +35,7 @@ test('Discord UI exposes native transaction routes without double-click guard', 
   assert.match(source, /discord:inv:select/);
   assert.match(source, /discord:skill:select/);
   assert.match(source, /discord:gear:select/);
-  assert.match(source, /item\.equipped_slot \? 'unequip' : 'equip'/);
+  assert.match(source, /item\.equipped_slot\s*\?\s*["']unequip["']\s*:\s*["']equip["']/);
   assert.match(source, /discord:ore:select/);
   assert.match(source, /discord:ore:quantity/);
   assert.match(source, /discord:duo:join/);
@@ -51,4 +51,14 @@ test('pagination controls always use unique Discord custom ids', () => {
       .map(button => button.data.custom_id);
     assert.equal(new Set(ids).size, ids.length);
   }
+});
+
+test('Discord interactions use one router and dungeon DMs use updatable panels', () => {
+  const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'discord-bot.js'), 'utf8');
+  assert.equal((source.match(/client\.on\(["']interactionCreate["']/g) || []).length, 1);
+  assert.match(source, /handleSelectInteraction/);
+  assert.match(source, /handleDiscordInteraction/);
+  assert.match(source, /activeDungeonPanels/);
+  assert.match(source, /upsertDungeonPanel/);
+  assert.match(source, /command\s*=\s*null/);
 });
