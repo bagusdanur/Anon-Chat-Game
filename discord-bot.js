@@ -268,6 +268,27 @@ const adapter = {
   telegram:{sendMessage:async(chatId,message,options={})=>{ const raw=String(chatId); const discordId=raw.startsWith('discord:')?raw.slice(8):null; if(!discordId)return null; const user=await client.users.fetch(discordId).catch(()=>null); return user?sendDiscordUser(user,message,options).catch(()=>null):null; }},
 };
 setupRpg(adapter,{getPartnerId:(userId)=>activePartners.get(String(userId)) || null,rateLimitCommand:(ctx,next)=>typeof next==='function'?next():undefined});
+adapter.action(/^discord:duo:join:(\d+):(\d+)$/, async (ctx) => {
+  const inviterDiscordId = ctx.match[1];
+  const dungeonNumber = Number(ctx.match[2]);
+  const inviterKey = ensureDiscordIdentity(inviterDiscordId, ctx.interaction.guildId);
+  const acceptedParty = social.acceptInvite(ctx.chat.id);
+  if (!acceptedParty.success) return ctx.interaction.reply({ content: `Gagal bergabung: ${acceptedParty.reason}`, flags: MessageFlags.Ephemeral });
+  const inviter = getOrCreateUser(inviterKey);
+  const dungeonId = dungeonService.list(inviter?.level || 1)[dungeonNumber - 1]?.dungeon_id;
+  if (!dungeonId) return ctx.interaction.reply({ content: 'Dungeon tidak tersedia.', flags: MessageFlags.Ephemeral });
+  const invited = dungeonService.inviteDuo(inviterKey, dungeonId);
+  if (!invited.success) return ctx.interaction.reply({ content: `Gagal memulai dungeon: ${invited.reason}`, flags: MessageFlags.Ephemeral });
+  const resolved = resolveDiscordAction(`ldinvite:${invited.invite.id}:accept`);
+  ctx.match = [`ldinvite:${invited.invite.id}:accept`, String(invited.invite.id), 'accept'];
+  ctx.callbackQuery = { data: ctx.match[0] };
+  return resolved.handler(ctx);
+});
+adapter.action(/^discord:duo:decline:(\d+)$/, async (ctx) => {
+  const inviterKey = ensureDiscordIdentity(ctx.match[1], ctx.interaction.guildId);
+  social.disconnectPair(ctx.chat.id, inviterKey);
+  return ctx.interaction.update({ content: 'Undangan party dan dungeon ditolak.', components: [] });
+});
 adapter.action(/^discord:shop:page:(?:prev|next):(\d+)$/, (ctx) => {
   const view = discordShopPage(ctx.chat.id, Number(ctx.match[1]));
   return ctx.interaction.update({
@@ -459,6 +480,46 @@ client.on('interactionCreate',async interaction=>{try{if (interaction.isButton()
     if (wrongChannel) return interaction.editReply({content:`❌ Command ini digunakan di channel yang salah. Gunakan ${channelMention(destination || expectedChannel)}.`});
     if (CHARACTER_REQUIRED.has(interaction.commandName) && !getOrCreateUser(actorKey)) {
       return interaction.editReply({content:'❌ Buat karakter terlebih dahulu dengan `/profile`.'});
+    }
+    const duoMatch = interaction.commandName === 'dungeon' ? String(input).trim().match(/^duo(?:\s+(\d+))?$/i) : null;
+    if (duoMatch && target) {
+      const dungeonNumber = Number(duoMatch[1] || 1);
+      const targetKeyForDuo = ensureDiscordIdentity(target.id, interaction.guildId);
+      if (!getOrCreateUser(targetKeyForDuo)) return interaction.editReply('Target belum memiliki karakter RPG.');
+      const dungeon = dungeonService.list(getOrCreateUser(actorKey)?.level || 1)[dungeonNumber - 1];
+      if (!dungeon) return interaction.editReply('Nomor dungeon tidak valid. Buka `/dungeon`.');
+      const actorParty = social.getParty(actorKey);
+      const targetParty = social.getParty(targetKeyForDuo);
+      const alreadyTogether = actorParty && targetParty && actorParty.id === targetParty.id && actorParty.members.length === 2;
+      if (alreadyTogether) {
+        const invited = dungeonService.inviteDuo(actorKey, dungeon.dungeon_id);
+        if (!invited.success) return interaction.editReply(`Gagal mengundang: ${invited.reason}`);
+        await target.send({
+          content: `Dungeon duo **${invited.invite.dungeonName}** dari <@${interaction.user.id}>.`,
+          components: [new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`ldinvite:${invited.invite.id}:accept`).setLabel('Terima & Mulai').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId(`ldinvite:${invited.invite.id}:decline`).setLabel('Tolak').setStyle(ButtonStyle.Danger),
+          )],
+        });
+        return interaction.editReply(`Undangan **${invited.invite.dungeonName}** dikirim ke ${target.toString()}.`);
+      }
+      if (targetParty || (actorParty && actorParty.members.length !== 1)) {
+        return interaction.editReply('Kalian sedang berada di party berbeda atau party tidak berisi tepat dua slot. Rapikan party terlebih dahulu.');
+      }
+      if (!actorParty) {
+        const created = social.createParty(actorKey);
+        if (!created.success) return interaction.editReply(`Gagal membuat party: ${created.reason}`);
+      }
+      const partyInvite = social.invite(actorKey, targetKeyForDuo);
+      if (!partyInvite.success) return interaction.editReply(`Gagal mengundang partner: ${partyInvite.reason}`);
+      await target.send({
+        content: `<@${interaction.user.id}> mengajakmu masuk party dan memainkan **${dungeon.name}**.`,
+        components: [new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId(`discord:duo:join:${interaction.user.id}:${dungeonNumber}`).setLabel('Terima & Mulai').setStyle(ButtonStyle.Success),
+          new ButtonBuilder().setCustomId(`discord:duo:decline:${interaction.user.id}`).setLabel('Tolak').setStyle(ButtonStyle.Danger),
+        )],
+      });
+      return interaction.editReply(`Undangan party + dungeon **${dungeon.name}** dikirim ke ${target.toString()}.`);
     }
     if(interaction.commandName==='profile' && input){ const existing=getOrCreateUser(actorKey); if(!existing){ createUser(actorKey,input); return interaction.editReply({embeds:[new EmbedBuilder().setColor(0x22c55e).setTitle('🎉 Karakter berhasil dibuat').setDescription('Selamat datang di RYU RPG!\n\nGunakan /alias input:NamaKamu untuk memberi nama karakter.\nSetelah itu lanjutkan dengan /guide atau /campaign.').addFields({name:'Langkah berikutnya',value:'1. Atur alias\n2. Buka guide\n3. Mulai campaign'})]}); } } const targetKey=target?ensureDiscordIdentity(target.id,interaction.guildId):null; if(targetKey && ['party','dungeon','duel','raid','bounty','trade','coopcampaign','worldboss'].includes(interaction.commandName)){ activePartners.set(actorKey,targetKey); activePartners.set(targetKey,actorKey); } if (interaction.commandName === 'shop') { const view=discordShopPage(actorKey, Number(input)||1); return interaction.editReply({embeds:[new EmbedBuilder().setColor(0x7c3aed).setDescription(view.text)],components:view.components}); } if (interaction.commandName === 'profile' && !input && getOrCreateUser(actorKey)) { return interaction.editReply({embeds:[new EmbedBuilder().setColor(0x7c3aed).setDescription(formatDiscordText(renderProfile(getOrCreateUser(actorKey))))],components:discordUi.navigationRows('profile',1)}); } const h=handlers.get(interaction.commandName);if(!h)return interaction.editReply({content:'Command belum tersedia.'}); if(nativeGuild){ const action=nativeGuild.action; let result; if(action==='create') result=social.createGuild(actorKey,nativeGuild.value,interaction.guild?.name||'Discord Guild'); else if(action==='join') result=social.joinGuild(actorKey,nativeGuild.value); else if(action==='contribute') result=social.contribute(actorKey,Number(nativeGuild.value)); else if(action==='upgrade') result=social.upgradeGuild(actorKey); else if(action==='leave') result=social.leaveGuild(actorKey); else if(action==='quest') result=social.getGuildQuest(actorKey); else result={success:true,guild:social.getGuild(actorKey)}; if(!result.success)return interaction.editReply('❌ '+result.reason); const g=result.guild||social.getGuild(actorKey); if(action==='quest'&&result.quest)return interaction.editReply('📜 Guild quest: '+result.quest.current+'/'+result.quest.target+' gold · status '+result.quest.status); return interaction.editReply(g?'🏛️ ['+g.tag+'] '+g.name+'\nLevel '+g.level+' · Treasury '+g.treasury+'g\nAnggota '+g.members.length:'✅ Aksi guild selesai.'); } if(nativeMarket){ const userId=actorKey; if(nativeMarket.action==='browse'){ const rows=marketplace.browse({limit:20}); return interaction.editReply(rows.length?('🏪 Marketplace\\n'+rows.map((x,i)=>(i+1)+'. '+x.display_name+' x'+x.quantity+' — '+x.unit_price+'g/item').join('\\n')):'🏪 Marketplace kosong.'); } const rows=marketplace.browse({limit:20}); if(nativeMarket.action==='buy'||nativeMarket.action==='cancel'){ if(!nativeMarket.item)return interaction.editReply('❌ Isi nomor listing pada opsi item.'); const listing=rows[nativeMarket.item-1]; if(!listing)return interaction.editReply('❌ Nomor listing tidak valid.'); const result=nativeMarket.action==='buy'?marketplace.buy(userId,listing.id):marketplace.cancel(userId,listing.id); return interaction.editReply(result.success?(nativeMarket.action==='buy'?'✅ Pembelian berhasil.':'✅ Listing dibatalkan.'):'❌ '+result.reason); } if(nativeMarket.action==='sell'){ if(!nativeMarket.item||!nativeMarket.quantity||!nativeMarket.price)return interaction.editReply('❌ Isi item, quantity, dan price.'); const inv=getInventory(userId); const item=inv[nativeMarket.item-1]; if(!item)return interaction.editReply('❌ Nomor item inventory tidak valid.'); const result=marketplace.createListing(userId,item.item_id,nativeMarket.quantity,nativeMarket.price); return interaction.editReply(result.success?'✅ Listing dibuat.':'❌ '+result.reason); } } if(nativeTrade){ const userId=actorKey; if(nativeTrade.action==='status'){ const pendingTrade=directTrade.getPending(userId); return interaction.editReply(pendingTrade ? '🤝 Trade #'+pendingTrade.id+' pending.' : 'Tidak ada trade pending.'); } if(nativeTrade.action==='accept'){ const result=directTrade.accept(userId,nativeTrade.tradeId); return interaction.editReply(result.success?'✅ Trade selesai.':'❌ '+result.reason); } if(nativeTrade.action==='cancel'){ const result=directTrade.cancel(userId,nativeTrade.tradeId); return interaction.editReply(result.success?'✅ Trade dibatalkan.':'❌ '+result.reason); } if(nativeTrade.action==='offer'){ if(!targetKey)return interaction.editReply('❌ Pilih user target dengan opsi user.'); if(!nativeTrade.type||!nativeTrade.amount)return interaction.editReply('❌ Isi type dan amount.'); const inv=nativeTrade.type==='item'?getInventory(actorKey):[]; const item=nativeTrade.type==='item'?inv[nativeTrade.amount-1]:null; const offer=nativeTrade.type==='gold'?{type:'gold',amount:nativeTrade.amount}:{type:'item',itemId:item?.item_id,quantity:1}; if(!offer.itemId&&nativeTrade.type==='item')return interaction.editReply('❌ Nomor item tidak valid.'); const result=directTrade.createOffer(userId,targetKey,offer); return interaction.editReply(result.success?'✅ Penawaran trade #'+result.tradeId+' dikirim.':'❌ '+result.reason); } } if(targetKey && interaction.commandName==='party' && input==='invite'){ if(!getOrCreateUser(targetKey))return interaction.editReply('❌ Target belum memiliki karakter RPG.'); const party=social.getParty(actorKey)||social.createParty(actorKey); if(!social.getParty(actorKey))return interaction.editReply('❌ '+party.reason); const invited=social.invite(actorKey,targetKey); if(!invited.success)return interaction.editReply('❌ '+invited.reason); await target.send({content:'🤝 Kamu mendapat undangan party dari <@'+interaction.user.id+'>.',components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('discord_party_accept:'+target.id).setLabel('Terima Party').setStyle(ButtonStyle.Success),new ButtonBuilder().setCustomId('discord_party_decline:'+target.id).setLabel('Tolak').setStyle(ButtonStyle.Danger))]}); return interaction.editReply('✅ Undangan party dikirim ke '+target.toString()+'.'); } if(targetKey && interaction.commandName==='dungeon' && input==='duo'){ const party=social.getParty(actorKey)||social.createParty(actorKey); if(!social.getParty(actorKey))return interaction.editReply('❌ '+party.reason); const invited=dungeonService.inviteDuo(actorKey,'goblin_ruins'); if(!invited.success)return interaction.editReply('❌ '+invited.reason); await target.send({content:'🏰 Undangan dungeon duo dari <@'+interaction.user.id+'> untuk **'+invited.invite.dungeonName+'**.',components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('ldinvite:'+invited.invite.id+':accept').setLabel('Terima & Mulai').setStyle(ButtonStyle.Success),new ButtonBuilder().setCustomId('ldinvite:'+invited.invite.id+':decline').setLabel('Tolak').setStyle(ButtonStyle.Danger))]}); return interaction.editReply('✅ Undangan dungeon duo dikirim ke '+target.toString()+'.'); } const ctx=ctxFor(interaction,'/'+interaction.commandName+(input?' '+input:'')); await h(ctx,()=>{}); await ctx.flush(); if(!interaction.replied&&!interaction.deferred)await interaction.reply({content:'Selesai.'});}catch(e){console.error('[Discord] interaction failed:',e.message);if(!interaction.replied&&!interaction.deferred)await interaction.reply({content:'Terjadi kesalahan internal.'}).catch(()=>{});else await interaction.followUp({content:'Terjadi kesalahan internal.'}).catch(()=>{});}});
 client.on('error',e=>console.error('[Discord] client error:',e.message));

@@ -38,6 +38,8 @@ test('Discord UI exposes native transaction routes without double-click guard', 
   assert.match(source, /item\.equipped_slot \? 'unequip' : 'equip'/);
   assert.match(source, /discord:ore:select/);
   assert.match(source, /discord:ore:quantity/);
+  assert.match(source, /discord:duo:join/);
+  assert.match(source, /discord:duo:decline/);
   assert.match(source, /Lebur Ore/);
   assert.match(source, /gearforge/);
   assert.doesNotMatch(source, /consumeInteraction|consumedInteractions/);
