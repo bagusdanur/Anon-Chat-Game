@@ -73,7 +73,7 @@ async function sendDiscordUser(user,message,options={}) {
   const keyboard = options && options.reply_markup && options.reply_markup.inline_keyboard;
   if (!Array.isArray(keyboard)) return [];
   return keyboard.slice(0,5).map(row => new ActionRowBuilder().addComponents(row.slice(0,5).map(b => new ButtonBuilder()
-    .setCustomId(String(b.callback_data || 'noop')).setLabel(String(b.text || 'Pilih').slice(0,80)).setStyle(ButtonStyle.Primary))));
+    .setCustomId(String(b.callback_data || 'noop').slice(0,100)).setLabel(String(b.text || 'Pilih').slice(0,80)).setStyle((/tolak|cancel|batal|leave|keluar|hapus|reject/i.test(String(b.text))?ButtonStyle.Danger:(/terima|accept|mulai|lanjut|pilih|beli|buy|gunakan|equip|upgrade/i.test(String(b.text))?ButtonStyle.Success:(/kembali|prev|next|halaman|guide|info/i.test(String(b.text))?ButtonStyle.Secondary:ButtonStyle.Primary)))))));
 }
 function ctxFor(interaction, text='') {
   const key = ensureDiscordIdentity(interaction.user.id, interaction.guildId);
