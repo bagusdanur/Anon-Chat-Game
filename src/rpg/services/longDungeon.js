@@ -15,7 +15,12 @@ require('../../../data/patch_loader');
 const DUNGEONS_FILE = path.join(__dirname, '../../../data/rpg_dungeons.json');
 const SESSION_TTL_SECONDS = 24 * 60 * 60;
 const INVITE_TTL_SECONDS = 10 * 60;
-const LEVEL_CAP = 60;
+const LEVEL_CAP = 60;function calculateLevelUpHp(currentHp, currentMaxHp, newMaxHp, levelCount) {
+  if (!levelCount || newMaxHp <= 0) return Math.min(currentHp, newMaxHp);
+  const preserved = Math.round((Math.max(0, currentHp) / Math.max(1, currentMaxHp)) * newMaxHp);
+  const recovery = Math.floor(newMaxHp * 0.15 * levelCount);
+  return Math.min(newMaxHp, preserved + recovery);
+}
 const POTION_USES_PER_COMBAT = 1;
 const POTION_COOLDOWN_CYCLES = 1;
 
@@ -328,11 +333,11 @@ function createLongDungeonService(db, options = {}) {
       if (stats) {
         db.prepare(`
           UPDATE rpg_users
-          SET level = ?, xp = ?, hp = MIN(hp, ?), max_hp = ?, atk = ?, def = ?, magic_atk = ?,
+          SET level = ?, xp = ?, hp = ?, max_hp = ?, atk = ?, def = ?, magic_atk = ?,
               crit_rate = ?, crit_multi = ?, updated_at = ?
           WHERE telegram_user_id = ?
         `).run(
-            level, xp, stats.max_hp, stats.max_hp, stats.atk, stats.def, stats.magic_atk,
+            level, xp, calculateLevelUpHp(user.hp, user.max_hp, stats.max_hp, level - user.level), stats.max_hp, stats.atk, stats.def, stats.magic_atk,
             stats.crit_rate, stats.crit_multi, timestamp, recipientId,
         );
       } else {

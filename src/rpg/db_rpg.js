@@ -394,6 +394,12 @@ function setDungeonCooldown(userId) {
 }
 
 // Tambah XP + auto level-up, kembalikan info level-up
+function calculateLevelUpHp(currentHp, currentMaxHp, newMaxHp, levelCount) {
+  if (!levelCount || newMaxHp <= 0) return Math.min(currentHp, newMaxHp);
+  const preserved = Math.round((Math.max(0, currentHp) / Math.max(1, currentMaxHp)) * newMaxHp);
+  const recovery = Math.floor(newMaxHp * 0.15 * levelCount);
+  return Math.min(newMaxHp, preserved + recovery);
+}
 function addXp(userId, amount) {
   const id = userId.toString();
   let user = db.prepare('SELECT * FROM rpg_users WHERE telegram_user_id = ?').get(id);
@@ -412,9 +418,9 @@ function addXp(userId, amount) {
 
   const stats = calcStats(user.class_name, level);
   const now = Math.floor(Date.now() / 1000);
-  db.prepare(`UPDATE rpg_users SET level = ?, xp = ?, hp = MIN(hp, ?), max_hp = ?, atk = ?, def = ?,
+  db.prepare(`UPDATE rpg_users SET level = ?, xp = ?, hp = ?, max_hp = ?, atk = ?, def = ?,
     magic_atk = ?, crit_rate = ?, crit_multi = ?, updated_at = ? WHERE telegram_user_id = ?`)
-    .run(level, xp, stats.max_hp, stats.max_hp, stats.atk, stats.def,
+    .run(level, xp, calculateLevelUpHp(user.hp, user.max_hp, stats.max_hp, leveled.length), stats.max_hp, stats.atk, stats.def,
          stats.magic_atk, stats.crit_rate, stats.crit_multi, now, id);
 
   return { leveled, newLevel: level };
@@ -828,7 +834,7 @@ module.exports = {
   getCurrentEnergy, spendEnergy, getCurrentHp,
   getDungeonCooldown, setDungeonCooldown, updateHp,
   getEquipmentBonus,
-  addXp, addGold, spendGold,
+  addXp, calculateLevelUpHp, addGold, spendGold,
   addItem, removeItem, getInventory, getItem, upgradeItem,
   logTransaction,
   createDungeonRun, finalizeDungeonRun,
