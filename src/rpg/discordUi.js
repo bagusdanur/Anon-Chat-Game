@@ -33,17 +33,4 @@ function numberedActionRows(prefix, items, actionLabel = 'Pilih', max = 20) {
   return rows;
 }
 
-function dedupeRows(rows) {
-  const seen = new Set();
-  const result = [];
-  for (const row of rows || []) {
-    const components = (row.components || []).filter(component => {
-      const id = component.data?.custom_id;
-      if (!id || seen.has(id)) return false;
-      seen.add(id);
-      return true;
-    });
-    if (components.length) result.push(new ActionRowBuilder().addComponents(components));
-  }
-  return result.slice(0, 5);
-}module.exports = { NAVIGATION, navigationRows, panelOptions, numberedActionRows, dedupeRows };
+module.exports = { NAVIGATION, navigationRows, panelOptions, numberedActionRows };

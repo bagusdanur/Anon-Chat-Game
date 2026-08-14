@@ -7,7 +7,7 @@ Dokumen ini dibuat khusus untuk mempermudah AI Agent baru (**Codex**, **Claude**
 ## 📌 Status Terkini Proyek (Live State)
 - **Status Bot**: Aktif & Deployed di Server VPS (`103.103.22.251`).
 - **PM2 Processes**:
-  - `anon-chat-bot` (ID 12) — Bot Telegram Anonymous Chat & RPG Engine.
+  - `anon-chat-bot` (ID 12) — Bot Telegram Discord RPG & RPG Engine.
   - `anon-dashboard` (ID 16) — Web Admin Dashboard Express.js.
 - **Progress Cerita (Saga Status)**:
   - **Saga I (Patch 1.0, 1.1, 1.2)**: 100% Selesai & Aktif.
@@ -31,8 +31,8 @@ Dokumen ini dibuat khusus untuk mempermudah AI Agent baru (**Codex**, **Claude**
    - Rute wildcard **WAJIB** ditulis: `app.get('/{*path}', ...)` di `dashboard.js`.
    - **DILARANG** memakai `app.get('*')`.
 
-3. **Anonymous Chat Relay**:
-   - Selalu gunakan `ctx.telegram.copyMessage(...)` untuk merelay pesan anonim.
+3. **Discord RPG Relay**:
+   - Selalu gunakan `ctx.telegram.copyMessage(...)` untuk merelay pesan alias karakter.
    - **DILARANG** memakai `forwardMessage` untuk menjaga privasi pengguna.
 
 4. **Stack & Syntax**:
