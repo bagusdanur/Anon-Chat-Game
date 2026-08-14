@@ -195,86 +195,6 @@ function inventoryPage(userId, page = 1) {
   components.push(...discordUi.navigationRows("inv"));
   return { text, components };
 }
-function legacyDiscordShopPage(userId, page = 1) {
-  const user = getOrCreateUser(userId);
-  const sections = [...new Set(SHOP_ITEMS.map((item) => item.section))];
-  const safePage = Math.min(sections.length, Math.max(1, page));
-  const section = sections[safePage - 1];
-  const items = SHOP_ITEMS.filter((item) => item.section === section);
-  const lines = items
-    .map((item) => {
-      const catalog = getCatalogItem(item.item_id);
-      const locked =
-        (user?.level || 1) < (item.min_level || 1)
-          ? ` · Lv.${item.min_level}`
-          : "";
-      return `[${item.id}] ${catalog?.display_name || item.item_id} — ${item.buy_price}g${locked}`;
-    })
-    .join("\n");
-  const selector = new StringSelectMenuBuilder()
-    .setCustomId("discord:shop:select")
-    .setPlaceholder("Pilih item untuk dibeli")
-    .addOptions(
-      items.slice(0, 25).map((item) => {
-        const catalog = getCatalogItem(item.item_id);
-        return {
-          label: `${item.id}. ${catalog?.display_name || item.item_id}`.slice(
-            0,
-            100,
-          ),
-          description:
-            `${item.buy_price} gold${(user?.level || 1) < (item.min_level || 1) ? ` • Butuh Lv.${item.min_level}` : ""}`.slice(
-              0,
-              100,
-            ),
-          value: String(item.id),
-        };
-      }),
-    );
-  const components = [
-    new ActionRowBuilder().addComponents(selector),
-    ...discordPageButtons("discord:shop", safePage, sections.length),
-    ...discordUi.navigationRows("shop"),
-  ];
-  return {
-    text: `🏪 **TOKO** — ${section}\n💰 Saldo: **${user?.gold || 0}g**\n\n${lines}\n\nHalaman ${safePage}/${sections.length}`,
-    components,
-  };
-}
-function compactDiscordShopPage(userId, page = 1) {
-  const user = getOrCreateUser(userId);
-  const pageSize = 5;
-  const totalPages = Math.max(1, Math.ceil(SHOP_ITEMS.length / pageSize));
-  const safePage = Math.min(totalPages, Math.max(1, page));
-  const items = SHOP_ITEMS.slice(
-    (safePage - 1) * pageSize,
-    safePage * pageSize,
-  );
-  const lines = items
-    .map((item) => {
-      const catalog = getCatalogItem(item.item_id);
-      const locked =
-        (user?.level || 1) < (item.min_level || 1)
-          ? ` · Butuh Lv.${item.min_level}`
-          : "";
-      return `**${item.id}.** ${catalog?.display_name || item.item_id} — **${item.buy_price}g**${locked}`;
-    })
-    .join("\n");
-  const itemButtons = items.map((item) =>
-    new ButtonBuilder()
-      .setCustomId(`discord:shop:item:${item.id}`)
-      .setLabel(`Beli ${item.id}`)
-      .setStyle(ButtonStyle.Success),
-  );
-  return {
-    text: `🏪 **TOKO**\n💰 Saldo: **${user?.gold || 0}g**\n\n${lines}\n\nHalaman ${safePage}/${totalPages}`,
-    components: [
-      new ActionRowBuilder().addComponents(itemButtons),
-      ...discordPageButtons("discord:shop", safePage, totalPages),
-      ...discordUi.navigationRows("shop"),
-    ],
-  };
-}
 function discordShopPage(userId, page = 1) {
   const user = getOrCreateUser(userId);
   const sections = [...new Set(SHOP_ITEMS.map((item) => item.section))];
@@ -326,6 +246,50 @@ function discordShopPage(userId, page = 1) {
       ...discordUi.navigationRows("shop"),
     ],
   };
+}
+function discordAutocompleteChoices(command, userId) {
+  const inventory = orderInventory(getInventory(userId));
+  const inventoryChoices = (filter = () => true) => inventory
+    .map((item, index) => ({ item, number: index + 1 }))
+    .filter(({ item }) => filter(item))
+    .map(({ item, number }) => ({
+      name: `${number}. ${item.display_name} x${item.quantity}`.slice(0, 100),
+      value: String(number),
+    }));
+  if (["inv", "sell"].includes(command)) return inventoryChoices();
+  if (command === "use") return inventoryChoices(item => item.category === "consumable");
+  if (command === "salvage") {
+    return inventoryChoices(item => ["weapon", "staff", "armor", "accessory"].includes(item.category));
+  }
+  if (command === "refine") {
+    return inventoryChoices(item => ["tembaga", "besi", "perak"].includes(item.item_id) && item.quantity >= 5);
+  }
+  if (command === "ore") {
+    return inventoryChoices(item => Boolean(ORE_CONVERSION_RATES[item.item_id]))
+      .map(choice => ({ ...choice, value: `convert ${choice.value} 1` }));
+  }
+  const gear = equipmentService.list(userId);
+  if (["equip", "unequip", "upgrade"].includes(command)) {
+    return gear
+      .map((item, index) => ({ item, number: index + 1 }))
+      .filter(({ item }) => command !== "unequip" || item.equipped_slot)
+      .map(({ item, number }) => ({
+        name: `${number}. ${item.display_name} +${item.upgrade_tier} · ${item.item_power} IP${item.equipped_slot ? " · Terpasang" : ""}`.slice(0, 100),
+        value: String(number),
+      }));
+  }
+  if (command === "gear") {
+    return gear.flatMap((item, index) => {
+      const number = index + 1;
+      const primaryAction = item.equipped_slot ? "unequip" : "equip";
+      return [
+        { name: `${primaryAction === "equip" ? "Pasang" : "Lepas"} ${number}. ${item.display_name}`.slice(0, 100), value: `${primaryAction} ${number}` },
+        { name: `Bandingkan ${number}. ${item.display_name}`.slice(0, 100), value: `compare ${number}` },
+        { name: `Upgrade ${number}. ${item.display_name}`.slice(0, 100), value: `upgrade ${number}` },
+      ];
+    });
+  }
+  return [];
 }
 const COMMANDS = [
   ["rpg", "Menu utama RPG"],
@@ -1339,19 +1303,13 @@ async function handleDiscordInteraction(interaction) {
         interaction.user.id,
         interaction.guildId,
       );
-      let v = [];
+      let v;
       if (["shop", "buy"].includes(interaction.commandName))
         v = SHOP_ITEMS.map((x) => ({
           name: String(x.id) + ". " + String(x.item_id),
           value: String(x.item_id),
         }));
-      else if (
-        ["inv", "use", "equip", "sell"].includes(interaction.commandName)
-      )
-        v = getInventory(key).map((x, i) => ({
-          name: String(i + 1) + ". " + x.display_name + " x" + x.quantity,
-          value: String(i + 1),
-        }));
+      else v = discordAutocompleteChoices(interaction.commandName, key);
       return interaction.respond(
         v
           .filter(
@@ -1383,8 +1341,8 @@ async function handleDiscordInteraction(interaction) {
         interaction.customId.startsWith("discord_party_decline:"))
     ) {
       await interaction.deferUpdate();
-      const inviteOwner = interaction.customId.split(":")[1];
-      if (inviteOwner && inviteOwner !== String(interaction.user.id))
+      const [, intendedUser, inviterDiscordId] = interaction.customId.split(":");
+      if (intendedUser && intendedUser !== String(interaction.user.id))
         return interaction.editReply({
           content: "❌ Undangan ini bukan untuk akunmu.",
           components: [],
@@ -1402,9 +1360,14 @@ async function handleDiscordInteraction(interaction) {
           components: [],
         });
       }
-      const result = social.leaveParty(key);
+      const inviterKey = inviterDiscordId
+        ? ensureDiscordIdentity(inviterDiscordId, interaction.guildId)
+        : null;
+      const result = social.rejectInvite(key, inviterKey);
       return interaction.editReply({
-        content: "❌ Undangan party ditolak.",
+        content: result.success
+          ? "❌ Undangan party ditolak."
+          : `❌ ${result.reason}`,
         components: [],
       });
     }
@@ -1837,11 +1800,11 @@ async function handleDiscordInteraction(interaction) {
         components: [
           new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-              .setCustomId("discord_party_accept:" + target.id)
+              .setCustomId(`discord_party_accept:${target.id}:${interaction.user.id}`)
               .setLabel("Terima Party")
               .setStyle(ButtonStyle.Success),
             new ButtonBuilder()
-              .setCustomId("discord_party_decline:" + target.id)
+              .setCustomId(`discord_party_decline:${target.id}:${interaction.user.id}`)
               .setLabel("Tolak")
               .setStyle(ButtonStyle.Danger),
           ),

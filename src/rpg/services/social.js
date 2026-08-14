@@ -122,6 +122,20 @@ function createSocialService(db, options = {}) {
       `).run(party.id, String(userId), String(inviteeId), timestamp + PARTY_INVITE_TTL_SECONDS, timestamp).lastInsertRowid;
       return { success: true, inviteId: id };
     },
+    rejectInvite(userId, inviterId = null) {
+      const parameters = [String(userId), now()];
+      const inviterFilter = inviterId ? ' AND inviter_id = ?' : '';
+      if (inviterId) parameters.push(String(inviterId));
+      const invite = db.prepare(`
+        SELECT id FROM rpg_party_invites
+        WHERE invitee_id = ? AND status = 'pending' AND expires_at > ?${inviterFilter}
+        ORDER BY id DESC LIMIT 1
+      `).get(...parameters);
+      if (!invite) return { success: false, reason: 'Undangan tidak ditemukan atau kedaluwarsa.' };
+      db.prepare("UPDATE rpg_party_invites SET status = 'rejected' WHERE id = ? AND status = 'pending'")
+        .run(invite.id);
+      return { success: true, inviteId: invite.id };
+    },
     acceptInvite(userId) {
       if (getParty(userId)) return { success: false, reason: 'Kamu sudah memiliki party.' };
       const invite = db.prepare(`

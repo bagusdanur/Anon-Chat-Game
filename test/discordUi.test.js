@@ -61,4 +61,7 @@ test('Discord interactions use one router and dungeon DMs use updatable panels',
   assert.match(source, /activeDungeonPanels/);
   assert.match(source, /upsertDungeonPanel/);
   assert.match(source, /command\s*=\s*null/);
+  assert.match(source, /discordAutocompleteChoices/);
+  assert.match(source, /social\.rejectInvite/);
+  assert.doesNotMatch(source, /legacyDiscordShopPage|compactDiscordShopPage/);
 });

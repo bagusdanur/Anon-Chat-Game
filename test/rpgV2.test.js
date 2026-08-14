@@ -710,6 +710,20 @@ test('persistent party invite, membership, and owner transfer are atomic', () =>
   db.close();
 });
 
+test('rejecting a party invite clears the pending invitation', () => {
+  const db = createTestDb();
+  const social = createSocialService(db, { now: () => 2_000_000_000 });
+  social.createParty('1');
+  social.invite('1', '2');
+  assert.equal(social.rejectInvite('2', '1').success, true);
+  assert.equal(social.acceptInvite('2').success, false);
+  assert.equal(
+    db.prepare("SELECT status FROM rpg_party_invites WHERE inviter_id='1' AND invitee_id='2'").get().status,
+    'rejected',
+  );
+  db.close();
+});
+
 test('disconnecting an anonymous pair removes both from their RPG party', () => {
   const db = createTestDb();
   const social = createSocialService(db, { now: () => 2_000_000_000 });
