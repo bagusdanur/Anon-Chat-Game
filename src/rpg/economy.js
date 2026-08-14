@@ -121,6 +121,51 @@ function upgradeOreBreakdown(items, allowedOreIds) {
   };
 }
 
+function buildInventoryText(userId) {
+  const user = getOrCreateUser(userId);
+  if (!user) return '⚠️ Buat karakter dulu dengan /profile!';
+  const items = orderInventory(getInventory(userId));
+  if (!items.length) return '🎒 <b>Inventaris kosong.</b>\n<i>Coba /hunt, /fish, atau /mine untuk mendapatkan item!</i>';
+  const orderedIds = [];
+  const categories = Object.fromEntries(INVENTORY_CATEGORY_ORDER);
+  const grouped = {};
+  for (const item of items) {
+    if (!grouped[item.category]) grouped[item.category] = [];
+    grouped[item.category].push(item);
+  }
+  let slotNum = 1;
+  let msg = `🎒 <b>Inventaris</b> — 💰 ${user.gold}g\n\n`;
+  const upgradeOreIds = Object.keys(ORE_CONVERSION_RATES);
+  const oreBreakdown = upgradeOreBreakdown(items, upgradeOreIds);
+  const upgradeOre = items.find(item => item.item_id === UPGRADE_ORE_ITEM_ID);
+  for (const [category, label] of Object.entries(categories)) {
+    if (!grouped[category]) continue;
+    msg += `<b>${label}</b>\n`;
+    for (const item of grouped[category]) {
+      const tier = item.upgrade_tier > 0 ? ` (+${item.upgrade_tier})` : '';
+      const conversionRate = ORE_CONVERSION_RATES[item.item_id];
+      const upgradeTag = conversionRate ? ` · 🔥 ${conversionRate} Ore/buah` : '';
+      msg += `<code>[${slotNum}]</code> ${RARITY_EMOJI[item.rarity]} ${item.display_name}${tier} x${item.quantity}${upgradeTag}\n`;
+      orderedIds.push(item.item_id);
+      slotNum++;
+    }
+    msg += '\n';
+  }
+  invCache.set(userId.toString(), orderedIds);
+  msg += `<b>⛏️ Ore Upgrade: ${upgradeOre?.quantity || 0}</b> · dipakai oleh /upgrade\n`;
+  if (oreBreakdown.total > 0) {
+    const numbered = oreBreakdown.entries.map(item => {
+      const number = orderedIds.indexOf(item.itemId) + 1;
+      return `[${number}] ${item.name} x${item.quantity} → ${ORE_CONVERSION_RATES[item.itemId]} Ore/buah`;
+    });
+    msg += `<i>Bahan yang bisa dilebur:\n${numbered.join('\n')}\nGunakan /ore convert [nomor] [jumlah].</i>\n\n`;
+  } else {
+    msg += '<i>Gunakan /ore untuk panduan peleburan material.</i>\n\n';
+  }
+  msg += '<i>Gunakan nomor: /use 1 • /sell 2\nEquipment: /gear • /gear forge [nomor /inv]</i>';
+  return msg;
+}
+
 function setupEconomy(bot, { getPartnerId, rateLimitCommand }) {
   const directTrade = createDirectTradeService(db);
   // ===== /inv =====
@@ -983,6 +1028,7 @@ const SHOP_ITEMS = getShopConfig();
 module.exports = {
   setupEconomy,
   SHOP_ITEMS,
+  buildInventoryText,
   resolveInvInput,
   orderInventory,
   INVENTORY_CATEGORY_ORDER,

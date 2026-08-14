@@ -8,7 +8,7 @@ const { createLongDungeonService } = require('./src/rpg/services/longDungeon');
 const { xpToNextLevel, calcStats, getInventory, getOrCreateUser, createUser, getCatalogItem } = require('./src/rpg/db_rpg');
 const { createDirectTradeService } = require('./src/rpg/services/directTrade');
 const { createMarketplaceService } = require('./src/rpg/services/marketplace');
-const { SHOP_ITEMS, limitedShopPurchased } = require('./src/rpg/economy');
+const { SHOP_ITEMS, limitedShopPurchased, buildInventoryText } = require('./src/rpg/economy');
 const { renderProfile, RARITY_EMOJI } = require('./src/rpg/profile');
 const discordUi = require('./src/rpg/discordUi');
 const { orderInventory } = require('./src/rpg/inputResolvers');
@@ -17,7 +17,7 @@ const marketplace = createMarketplaceService(db);
 const social = createSocialService(db);
 const dungeonService = createLongDungeonService(db, { xpToNextLevel, calcStats });
 const activePartners = new Map();
-const DISCORD_PAGE_SIZE = 8;
+const DISCORD_PAGE_SIZE = 25;
 const PRIVATE_COMMANDS = new Set(['profile','alias','inv','gear','skill','shop','buy','sell','use','craft','market','trade','equip','unequip','upgrade','refine','salvage','daily']);
 const RPG_CHANNELS = {
   'rpg-start': ['rpg','profile','alias'],
@@ -44,12 +44,12 @@ function inventoryPage(userId, page = 1) {
   const totalPages = Math.max(1, Math.ceil(items.length / DISCORD_PAGE_SIZE));
   const safePage = Math.min(totalPages, Math.max(1, page));
   const rows = items.slice((safePage - 1) * DISCORD_PAGE_SIZE, safePage * DISCORD_PAGE_SIZE);
-  const text = rows.length ? rows.map((item, index) => `${(safePage - 1) * DISCORD_PAGE_SIZE + index + 1}. ${item.display_name} x${item.quantity}${item.upgrade_tier ? ` (+${item.upgrade_tier})` : ''}`).join('\n') : 'Inventory kosong.';
+  const text = formatDiscordText(buildInventoryText(userId));
   const components = [];
   if (rows.length) {
     const selector = new StringSelectMenuBuilder()
       .setCustomId('discord:inv:select')
-      .setPlaceholder('Pilih item untuk aksi')
+      .setPlaceholder(`Pilih item untuk aksi · ${safePage}/${totalPages}`)
       .addOptions(rows.map((item, index) => ({
         label: `${(safePage - 1) * DISCORD_PAGE_SIZE + index + 1}. ${item.display_name}`.slice(0, 100),
         description: `${item.category} · ${item.rarity} · x${item.quantity}`.slice(0, 100),
@@ -59,7 +59,7 @@ function inventoryPage(userId, page = 1) {
     components.push(...discordPageButtons('discord:inv', safePage, totalPages));
   }
   components.push(...discordUi.navigationRows('inv'));
-  return { text: `Inventory\n\n${text}\n\nPage ${safePage}/${totalPages}`, components };
+  return { text, components };
 }
 function legacyDiscordShopPage(userId, page = 1) {
   const user = getOrCreateUser(userId);
