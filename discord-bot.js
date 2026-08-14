@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags, StringSelectMenuBuilder } = require('discord.js');
 const { setupRpg } = require('./src/rpg/controller');
 const { ensureDiscordIdentity } = require('./src/rpg/discordIdentity');
 const { db } = require('./src/db');
@@ -8,8 +8,8 @@ const { createLongDungeonService } = require('./src/rpg/services/longDungeon');
 const { xpToNextLevel, calcStats, getInventory, getOrCreateUser, createUser, getCatalogItem } = require('./src/rpg/db_rpg');
 const { createDirectTradeService } = require('./src/rpg/services/directTrade');
 const { createMarketplaceService } = require('./src/rpg/services/marketplace');
-const { SHOP_ITEMS } = require('./src/rpg/economy');
-const { renderProfile } = require('./src/rpg/profile');
+const { SHOP_ITEMS, limitedShopPurchased } = require('./src/rpg/economy');
+const { renderProfile, RARITY_EMOJI } = require('./src/rpg/profile');
 const discordUi = require('./src/rpg/discordUi');
 const { orderInventory } = require('./src/rpg/inputResolvers');
 const directTrade = createDirectTradeService(db);
@@ -78,7 +78,7 @@ function legacyDiscordShopPage(userId, page = 1) {
   ];
   return { text: `🏪 **TOKO** — ${section}\n💰 Saldo: **${user?.gold || 0}g**\n\n${lines}\n\nHalaman ${safePage}/${sections.length}`, components };
 }
-function discordShopPage(userId, page = 1) {
+function compactDiscordShopPage(userId, page = 1) {
   const user = getOrCreateUser(userId);
   const pageSize = 5;
   const totalPages = Math.max(1, Math.ceil(SHOP_ITEMS.length / pageSize));
@@ -98,6 +98,43 @@ function discordShopPage(userId, page = 1) {
     components: [
       new ActionRowBuilder().addComponents(itemButtons),
       ...discordPageButtons('discord:shop', safePage, totalPages),
+      ...discordUi.navigationRows('shop'),
+    ],
+  };
+}
+function discordShopPage(userId, page = 1) {
+  const user = getOrCreateUser(userId);
+  const sections = [...new Set(SHOP_ITEMS.map(item => item.section))];
+  const safePage = Math.min(sections.length, Math.max(1, page));
+  const section = sections[safePage - 1];
+  const items = SHOP_ITEMS.filter(item => item.section === section);
+  const lines = items.map(item => {
+    const catalog = getCatalogItem(item.item_id);
+    const rarity = RARITY_EMOJI[catalog?.rarity] || '';
+    let suffix = '';
+    if ((user?.level || 1) < (item.min_level || 1)) suffix = ` · 🔒 Lv.${item.min_level}`;
+    else if (item.weekly_limit) {
+      const remaining = Math.max(0, item.weekly_limit - limitedShopPurchased(userId, item.item_id));
+      suffix = ` · sisa ${remaining}/${item.weekly_limit} minggu ini`;
+    }
+    return `[${item.id}] ${rarity} **${catalog?.display_name || item.item_id}** — ${item.buy_price.toLocaleString()}g${suffix}`;
+  }).join('\n');
+  const selector = new StringSelectMenuBuilder()
+    .setCustomId('discord:shop:select')
+    .setPlaceholder('Pilih item untuk dibeli')
+    .addOptions(items.slice(0, 25).map(item => {
+      const catalog = getCatalogItem(item.item_id);
+      return {
+        label: `${item.id}. ${catalog?.display_name || item.item_id}`.slice(0, 100),
+        description: `${item.buy_price.toLocaleString()}g${(user?.level || 1) < (item.min_level || 1) ? ` • Butuh Lv.${item.min_level}` : ''}`.slice(0, 100),
+        value: String(item.id),
+      };
+    }));
+  return {
+    text: `🏪 **TOKO — ${section}**\n💰 Saldo: **${user?.gold || 0}g**\n*Beli: pilih item dari dropdown*\n\n${lines}\n\n*Halaman ${safePage}/${sections.length} · Nomor item tetap global.*`,
+    components: [
+      new ActionRowBuilder().addComponents(selector),
+      ...discordPageButtons('discord:shop', safePage, sections.length),
       ...discordUi.navigationRows('shop'),
     ],
   };
@@ -204,7 +241,28 @@ async function dispatchDiscordCommand(interaction, command, text, privateReply =
   const ctx = ctxFor(interaction, text);
   await handler(ctx, () => {});
   await ctx.flush();
-}client.once('clientReady',async()=>{try{const rest=new REST({version:'10'}).setToken(process.env.DISCORD_BOT_TOKEN);const route=process.env.DISCORD_GUILD_ID?Routes.applicationGuildCommands(client.user.id,process.env.DISCORD_GUILD_ID):Routes.applicationCommands(client.user.id);await rest.put(route,{body:commandJson()});console.log('[Discord] RPG penuh online sebagai '+client.user.tag);console.log('[Discord] '+handlers.size+' RPG handlers loaded');}catch(e){console.error('[Discord] registration failed:',e.message);}});
+}
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isStringSelectMenu() || interaction.customId !== 'discord:shop:select') return;
+  try {
+    const itemId = Number(interaction.values[0]);
+    const item = SHOP_ITEMS.find(entry => entry.id === itemId);
+    const catalog = item ? getCatalogItem(item.item_id) : null;
+    if (!item) return interaction.reply({ content: 'Item shop tidak valid.', flags: MessageFlags.Ephemeral });
+    return interaction.reply({
+      content: `Konfirmasi beli ${catalog?.display_name || item.item_id} seharga ${item.buy_price.toLocaleString()}g?`,
+      flags: MessageFlags.Ephemeral,
+      components: [new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`discord:shop:confirm:${item.id}`).setLabel('Beli').setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId('discord:shop:cancel').setLabel('Batal').setStyle(ButtonStyle.Danger),
+      )],
+    });
+  } catch (error) {
+    console.error('[Discord] shop select failed:', error.message);
+    if (!interaction.replied) await interaction.reply({ content: 'Gagal membuka item shop.', flags: MessageFlags.Ephemeral }).catch(() => {});
+  }
+});
+client.once('clientReady',async()=>{try{const rest=new REST({version:'10'}).setToken(process.env.DISCORD_BOT_TOKEN);const route=process.env.DISCORD_GUILD_ID?Routes.applicationGuildCommands(client.user.id,process.env.DISCORD_GUILD_ID):Routes.applicationCommands(client.user.id);await rest.put(route,{body:commandJson()});console.log('[Discord] RPG penuh online sebagai '+client.user.tag);console.log('[Discord] '+handlers.size+' RPG handlers loaded');}catch(e){console.error('[Discord] registration failed:',e.message);}});
 client.on('interactionCreate',async interaction=>{try{if (interaction.isButton() && interaction.customId === 'discord:navpage:1') return interaction.update({components:discordUi.navigationRows('profile',1)}); if (interaction.isButton() && interaction.customId === 'discord:navpage:2') return interaction.update({components:discordUi.navigationRows('profile',2)}); if (interaction.isButton() && interaction.customId.startsWith('discord:shop:item:')) { const itemId=Number(interaction.customId.split(':').pop()); const userKey=ensureDiscordIdentity(interaction.user.id,interaction.guildId); const item=SHOP_ITEMS.find(entry=>entry.id===itemId); const catalog=item?getCatalogItem(item.item_id):null; if(!item)return interaction.reply({content:'Item shop tidak valid.',flags:MessageFlags.Ephemeral}); return interaction.reply({content:'Konfirmasi beli '+(catalog?.display_name||item.item_id)+' seharga '+item.buy_price+'g?',flags:MessageFlags.Ephemeral,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('discord:shop:confirm:'+item.id).setLabel('Konfirmasi').setStyle(ButtonStyle.Success),new ButtonBuilder().setCustomId('discord:shop:cancel').setLabel('Batal').setStyle(ButtonStyle.Danger))]}); } if (interaction.isButton() && interaction.customId.startsWith('discord:shop:confirm:')) { const itemId=Number(interaction.customId.split(':').pop()); return dispatchDiscordCommand(interaction,'buy','/buy '+itemId,true); } if (interaction.isButton() && interaction.customId === 'discord:shop:cancel') return interaction.update({content:'Pembelian dibatalkan.',components:[]}); if (interaction.isButton() && interaction.customId.startsWith('discord:inv:item:')) { const number=Number(interaction.customId.split(':').pop()); return interaction.reply({content:'Pilih aksi untuk item '+number+'.',flags:MessageFlags.Ephemeral,components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('discord:inv:action:equip:'+number).setLabel('Equip').setStyle(ButtonStyle.Success),new ButtonBuilder().setCustomId('discord:inv:action:use:'+number).setLabel('Use').setStyle(ButtonStyle.Primary),new ButtonBuilder().setCustomId('discord:inv:action:sell:'+number).setLabel('Sell').setStyle(ButtonStyle.Danger),new ButtonBuilder().setCustomId('discord:inv:action:upgrade:'+number).setLabel('Upgrade').setStyle(ButtonStyle.Secondary))]}); } if (interaction.isButton() && interaction.customId.startsWith('discord:inv:action:')) { const parts=interaction.customId.split(':'); return dispatchDiscordCommand(interaction,parts[3],'/'+parts[3]+' '+parts[4],true); } if (interaction.isButton() && interaction.customId.startsWith('discord:nav:')) { const command=interaction.customId.slice('discord:nav:'.length); const handler=handlers.get(command); if(!handler)return interaction.reply({content:'Aksi navigasi belum tersedia.',flags:MessageFlags.Ephemeral}); interaction.__discordCommandName=command; await interaction.deferReply(PRIVATE_COMMANDS.has(command)?{flags:MessageFlags.Ephemeral}:{}); const ctx=ctxFor(interaction,'/'+command); await handler(ctx,()=>{}); await ctx.flush(); return; } if (interaction.isAutocomplete()) { const q=(interaction.options.getString('input')||'').toLowerCase(); const key=ensureDiscordIdentity(interaction.user.id,interaction.guildId); let v=[]; if(['shop','buy'].includes(interaction.commandName)) v=SHOP_ITEMS.map(x=>({name:String(x.id)+'. '+String(x.item_id),value:String(x.item_id)})); else if(['inv','use','equip','sell'].includes(interaction.commandName)) v=getInventory(key).map((x,i)=>({name:String(i+1)+'. '+x.display_name+' x'+x.quantity,value:String(i+1)})); return interaction.respond(v.filter(x=>x.name.toLowerCase().includes(q)||x.value.toLowerCase().includes(q)).slice(0,25)); } if(interaction.isButton() && interaction.customId.startsWith('discord:inv:page:')) { const view=inventoryPage(ensureDiscordIdentity(interaction.user.id,interaction.guildId),Number(interaction.customId.split(':').pop())); return interaction.update({embeds:[new EmbedBuilder().setColor(0x7c3aed).setDescription(view.text)],components:view.components}); } if(interaction.isButton() && (interaction.customId.startsWith('discord_party_accept:') || interaction.customId.startsWith('discord_party_decline:'))){ await interaction.deferUpdate(); const inviteOwner=interaction.customId.split(':')[1]; if(inviteOwner && inviteOwner!==String(interaction.user.id)) return interaction.editReply({content:'❌ Undangan ini bukan untuk akunmu.',components:[]}); const key=ensureDiscordIdentity(interaction.user.id,interaction.guildId); if(interaction.customId.startsWith('discord_party_accept:')){ const result=social.acceptInvite(key); return interaction.editReply({content:result.success?'✅ Kamu bergabung ke party #'+result.partyId:'❌ '+result.reason,components:[]}); } const result=social.leaveParty(key); return interaction.editReply({content:'❌ Undangan party ditolak.',components:[]}); } if(interaction.isButton()){let h=actions.get(interaction.customId); let match=null; if(!h){ for(const [pattern, candidate] of actions){ if(pattern instanceof RegExp){ const found=interaction.customId.match(pattern); if(found){h=candidate;match=found;break;} } } } if(!h)return interaction.reply({content:'Aksi sudah kedaluwarsa.'}); const ctx=ctxFor(interaction); if(match) { ctx.match=match; ctx.callbackQuery={data:interaction.customId}; } await h(ctx); await ctx.flush(); return;}if(!interaction.isChatInputCommand())return;const input=interaction.commandName==='profile'?(interaction.options.getString('class')||''):(interaction.options.getString('input')||''); const nativeTrade=interaction.commandName==='trade' ? {action:interaction.options.getString('action')||'status',type:interaction.options.getString('type'),amount:interaction.options.getInteger('amount'),tradeId:interaction.options.getInteger('trade_id')} : null; const nativeMarket=interaction.commandName==='market' ? {action:interaction.options.getString('action')||'browse',item:interaction.options.getInteger('item'),quantity:interaction.options.getInteger('quantity'),price:interaction.options.getInteger('price')} : null; const nativeGuild=interaction.commandName==='guild' ? {action:interaction.options.getString('action')||'info',value:interaction.options.getString('value')} : null; const target=interaction.options.getUser('user'); const actorKey=ensureDiscordIdentity(interaction.user.id,interaction.guildId);
     const expectedChannel = interaction.guildId && !PRIVATE_COMMANDS.has(interaction.commandName || interaction.__discordCommandName) ? COMMAND_CHANNEL[interaction.commandName] : null;
     const wrongChannel = Boolean(expectedChannel && interaction.channel?.name !== `・${expectedChannel}`);
