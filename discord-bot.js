@@ -37,10 +37,7 @@ async function resolveRpgChannel(guild, channelName) {
 }
 function channelMention(channel) { return channel ? `<#${channel.id}>` : `#・${channel}`; }
 function discordPageButtons(prefix, page, totalPages) {
-  return [new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`${prefix}:page:${Math.max(1, page - 1)}`).setLabel('Prev').setStyle(ButtonStyle.Secondary).setDisabled(page <= 1),
-    new ButtonBuilder().setCustomId(`${prefix}:page:${Math.min(totalPages, page + 1)}`).setLabel('Next').setStyle(ButtonStyle.Secondary).setDisabled(page >= totalPages),
-  )];
+  return [discordUi.paginationRow(prefix, page, totalPages)];
 }
 function inventoryPage(userId, page = 1) {
   const items = orderInventory(getInventory(userId));
@@ -158,8 +155,15 @@ client.on('interactionCreate',async interaction=>{try{if (interaction.isButton()
     const expectedChannel = interaction.guildId && !PRIVATE_COMMANDS.has(interaction.commandName || interaction.__discordCommandName) ? COMMAND_CHANNEL[interaction.commandName] : null;
     const wrongChannel = Boolean(expectedChannel && interaction.channel?.name !== `・${expectedChannel}`);
     const destination = wrongChannel ? await resolveRpgChannel(interaction.guild, expectedChannel) : null;
+    if (interaction.commandName === 'inv') {
+      const view = inventoryPage(actorKey, Number(input) || 1);
+      return interaction.reply({
+        embeds: [new EmbedBuilder().setColor(0x7c3aed).setDescription(view.text)],
+        components: view.components,
+        flags: MessageFlags.Ephemeral,
+      });
+    }
     await interaction.deferReply((PRIVATE_COMMANDS.has(interaction.commandName || interaction.__discordCommandName) || wrongChannel)?{flags:MessageFlags.Ephemeral}:{});
-    if (interaction.commandName === 'inv') { const view=inventoryPage(actorKey, Number(input)||1); return interaction.editReply({embeds:[new EmbedBuilder().setColor(0x7c3aed).setDescription(view.text)],components:view.components}); }
     if (wrongChannel) return interaction.editReply({content:`❌ Command ini digunakan di channel yang salah. Gunakan ${channelMention(destination || expectedChannel)}.`});
     if (CHARACTER_REQUIRED.has(interaction.commandName) && !getOrCreateUser(actorKey)) {
       return interaction.editReply({content:'❌ Buat karakter terlebih dahulu dengan `/profile`.'});

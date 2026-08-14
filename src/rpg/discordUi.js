@@ -19,6 +19,21 @@ function navigationRows(active = 'profile', page = 1) {
   return [new ActionRowBuilder().addComponents(buttons), controls];
 }
 
+function paginationRow(prefix, page, totalPages) {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`${prefix}:page:prev:${Math.max(1, page - 1)}`)
+      .setLabel('Prev')
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(page <= 1),
+    new ButtonBuilder()
+      .setCustomId(`${prefix}:page:next:${Math.min(totalPages, page + 1)}`)
+      .setLabel('Next')
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(page >= totalPages),
+  );
+}
+
 function panelOptions(active, page = 1, extraRows = []) {
   return { components: [...navigationRows(active, page), ...extraRows] };
 }
@@ -33,4 +48,4 @@ function numberedActionRows(prefix, items, actionLabel = 'Pilih', max = 20) {
   return rows;
 }
 
-module.exports = { NAVIGATION, navigationRows, panelOptions, numberedActionRows };
+module.exports = { NAVIGATION, navigationRows, paginationRow, panelOptions, numberedActionRows };

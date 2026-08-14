@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { NAVIGATION, navigationRows, numberedActionRows } = require('../src/rpg/discordUi');
+const { NAVIGATION, navigationRows, paginationRow, numberedActionRows } = require('../src/rpg/discordUi');
 
 test('Discord navigation preserves ten RPG destinations across two pages', () => {
   assert.equal(NAVIGATION.length, 10);
@@ -34,4 +34,12 @@ test('Discord UI exposes native transaction routes without double-click guard', 
   assert.match(source, /discord:shop:confirm/);
   assert.match(source, /discord:inv:action/);
   assert.doesNotMatch(source, /consumeInteraction|consumedInteractions/);
+});
+
+test('pagination controls always use unique Discord custom ids', () => {
+  for (const [page, totalPages] of [[1, 1], [1, 3], [2, 3], [3, 3]]) {
+    const ids = paginationRow('discord:inv', page, totalPages).components
+      .map(button => button.data.custom_id);
+    assert.equal(new Set(ids).size, ids.length);
+  }
 });
