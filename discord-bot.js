@@ -45,9 +45,11 @@ function inventoryPage(userId, page = 1) {
   const safePage = Math.min(totalPages, Math.max(1, page));
   const rows = items.slice((safePage - 1) * DISCORD_PAGE_SIZE, safePage * DISCORD_PAGE_SIZE);
   const text = rows.length ? rows.map((item, index) => `${(safePage - 1) * DISCORD_PAGE_SIZE + index + 1}. ${item.display_name} x${item.quantity}${item.upgrade_tier ? ` (+${item.upgrade_tier})` : ''}`).join('\n') : 'Inventory kosong.';
-  return { text: `Inventory\n\n${text}\n\nPage ${safePage}/${totalPages}`, components: rows.length ? discordPageButtons('discord:inv', safePage, totalPages) : [] };
+  const components = rows.length ? discordPageButtons('discord:inv', safePage, totalPages) : [];
+  components.push(...discordUi.navigationRows('inv'));
+  return { text: `Inventory\n\n${text}\n\nPage ${safePage}/${totalPages}`, components };
 }
-function discordShopPage(userId, page = 1) {
+function legacyDiscordShopPage(userId, page = 1) {
   const user = getOrCreateUser(userId);
   const sections = [...new Set(SHOP_ITEMS.map(item => item.section))];
   const safePage = Math.min(sections.length, Math.max(1, page));
@@ -58,12 +60,49 @@ function discordShopPage(userId, page = 1) {
     const locked = (user?.level || 1) < (item.min_level || 1) ? ` · Lv.${item.min_level}` : '';
     return `[${item.id}] ${catalog?.display_name || item.item_id} — ${item.buy_price}g${locked}`;
   }).join('\n');
-  const buttons = items.map(item => new ButtonBuilder().setCustomId(`discord:shop:item:${item.id}`).setLabel(`Beli ${item.id}`).setStyle(ButtonStyle.Success));
-  const rows = [];
-  for (let i = 0; i < buttons.length; i += 5) rows.push(new ActionRowBuilder().addComponents(buttons.slice(i, i + 5)));
-  rows.push(...discordUi.navigationRows('shop', 1));
-  return { text: `TOKO (SHOP)\nSaldo: ${user?.gold || 0}g\n\n${lines}\n\nHalaman ${safePage}/${sections.length}`, components: rows.slice(0, 5) };
-}const COMMANDS = [
+  const selector = new StringSelectMenuBuilder()
+    .setCustomId('discord:shop:select')
+    .setPlaceholder('Pilih item untuk dibeli')
+    .addOptions(items.slice(0, 25).map(item => {
+      const catalog = getCatalogItem(item.item_id);
+      return {
+        label: `${item.id}. ${catalog?.display_name || item.item_id}`.slice(0, 100),
+        description: `${item.buy_price} gold${(user?.level || 1) < (item.min_level || 1) ? ` • Butuh Lv.${item.min_level}` : ''}`.slice(0, 100),
+        value: String(item.id),
+      };
+    }));
+  const components = [
+    new ActionRowBuilder().addComponents(selector),
+    ...discordPageButtons('discord:shop', safePage, sections.length),
+    ...discordUi.navigationRows('shop'),
+  ];
+  return { text: `🏪 **TOKO** — ${section}\n💰 Saldo: **${user?.gold || 0}g**\n\n${lines}\n\nHalaman ${safePage}/${sections.length}`, components };
+}
+function discordShopPage(userId, page = 1) {
+  const user = getOrCreateUser(userId);
+  const pageSize = 5;
+  const totalPages = Math.max(1, Math.ceil(SHOP_ITEMS.length / pageSize));
+  const safePage = Math.min(totalPages, Math.max(1, page));
+  const items = SHOP_ITEMS.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const lines = items.map(item => {
+    const catalog = getCatalogItem(item.item_id);
+    const locked = (user?.level || 1) < (item.min_level || 1) ? ` · Butuh Lv.${item.min_level}` : '';
+    return `**${item.id}.** ${catalog?.display_name || item.item_id} — **${item.buy_price}g**${locked}`;
+  }).join('\n');
+  const itemButtons = items.map(item => new ButtonBuilder()
+    .setCustomId(`discord:shop:item:${item.id}`)
+    .setLabel(`Beli ${item.id}`)
+    .setStyle(ButtonStyle.Success));
+  return {
+    text: `🏪 **TOKO**\n💰 Saldo: **${user?.gold || 0}g**\n\n${lines}\n\nHalaman ${safePage}/${totalPages}`,
+    components: [
+      new ActionRowBuilder().addComponents(itemButtons),
+      ...discordPageButtons('discord:shop', safePage, totalPages),
+      ...discordUi.navigationRows('shop'),
+    ],
+  };
+}
+const COMMANDS = [
   ['rpg','Menu utama RPG'],['guide','Panduan RPG'],['helprpg','Panduan lengkap RPG'],['rpghelp','Alias panduan RPG'],['bantuanrpg','Alias panduan RPG'],['profile','Profil karakter'],['alias','Alias karakter'],
   ['world','Dunia RPG'],['travel','Pindah region'],['campaign','Campaign'],['explore','Eksplorasi'],['skill','Skill tree'],['build','Build'],['gear','Equipment'],
   ['dungeon','Dungeon'],['adventure','Adventure'],['party','Party'],['coop','Co-op'],['guild','Guild'],['duel','PvP Duel'],['worldboss','World Boss'],
@@ -96,10 +135,10 @@ function splitDiscordText(value, limit=1900) {
 }
 function discordPayloads(message, options={}, privateReply=false, command='profile') {
   const chunks=splitDiscordText(message);
-  const active = ['profile','inv','shop','gear','skill','campaign','dungeon','party','guild','guide'].includes(command) ? command : 'profile';
+  const panelCommands = new Set(['profile', 'inv', 'shop', 'gear', 'skill']);
   return chunks.map((content,index)=>{
     const actionRows = index === chunks.length - 1 ? buttons(options) : [];
-    const navigation = index === chunks.length - 1 ? discordUi.navigationRows(active, 1) : [];
+    const navigation = index === chunks.length - 1 && panelCommands.has(command) ? discordUi.navigationRows(command) : [];
     return { embeds:[new EmbedBuilder().setColor(0x7c3aed).setDescription(content)], components: actionRows.length + navigation.length <= 5 ? [...actionRows, ...navigation] : actionRows, ...(privateReply?{flags:MessageFlags.Ephemeral}: {}) };
   });
 }async function sendDiscordUser(user,message,options={}) {
@@ -115,7 +154,7 @@ function ctxFor(interaction, text='') {
   let answered = interaction.replied;
   const pending = [];
   const ctx = {
-    chat: { id:key }, from:{id:interaction.user.id}, message:{text, message_id:interaction.id},
+    chat: { id:key }, from:{id:interaction.user.id}, message:{text, message_id:interaction.id}, interaction,
     update:{update_id:interaction.id, callback_query:interaction.isButton()?{data:interaction.customId}:undefined},
     callbackQuery: interaction.isButton()?{data:interaction.customId}:undefined,
     telegram:{sendMessage:async(chatId,message,options={})=>{ const raw=String(chatId); const discordId=raw.startsWith('discord:')?raw.slice(8):null; if(!discordId)return null; const user=await client.users.fetch(discordId).catch(()=>null); if(!user)return null; return sendDiscordUser(user,message,options).catch(()=>null); },copyMessage:async()=>null},
@@ -133,6 +172,21 @@ const adapter = {
   telegram:{sendMessage:async(chatId,message,options={})=>{ const raw=String(chatId); const discordId=raw.startsWith('discord:')?raw.slice(8):null; if(!discordId)return null; const user=await client.users.fetch(discordId).catch(()=>null); return user?sendDiscordUser(user,message,options).catch(()=>null):null; }},
 };
 setupRpg(adapter,{getPartnerId:(userId)=>activePartners.get(String(userId)) || null,rateLimitCommand:(ctx,next)=>typeof next==='function'?next():undefined});
+adapter.action(/^discord:shop:page:(?:prev|next):(\d+)$/, (ctx) => {
+  const view = discordShopPage(ctx.chat.id, Number(ctx.match[1]));
+  return ctx.interaction.update({
+    embeds: [new EmbedBuilder().setColor(0x7c3aed).setDescription(view.text)],
+    components: view.components,
+  });
+});
+adapter.action(/^discord:panel:(inv|shop)$/, (ctx) => {
+  const command = ctx.match[1];
+  const view = command === 'shop' ? discordShopPage(ctx.chat.id, 1) : inventoryPage(ctx.chat.id, 1);
+  return ctx.interaction.update({
+    embeds: [new EmbedBuilder().setColor(0x7c3aed).setDescription(view.text)],
+    components: view.components,
+  });
+});
 
 function commandJson() {
   return COMMANDS.map(([name,description]) => {

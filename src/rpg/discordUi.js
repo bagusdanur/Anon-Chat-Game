@@ -2,21 +2,14 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 const NAVIGATION = [
   ['profile', 'Profile'], ['inv', 'Inventory'], ['shop', 'Shop'], ['gear', 'Gear'], ['skill', 'Skills'],
-  ['campaign', 'Campaign'], ['dungeon', 'Dungeon'], ['party', 'Party'], ['guild', 'Guild'], ['guide', 'Guide'],
 ];
 
-function navigationRows(active = 'profile', page = 1) {
-  const pages = [NAVIGATION.slice(0, 5), NAVIGATION.slice(5)];
-  const safePage = page === 2 ? 2 : 1;
-  const buttons = pages[safePage - 1].map(([command, label]) => new ButtonBuilder()
-    .setCustomId(`discord:nav:${command}`)
+function navigationRows(active = 'profile') {
+  const buttons = NAVIGATION.map(([command, label]) => new ButtonBuilder()
+    .setCustomId(`${command === 'inv' || command === 'shop' ? 'discord:panel' : 'discord:nav'}:${command}`)
     .setLabel(`${label}${active === command ? ' ✓' : ''}`)
     .setStyle(active === command ? ButtonStyle.Success : ButtonStyle.Secondary));
-  const controls = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('discord:navpage:1').setLabel('◀').setStyle(ButtonStyle.Secondary).setDisabled(safePage === 1),
-    new ButtonBuilder().setCustomId('discord:navpage:2').setLabel('▶').setStyle(ButtonStyle.Secondary).setDisabled(safePage === 2),
-  );
-  return [new ActionRowBuilder().addComponents(buttons), controls];
+  return [new ActionRowBuilder().addComponents(buttons)];
 }
 
 function paginationRow(prefix, page, totalPages) {
