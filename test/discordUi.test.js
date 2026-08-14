@@ -30,6 +30,8 @@ test('Discord UI exposes native transaction routes without double-click guard', 
   assert.match(source, /discord:shop:page/);
   assert.match(source, /discord:shop:confirm/);
   assert.match(source, /discord:inv:action/);
+  assert.match(source, /discord:callback-select/);
+  assert.match(source, /choices\.length > 5/);
   assert.doesNotMatch(source, /consumeInteraction|consumedInteractions/);
 });
 

@@ -180,9 +180,26 @@ function discordPayloads(message, options={}, privateReply=false, command='profi
   });
 }async function sendDiscordUser(user,message,options={}) {
   let result=null; for(const payload of discordPayloads(message,options)) result=await user.send(payload); return result;
-}function buttons(options) {
+}
+function buttons(options) {
   const keyboard = options && options.reply_markup && options.reply_markup.inline_keyboard;
   if (!Array.isArray(keyboard)) return [];
+  const choices = keyboard.flat().filter(button => button && button.callback_data);
+  if (choices.length > 5) {
+    const uniqueChoices = [...new Map(choices.map(button => [String(button.callback_data), button])).values()];
+    const rows = [];
+    for (let offset = 0; offset < uniqueChoices.length && rows.length < 5; offset += 25) {
+      const select = new StringSelectMenuBuilder()
+        .setCustomId(`discord:callback-select:${rows.length}`)
+        .setPlaceholder(rows.length === 0 ? 'Pilih aksi' : `Pilih aksi (${rows.length + 1})`)
+        .addOptions(uniqueChoices.slice(offset, offset + 25).map(button => ({
+          label: String(button.text || 'Pilih').slice(0, 100),
+          value: String(button.callback_data).slice(0, 100),
+        })));
+      rows.push(new ActionRowBuilder().addComponents(select));
+    }
+    return rows;
+  }
   return keyboard.slice(0,5).map(row => new ActionRowBuilder().addComponents(row.slice(0,5).map(b => new ButtonBuilder()
     .setCustomId(String(b.callback_data || 'noop').slice(0,100)).setLabel(String(b.text || 'Pilih').slice(0,80)).setStyle((/tolak|cancel|batal|leave|keluar|hapus|reject/i.test(String(b.text))?ButtonStyle.Danger:(/terima|accept|mulai|lanjut|pilih|beli|buy|gunakan|equip|upgrade/i.test(String(b.text))?ButtonStyle.Success:(/kembali|prev|next|halaman|guide|info/i.test(String(b.text))?ButtonStyle.Secondary:ButtonStyle.Primary)))))));
 }
@@ -242,9 +259,31 @@ async function dispatchDiscordCommand(interaction, command, text, privateReply =
   await handler(ctx, () => {});
   await ctx.flush();
 }
+function resolveDiscordAction(data) {
+  const exact = actions.get(data);
+  if (exact) return { handler: exact, match: null };
+  for (const [pattern, handler] of actions) {
+    if (!(pattern instanceof RegExp)) continue;
+    const match = data.match(pattern);
+    if (match) return { handler, match };
+  }
+  return null;
+}
 client.on('interactionCreate', async interaction => {
-  if (!interaction.isStringSelectMenu() || interaction.customId !== 'discord:shop:select') return;
+  if (!interaction.isStringSelectMenu()) return;
   try {
+    if (interaction.customId.startsWith('discord:callback-select:')) {
+      const data = interaction.values[0];
+      const resolved = resolveDiscordAction(data);
+      if (!resolved) return interaction.reply({ content: 'Aksi sudah kedaluwarsa.', flags: MessageFlags.Ephemeral });
+      const ctx = ctxFor(interaction);
+      ctx.callbackQuery = { data };
+      ctx.match = resolved.match;
+      await resolved.handler(ctx);
+      await ctx.flush();
+      return;
+    }
+    if (interaction.customId !== 'discord:shop:select') return;
     const itemId = Number(interaction.values[0]);
     const item = SHOP_ITEMS.find(entry => entry.id === itemId);
     const catalog = item ? getCatalogItem(item.item_id) : null;
