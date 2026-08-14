@@ -739,7 +739,7 @@ function getWinStreak(userId) {
 // ===== EQUIP/UNEQUIP SYSTEM =====
 const EQUIP_CATEGORIES = ['weapon', 'staff', 'armor', 'accessory'];
 
-// Slot yang bisa dipakai tiap class (staff=Penyihir, weapon=Ksatria/Pencuri)
+// Slot yang bisa dipakai tiap class (staff=Penyihir, weapon=Ksatria/Assassin)
 const CLASS_EQUIP_SLOTS = {
   ksatria:  ['weapon', 'armor', 'accessory'],
   penyihir: ['staff', 'armor', 'accessory'],

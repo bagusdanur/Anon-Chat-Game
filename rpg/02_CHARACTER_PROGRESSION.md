@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|
 | ⚔️ Ksatria | 50 | 5 | 5 | +8 HP, +1.5 ATK, +2 DEF | -10% damage diterima saat `/dungeon` |
 | 🔥 Penyihir | 35 | 8 | 2 | +5 HP, +2.5 ATK, +1 DEF | +15% XP dari `/hunt` |
-| 🗡️ Pencuri | 40 | 6 | 3 | +6 HP, +2 ATK, +1.5 DEF | +1% bonus gold per 5 level (maks +20%) |
+| 🗡️ Assassin | 40 | 6 | 3 | +6 HP, +2 ATK, +1.5 DEF | +1% bonus gold per 5 level (maks +20%) |
 
 Growth dibulatkan ke bawah tiap level up. Reclass TIDAK ada di v1
 (backlog: item "Scroll of Rebirth" di v2 kalau perlu).

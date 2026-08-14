@@ -55,7 +55,7 @@ function createItemCatalogService(db, options = {}) {
       const classFit = item.category === 'staff'
         ? 'Cocok: Penyihir'
         : item.category === 'weapon'
-          ? 'Cocok: Ksatria dan Pencuri'
+          ? 'Cocok: Ksatria dan Assassin'
           : 'Cocok: semua class';
       result.push(classFit);
       if (['rare', 'epic', 'legendary'].includes(item.rarity)) result.push('Memiliki socket setelah forge');

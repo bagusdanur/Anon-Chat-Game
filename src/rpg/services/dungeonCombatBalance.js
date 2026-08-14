@@ -13,7 +13,7 @@ function combinedPower(actorPower, allyPower = 0, hasAlly = false) {
 }
 
 // Dungeon panjang menggabungkan banyak serangan musuh dalam satu room. Tanpa
-// perlindungan konteks ini, HP/DEF dasar Penyihir dan Pencuri membuat keduanya
+// perlindungan konteks ini, HP/DEF dasar Penyihir dan Assassin membuat keduanya
 // jauh tertinggal dari Ksatria, meski damage dan gear mereka setara. Ini hanya
 // dipakai pada dungeon solo; raid, hunt, dan combat lain tidak berubah.
 function soloClassDamageReduction(className) {

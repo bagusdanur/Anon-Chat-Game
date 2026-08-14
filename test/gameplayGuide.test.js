@@ -105,7 +105,7 @@ test('tracker Saga II memakai nomor dungeon dan rekomendasi level dinamis', () =
   assert.equal(duo.command, '/dungeon duo 4');
 });
 
-test('tracker mengenali objective hunt, class Pencuri, dan chapter Saga II', () => {
+test('tracker mengenali objective hunt, class Assassin, dan chapter Saga II', () => {
   const hunt = determineNextStep({
     hasCharacter: true,
     hasAlias: true,
@@ -116,7 +116,7 @@ test('tracker mengenali objective hunt, class Pencuri, dan chapter Saga II', () 
   });
   assert.equal(hunt.command, '/hunt');
   assert.match(hunt.detail, /3\/8/);
-  assert.match(getClassBuildAdvice('Pencuri').className, /Pencuri/);
+  assert.match(getClassBuildAdvice('Assassin').className, /Assassin/);
   assert.equal(formatObjectiveLabel('clear_emperor_throne'), 'Runtuhkan Kaisar Kosmik Xylarion');
   assert.match(getSagaHeader(4), /SAGA II/);
   assert.match(getSagaHeader(7), /Chapter 7/);

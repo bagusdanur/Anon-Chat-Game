@@ -166,9 +166,9 @@ function getClassBuildAdvice(className) {
       ],
     };
   }
-  if (norm.includes('pencuri') || norm.includes('rogue') || norm.includes('thief')) {
+  if (norm.includes('pencuri') || norm.includes('assassin') || norm.includes('rogue') || norm.includes('thief')) {
     return {
-      className: '🗡️ Pencuri (Crit/Control DPS)',
+      className: '🗡️ Assassin (Crit/Control DPS)',
       statFocus: 'ATK, Crit Rate & Crit Multiplier',
       gearFocus: 'Senjata Fisik + Aksesori Crit (jaga HP karena DEF lebih rendah)',
       skillCombo: '1️⃣ Bom Asap saat telegraph ➔ 2️⃣ Backstab/Flurry untuk burst',

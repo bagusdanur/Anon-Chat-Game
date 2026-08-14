@@ -172,7 +172,7 @@ function resolveTurn(raid, actions) {
         logs.push(`🔥 ${player.className}: ${cls.skillName}! *-${dmg} HP* bos + 🔥 Burn 3 turn!`);
 
       } else if (player.classId === 'pencuri') {
-        // Pencuri: Backstab — physical + 100% crit
+        // Assassin: Backstab — physical + 100% crit
         dmg = calcPhysicalDamage(player, bossDefender, baseDmg, skillMulti);
         const critDmg = Math.floor(dmg * (player.critMulti || 2.0));
         boss.hp = Math.max(0, boss.hp - critDmg);

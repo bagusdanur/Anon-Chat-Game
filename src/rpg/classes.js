@@ -30,7 +30,7 @@ const classes = {
     skillCooldownMax: 3
   },
   pencuri: {
-    name: 'Pencuri',
+    name: 'Assassin',
     icon: '🗡️',
     hp: 24,
     maxHp: 24,

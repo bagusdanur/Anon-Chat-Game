@@ -288,7 +288,7 @@ function setupProfile(bot, { rateLimitCommand }) {
         `   Physical fighter, Skill: Tebasan Besar\n\n` +
         `🔥 <b>Penyihir</b> — Magic DPS, burst damage\n` +
         `   Skill: Bola Api (Burn 3 turn)\n\n` +
-        `🗡️ <b>Pencuri</b> — Crit tinggi, burst cepat\n` +
+        `🗡️ <b>Assassin</b> — Crit tinggi, burst cepat\n` +
         `   Skill: Backstab (100% Crit!)\n\n` +
         `━━━━━━━━━━━━━━━━━━━━\n` +
         `<i>Pilih kelasmu di bawah:</i>`;
@@ -298,7 +298,7 @@ function setupProfile(bot, { rateLimitCommand }) {
         ...Markup.inlineKeyboard([
           [Markup.button.callback('⚔️ Ksatria', 'create_ksatria')],
           [Markup.button.callback('🔥 Penyihir', 'create_penyihir')],
-          [Markup.button.callback('🗡️ Pencuri', 'create_pencuri')],
+          [Markup.button.callback('🗡️ Assassin', 'create_pencuri')],
         ])
       });
     }
